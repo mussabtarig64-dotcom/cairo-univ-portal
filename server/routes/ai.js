@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Groq = require('groq-sdk');
+const KnowledgeBase = require('../models/KnowledgeBase');
 
 const groqApiKey = process.env.GROQ_API_KEY || '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';
 let groq = null;
@@ -19,6 +20,16 @@ const SUPPORTED_MODELS = [
   'qwen/qwen3.6-27b',
 ];
 
+// مسار جلب عناصر قاعدة المعرفة النشطة للطلاب (Public Knowledge Base query)
+router.get('/knowledge', async (req, res) => {
+  try {
+    const items = await KnowledgeBase.find({ isActive: true }).sort({ createdAt: -1 });
+    res.json({ success: true, count: items.length, items });
+  } catch (error) {
+    res.status(500).json({ success: false, message: 'خطأ في جلب عناصر قاعدة المعرفة' });
+  }
+});
+
 router.post('/chat', async (req, res) => {
   try {
     const { messages, studentName, department, academicLevel } = req.body;
@@ -32,6 +43,19 @@ router.post('/chat', async (req, res) => {
     const dept = department || 'العلوم العامة';
     const level = academicLevel || 'المرحلة الجامعية';
 
+    // جلب المواضيع المعرفة من قبل الإدارة في MongoDB
+    let kbContextText = '';
+    try {
+      const activeKBItems = await KnowledgeBase.find({ isActive: true }).limit(50);
+      if (activeKBItems && activeKBItems.length > 0) {
+        kbContextText = activeKBItems
+          .map((item, idx) => `[Topic ${idx + 1} - Category: ${item.category}]\nQ: ${item.question}\nA: ${item.answer}`)
+          .join('\n\n');
+      }
+    } catch (kbErr) {
+      console.log('KB fetch note:', kbErr.message);
+    }
+
     // كشف ما إذا كانت الرسالة باللغة الإنجليزية
     const isEnglish = /[a-zA-Z]{3,}/.test(lastMessage) && !/[\u0600-\u06FF]/.test(lastMessage);
 
@@ -43,11 +67,19 @@ Student Profile:
 - Department/Major: ${dept}
 - Academic Level: ${level}
 
+Admin Curated Knowledge Base (Official Q&A Ground Truth from MongoDB):
+${kbContextText || 'No custom KB topics added yet.'}
+
 Guidelines:
 1. Always address the student personally by their name ("${name}").
-2. Language Adaptation:
+2. Prioritize answering using the official Admin Curated Knowledge Base provided above whenever relevant.
+3. Language Adaptation:
    - If the student speaks/asks in English, respond in fluent, professional, and helpful English.
    - If the student speaks/asks in Arabic, respond in eloquent, warm, and supportive Arabic infused with polite and brotherly Sudanese warmth (e.g., "أهلاً بيك يا دكتورنا ${name}", "أبشر بالخير", "ولا تشيل هم").
+4. Specialization: You possess deep knowledge of Faculty of Science, Cairo University (Departments: Computer Science, Chemistry, Biochemistry, Physics, Biophysics, Mathematics, Statistics, Botany & Microbiology, Zoology, Entomology, Geology, Geophysics, Biotechnology, Astronomy).
+5. Academic & Practical Advice: Provide comprehensive guidance on course registration, Credit Hours system, GPA calculation, laboratory reports, exam preparation, Cairo residency renewal procedures (Giza/Abbassia immigration offices), student housing in Cairo/Giza (Dokki, Faisal, Bein El-Sarayat), and Association activities.
+6. Formatting: Use elegant Markdown (headings, bullet points, code blocks for programming, clear math/science formulas).
+`;, respond in eloquent, warm, and supportive Arabic infused with polite and brotherly Sudanese warmth (e.g., "أهلاً بيك يا دكتورنا ${name}", "أبشر بالخير", "ولا تشيل هم").
 3. Specialization: You possess deep knowledge of Faculty of Science, Cairo University (Departments: Computer Science, Chemistry, Biochemistry, Physics, Biophysics, Mathematics, Statistics, Botany & Microbiology, Zoology, Entomology, Geology, Geophysics, Biotechnology, Astronomy).
 4. Academic & Practical Advice: Provide comprehensive guidance on course registration, Credit Hours system, GPA calculation, laboratory reports, exam preparation, Cairo residency renewal procedures (Giza/Abbassia immigration offices), student housing in Cairo/Giza (Dokki, Faisal, Bein El-Sarayat), and Association activities.
 5. Formatting: Use elegant Markdown (headings, bullet points, code blocks for programming, clear math/science formulas).

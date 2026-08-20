@@ -25,6 +25,7 @@ import Contact from './pages/Contact';
 import DigitalIDPage from './pages/DigitalIDPage';
 import AnnouncementTicker from './components/AnnouncementTicker';
 import SocialLinks from './components/SocialLinks';
+import FloatingAIChatWidget from './components/FloatingAIChatWidget';
 
 import {
   Home as HomeIcon,
@@ -580,6 +581,7 @@ function MainAppLayout() {
         </Routes>
       </main>
       <Footer />
+      <FloatingAIChatWidget />
     </div>
   );
 }

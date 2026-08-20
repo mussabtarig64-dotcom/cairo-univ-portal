@@ -16,19 +16,30 @@ export default function Login() {
   const [rejectedMessage, setRejectedMessage] = useState('');
   const [loading, setLoading] = useState(false);
 
+  // حالة التدقيق المباشر والتنبيه باللون الأحمر (Real-time Validation)
+  const [touched, setTouched] = useState({ email: false, password: false });
+
+  const isEmailValid = /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim());
+  const isPasswordValid = password.trim().length >= 6;
+
+  const emailError = touched.email && (!email.trim() ? 'البريد الإلكتروني مطلوب' : !isEmailValid ? 'صيغة البريد الإلكتروني غير صحيحة' : '');
+  const passwordError = touched.password && (!password.trim() ? 'كلمة المرور مطلوبة' : !isPasswordValid ? 'كلمة المرور يجب أن لا تقل عن 6 أحرف' : '');
+
   const handleLogin = async (e) => {
     e.preventDefault();
+    setTouched({ email: true, password: true });
+
+    if (!isEmailValid || !isPasswordValid) {
+      setError('يرجى تصحيح الحقول المطلوبة باللون الأحمر قبل المتابعة.');
+      return;
+    }
+
     setError('');
     setPendingMessage('');
     setRejectedMessage('');
 
     const cleanEmail = email.trim().toLowerCase();
     const cleanPassword = password.trim();
-
-    if (!cleanEmail || !cleanPassword) {
-      setError('يرجى إدخال البريد الإلكتروني وكلمة المرور.');
-      return;
-    }
 
     setLoading(true);
 
@@ -38,7 +49,6 @@ export default function Login() {
       if (res && res.isRejected) {
         setRejectedMessage(res.message || 'تم رفض طلب تسجيلك بواسطة إدارة الرابطة. يرجى التواصل مع الإدارة لإعادة تفعيل الحساب.');
       } else if (res && res.success && res.user) {
-        // إذا كان المستخدم أدمن (سواء حساب أساسي أو طالب تمت ترقيته لأدمن)
         if (res.user.role === 'admin') {
           navigate('/admin');
         } else if (
@@ -171,24 +181,30 @@ export default function Login() {
         <form onSubmit={handleLogin} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
           <div>
             <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-              البريد الإلكتروني
+              البريد الإلكتروني *
             </label>
             <div style={{ position: 'relative' }}>
               <input
                 type="email"
                 required
-                placeholder="البريد الإلكتروني"
+                placeholder="example@gmail.com"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                style={inputStyle(activeTheme)}
+                onBlur={() => setTouched((prev) => ({ ...prev, email: true }))}
+                style={inputStyle(activeTheme, !!emailError)}
               />
-              <Mail size={16} color={activeTheme.textMuted} style={iconStyle} />
+              <Mail size={16} color={emailError ? '#ef4444' : activeTheme.textMuted} style={iconStyle} />
             </div>
+            {emailError && (
+              <span style={{ color: '#f87171', fontSize: '11px', marginTop: '4px', display: 'block', fontWeight: 'bold' }}>
+                ⚠️ {emailError}
+              </span>
+            )}
           </div>
 
           <div>
             <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-              كلمة المرور
+              كلمة المرور *
             </label>
             <div style={{ position: 'relative' }}>
               <input
@@ -197,10 +213,16 @@ export default function Login() {
                 placeholder="••••••••"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                style={inputStyle(activeTheme)}
+                onBlur={() => setTouched((prev) => ({ ...prev, password: true }))}
+                style={inputStyle(activeTheme, !!passwordError)}
               />
-              <Lock size={16} color={activeTheme.textMuted} style={iconStyle} />
+              <Lock size={16} color={passwordError ? '#ef4444' : activeTheme.textMuted} style={iconStyle} />
             </div>
+            {passwordError && (
+              <span style={{ color: '#f87171', fontSize: '11px', marginTop: '4px', display: 'block', fontWeight: 'bold' }}>
+                ⚠️ {passwordError}
+              </span>
+            )}
           </div>
 
           <button
@@ -239,17 +261,18 @@ export default function Login() {
   );
 }
 
-const inputStyle = (theme) => ({
+const inputStyle = (theme, isError) => ({
   width: '100%',
   padding: '11px 40px 11px 14px',
   borderRadius: '10px',
-  background: 'rgba(0, 0, 0, 0.3)',
-  border: `1px solid ${theme.border}`,
+  background: isError ? 'rgba(239, 68, 68, 0.08)' : 'rgba(0, 0, 0, 0.3)',
+  border: isError ? '1px solid #ef4444' : `1px solid ${theme.border}`,
   color: theme.textMain,
   outline: 'none',
   fontSize: '13px',
   boxSizing: 'border-box',
   direction: 'rtl',
+  transition: 'all 0.2s ease',
 });
 
 const iconStyle = {

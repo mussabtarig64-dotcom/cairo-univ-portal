@@ -105,37 +105,55 @@ export default function Register() {
     reader.readAsDataURL(file);
   };
 
+  const [touched, setTouched] = useState({});
+
+  const handleBlur = (field) => {
+    setTouched((prev) => ({ ...prev, [field]: true }));
+  };
+
+  const getFieldError = (field) => {
+    if (!touched[field]) return '';
+    switch (field) {
+      case 'fullName':
+        return !formData.fullName.trim() ? 'الاسم كامل مطلوب' : formData.fullName.trim().length < 3 ? 'يرجى إدخال اسم ثلاثي صحيح' : '';
+      case 'age':
+        return !formData.age ? 'العمر مطلوب' : (parseInt(formData.age, 10) < 16 || parseInt(formData.age, 10) > 60) ? 'العمر بين 16 و 60 سنة' : '';
+      case 'phone':
+        return !formData.phone.trim() ? 'رقم الهاتف المصري مطلوب' : formData.phone.trim().length < 10 ? 'رقم الهاتف يجب أن يتكون من 10 أرقام على الأقل' : '';
+      case 'cairoAddress':
+        return !formData.cairoAddress.trim() ? 'عنوان السكن بمصر مطلوب بالتفصيل' : formData.cairoAddress.trim().length < 5 ? 'ادخل العنوان بالتفصيل' : '';
+      case 'studentId':
+        return !formData.studentId.trim() ? 'الرقم الأكاديمي أو رقم القيد مطلوب' : '';
+      case 'email':
+        return !formData.email.trim() ? 'البريد الإلكتروني مطلوب' : !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(formData.email.trim()) ? 'صيغة البريد الإلكتروني غير صحيحة' : '';
+      case 'password':
+        return !formData.password ? 'كلمة المرور مطلوبة' : formData.password.length < 6 ? 'كلمة المرور 6 أحرف أو أرقام على الأقل' : '';
+      case 'confirmPassword':
+        return !formData.confirmPassword ? 'تأكيد كلمة المرور مطلوب' : formData.confirmPassword !== formData.password ? 'كلمات المرور غير متطابقة' : '';
+      default:
+        return '';
+    }
+  };
+
   const handleRegister = async (e) => {
     e.preventDefault();
     setError('');
 
-    // التحقق من الحقول الإلزامية
-    if (!formData.fullName.trim()) {
-      setError('يرجى كتابة الاسم الرباعي الكامل للطالب.');
-      return;
-    }
-    if (!formData.phone.trim()) {
-      setError('يرجى إدخال رقم الهاتف المصري للتواصل.');
-      return;
-    }
-    if (!formData.cairoAddress.trim()) {
-      setError('يرجى إدخال عنوان السكن الحالي في مصر بالتفصيل (المحافظة والحي).');
-      return;
-    }
-    if (!formData.studentId.trim()) {
-      setError('يرجى إدخال الرقم الأكاديمي أو رقم القيد بالكلية.');
-      return;
-    }
-    if (!formData.idDocument) {
-      setError('إثبات الهوية إلزامي! يرجى رفع صورة من (جواز السفر / الرقم الوطني / بطاقة الكلية).');
-      return;
-    }
-    if (formData.password !== formData.confirmPassword) {
-      setError('كلمات المرور غير متطابقة، يرجى إعادة كتابتها بدقة.');
-      return;
-    }
-    if (formData.password.length < 6) {
-      setError('كلمة المرور يجب أن لا تقل عن 6 أحرف أو أرقام.');
+    // تفعيل حالة اللمس لجميع الحقول عند محاولة الإرسال
+    const allFields = ['fullName', 'age', 'phone', 'cairoAddress', 'studentId', 'email', 'password', 'confirmPassword'];
+    const touchedAll = {};
+    allFields.forEach((f) => { touchedAll[f] = true; });
+    setTouched(touchedAll);
+
+    // التحقق من أن جميع الحقول صالحة
+    const hasErrors = allFields.some((f) => !!getFieldError(f)) || !formData.idDocument;
+
+    if (hasErrors) {
+      if (!formData.idDocument) {
+        setError('إثبات الهوية إلزامي! يرجى رفع صورة من (جواز السفر / الرقم الوطني / بطاقة الكلية).');
+      } else {
+        setError('يرجى مراجعة وتصحيح الحقول المحددة باللون الأحمر قبل إرسال الاستمارة.');
+      }
       return;
     }
 
@@ -158,7 +176,7 @@ export default function Register() {
         idDocument: formData.idDocument,
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
-        role: 'user', // رتبة مستخدم عادي تنتظر قبول الأدمن
+        role: 'user',
         verificationStatus: 'pending',
       };
 
@@ -291,8 +309,12 @@ export default function Register() {
                     placeholder="الاسم كامل"
                     value={formData.fullName}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    onBlur={() => handleBlur('fullName')}
+                    style={inputStyle(activeTheme, !!getFieldError('fullName'))}
                   />
+                  {getFieldError('fullName') && (
+                    <span style={errorTextStyle}>⚠️ {getFieldError('fullName')}</span>
+                  )}
                 </div>
 
                 {/* العمر */}
@@ -307,8 +329,12 @@ export default function Register() {
                     placeholder="مثال: 20"
                     value={formData.age}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    onBlur={() => handleBlur('age')}
+                    style={inputStyle(activeTheme, !!getFieldError('age'))}
                   />
+                  {getFieldError('age') && (
+                    <span style={errorTextStyle}>⚠️ {getFieldError('age')}</span>
+                  )}
                 </div>
 
                 {/* رقم الهاتف المصري */}
@@ -321,8 +347,12 @@ export default function Register() {
                     placeholder="مثال: 01012345678"
                     value={formData.phone}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    onBlur={() => handleBlur('phone')}
+                    style={inputStyle(activeTheme, !!getFieldError('phone'))}
                   />
+                  {getFieldError('phone') && (
+                    <span style={errorTextStyle}>⚠️ {getFieldError('phone')}</span>
+                  )}
                 </div>
 
                 {/* رقم الواتساب */}
@@ -334,7 +364,7 @@ export default function Register() {
                     placeholder="مثال: +249... أو 010..."
                     value={formData.whatsapp}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    style={inputStyle(activeTheme, false)}
                   />
                 </div>
               </div>
@@ -349,8 +379,12 @@ export default function Register() {
                   placeholder="مثال: محافظة الجيزة - الدقي - شارع التحرير بالقرب من محطة المترو"
                   value={formData.cairoAddress}
                   onChange={handleChange}
-                  style={inputStyle(activeTheme)}
+                  onBlur={() => handleBlur('cairoAddress')}
+                  style={inputStyle(activeTheme, !!getFieldError('cairoAddress'))}
                 />
+                {getFieldError('cairoAddress') && (
+                  <span style={errorTextStyle}>⚠️ {getFieldError('cairoAddress')}</span>
+                )}
               </div>
 
               {/* بيانات اتصال الطوارئ */}
@@ -368,7 +402,7 @@ export default function Register() {
                       placeholder="اسم ولي الأمر أو القريب..."
                       value={formData.emergencyContactName}
                       onChange={handleChange}
-                      style={inputStyle(activeTheme)}
+                      style={inputStyle(activeTheme, false)}
                     />
                   </div>
                   <div>
@@ -377,7 +411,7 @@ export default function Register() {
                       name="emergencyContactRelation"
                       value={formData.emergencyContactRelation}
                       onChange={handleChange}
-                      style={inputStyle(activeTheme)}
+                      style={inputStyle(activeTheme, false)}
                     >
                       <option value="الوالد / الوالدة">الوالد / الوالدة</option>
                       <option value="أخ / أخت">أخ / أخت</option>
@@ -393,7 +427,7 @@ export default function Register() {
                       placeholder="رقم الهاتف للطوارئ..."
                       value={formData.emergencyContactPhone}
                       onChange={handleChange}
-                      style={inputStyle(activeTheme)}
+                      style={inputStyle(activeTheme, false)}
                     />
                   </div>
                 </div>
@@ -418,8 +452,12 @@ export default function Register() {
                     placeholder="مثال: 202410889"
                     value={formData.studentId}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    onBlur={() => handleBlur('studentId')}
+                    style={inputStyle(activeTheme, !!getFieldError('studentId'))}
                   />
+                  {getFieldError('studentId') && (
+                    <span style={errorTextStyle}>⚠️ {getFieldError('studentId')}</span>
+                  )}
                 </div>
 
                 {/* القسم / التخصص */}
@@ -429,7 +467,7 @@ export default function Register() {
                     name="department"
                     value={formData.department}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    style={inputStyle(activeTheme, false)}
                   >
                     {DEPARTMENTS.map((dept) => (
                       <option key={dept} value={dept}>
@@ -446,7 +484,7 @@ export default function Register() {
                     name="academicYear"
                     value={formData.academicYear}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    style={inputStyle(activeTheme, false)}
                   >
                     {ACADEMIC_YEARS.map((yr) => (
                       <option key={yr} value={yr}>
@@ -471,7 +509,7 @@ export default function Register() {
 
               <div
                 style={{
-                  border: `2px dashed ${formData.idDocument ? '#22c55e' : activeTheme.accent}`,
+                  border: `2px dashed ${formData.idDocument ? '#22c55e' : '#f59e0b'}`,
                   borderRadius: '16px',
                   padding: '24px 16px',
                   textAlign: 'center',
@@ -518,7 +556,7 @@ export default function Register() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                     <Upload size={32} color={activeTheme.accentLight} />
                     <div style={{ color: activeTheme.textMain, fontWeight: 'bold', fontSize: '14px' }}>
-                      اضغط هنا لرفع صورة جواز السفر أو بطاقة الهوية / الكلية
+                      اضغط هنا لرفع صورة جواز السفر أو بطاقة الهوية / الكلية *
                     </div>
                     <div style={{ color: activeTheme.textMuted, fontSize: '11px' }}>
                       يقبل الصور (JPG, PNG) وملفات PDF بحد أقصى 5MB
@@ -545,8 +583,12 @@ export default function Register() {
                     placeholder="example@gmail.com"
                     value={formData.email}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    onBlur={() => handleBlur('email')}
+                    style={inputStyle(activeTheme, !!getFieldError('email'))}
                   />
+                  {getFieldError('email') && (
+                    <span style={errorTextStyle}>⚠️ {getFieldError('email')}</span>
+                  )}
                 </div>
 
                 <div>
@@ -558,8 +600,12 @@ export default function Register() {
                     placeholder="••••••••"
                     value={formData.password}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    onBlur={() => handleBlur('password')}
+                    style={inputStyle(activeTheme, !!getFieldError('password'))}
                   />
+                  {getFieldError('password') && (
+                    <span style={errorTextStyle}>⚠️ {getFieldError('password')}</span>
+                  )}
                 </div>
 
                 <div>
@@ -571,8 +617,12 @@ export default function Register() {
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    style={inputStyle(activeTheme)}
+                    onBlur={() => handleBlur('confirmPassword')}
+                    style={inputStyle(activeTheme, !!getFieldError('confirmPassword'))}
                   />
+                  {getFieldError('confirmPassword') && (
+                    <span style={errorTextStyle}>⚠️ {getFieldError('confirmPassword')}</span>
+                  )}
                 </div>
               </div>
             </div>
@@ -650,15 +700,24 @@ const labelStyle = (theme) => ({
   marginBottom: '6px',
 });
 
-const inputStyle = (theme) => ({
+const inputStyle = (theme, isError) => ({
   width: '100%',
   padding: '11px 14px',
   borderRadius: '10px',
-  background: 'rgba(0, 0, 0, 0.35)',
-  border: `1px solid ${theme.border}`,
+  background: isError ? 'rgba(239, 68, 68, 0.08)' : 'rgba(0, 0, 0, 0.35)',
+  border: isError ? '1px solid #ef4444' : `1px solid ${theme.border}`,
   color: theme.textMain,
   outline: 'none',
   fontSize: '13px',
   boxSizing: 'border-box',
   direction: 'rtl',
+  transition: 'all 0.2s ease',
 });
+
+const errorTextStyle = {
+  color: '#f87171',
+  fontSize: '11px',
+  marginTop: '4px',
+  display: 'block',
+  fontWeight: 'bold',
+};

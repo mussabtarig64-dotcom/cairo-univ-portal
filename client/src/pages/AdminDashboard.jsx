@@ -38,27 +38,41 @@ export default function AdminDashboard() {
   const { currentThemeKey, activeTheme, switchTheme, availableThemes } = useTheme();
   const { user, updateUserRole } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'themes' | 'announcements'
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'themes' | 'announcements' | 'kb' | 'analytics'
   const [pendingUsers, setPendingUsers] = useState([]);
   const [approvedUsers, setApprovedUsers] = useState([]);
   const [rejectedUsers, setRejectedUsers] = useState([]);
   const [announcements, setAnnouncements] = useState([]);
+  const [kbItems, setKbItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', isPinned: true });
   const [themeSuccessMsg, setThemeSuccessMsg] = useState('');
+  const [kbSuccessMsg, setKbSuccessMsg] = useState('');
+
+  // حالة نموذج إضافة/تعديل أسئلة المستشار الأكاديمي
+  const [newKbQuestion, setNewKbQuestion] = useState('');
+  const [newKbAnswer, setNewKbAnswer] = useState('');
+  const [newKbCategory, setNewKbCategory] = useState('general');
+  const [newKbKeywords, setNewKbKeywords] = useState('');
+  const [editingKbId, setEditingKbId] = useState(null);
 
   useEffect(() => {
     loadDashboardData();
   }, []);
 
   const loadDashboardData = async () => {
-    // 1. تحميل من السيرفر
+    // 1. تحميل البيانات من السيرفر
     try {
-      const [studentsRes, annRes] = await Promise.allSettled([
+      const [studentsRes, annRes, kbRes] = await Promise.allSettled([
         axios.get(`${API_BASE}/admin/students`),
         axios.get(`${API_BASE}/admin/announcements`),
+        axios.get(`${API_BASE}/admin/faq`),
       ]);
+
+      if (kbRes.status === 'fulfilled' && kbRes.value.data?.items) {
+        setKbItems(kbRes.value.data.items);
+      }
 
       if (studentsRes.status === 'fulfilled' && studentsRes.value.data?.students) {
         const all = studentsRes.value.data.students;
@@ -387,6 +401,77 @@ export default function AdminDashboard() {
       u.cairoAddress?.includes(searchTerm)
   );
 
+  const handleSaveKb = async (e) => {
+    e.preventDefault();
+    if (!newKbQuestion.trim() || !newKbAnswer.trim()) return;
+
+    try {
+      if (editingKbId) {
+        const res = await axios.put(`${API_BASE}/admin/faq/${editingKbId}`, {
+          question: newKbQuestion.trim(),
+          answer: newKbAnswer.trim(),
+          category: newKbCategory,
+          keywords: newKbKeywords.split(',').map((k) => k.trim()).filter(Boolean),
+        });
+        if (res.data?.success) {
+          setKbItems((prev) => prev.map((k) => (k._id === editingKbId ? res.data.item : k)));
+          setKbSuccessMsg('تم تحديث السؤال في قاعدة المعرفة بنجاح ✨');
+        }
+      } else {
+        const res = await axios.post(`${API_BASE}/admin/faq`, {
+          question: newKbQuestion.trim(),
+          answer: newKbAnswer.trim(),
+          category: newKbCategory,
+          keywords: newKbKeywords.split(',').map((k) => k.trim()).filter(Boolean),
+        });
+        if (res.data?.success) {
+          setKbItems((prev) => [res.data.item, ...prev]);
+          setKbSuccessMsg('تمت إضافة السؤال بنجاح إلى المستشار الذكي 🤖');
+        }
+      }
+
+      setNewKbQuestion('');
+      setNewKbAnswer('');
+      setNewKbCategory('general');
+      setNewKbKeywords('');
+      setEditingKbId(null);
+      setTimeout(() => setKbSuccessMsg(''), 4000);
+    } catch (err) {
+      console.error('KB save error:', err);
+    }
+  };
+
+  const handleToggleKb = async (id) => {
+    try {
+      const res = await axios.patch(`${API_BASE}/admin/faq/${id}/toggle`);
+      if (res.data?.success) {
+        setKbItems((prev) =>
+          prev.map((k) => (k._id === id ? { ...k, isActive: res.data.isActive } : k))
+        );
+      }
+    } catch (err) {
+      console.error('KB toggle error:', err);
+    }
+  };
+
+  const handleDeleteKb = async (id) => {
+    if (!window.confirm('هل أنت تأكد من رغبتك في حذف هذا الموضوع من قاعدة المعرفة؟')) return;
+    try {
+      await axios.delete(`${API_BASE}/admin/faq/${id}`);
+      setKbItems((prev) => prev.filter((k) => k._id !== id));
+    } catch (err) {
+      console.error('KB delete error:', err);
+    }
+  };
+
+  const handleEditKb = (item) => {
+    setEditingKbId(item._id);
+    setNewKbQuestion(item.question);
+    setNewKbAnswer(item.answer);
+    setNewKbCategory(item.category || 'general');
+    setNewKbKeywords(Array.isArray(item.keywords) ? item.keywords.join(', ') : '');
+  };
+
   return (
     <div style={{ maxWidth: '1150px', margin: '30px auto', padding: '0 20px', paddingBottom: '70px', direction: 'rtl' }}>
       
@@ -547,6 +632,26 @@ export default function AdminDashboard() {
           </button>
 
           <button
+            onClick={() => setActiveTab('kb')}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              border: `1px solid ${activeTab === 'kb' ? activeTheme.accent : activeTheme.border}`,
+              background: activeTab === 'kb' ? activeTheme.primary : 'rgba(0, 0, 0, 0.25)',
+              color: activeTab === 'kb' && !activeTheme.isDark ? '#0b1622' : '#ffffff',
+            }}
+          >
+            <Sparkles size={16} />
+            <span>🤖 المستشار الأكاديمي (قاعدة المعرفة) ({kbItems.length})</span>
+          </button>
+
+          <button
             onClick={() => setActiveTab('themes')}
             style={{
               display: 'flex',
@@ -616,6 +721,271 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* 5. تبويب إدارة قاعدة معرفة المستشار الأكاديمي الذكي (KB Management) */}
+      {activeTab === 'kb' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* نموذج إضافة/تعديل سؤال بقاعدة المعرفة */}
+          <div
+            style={{
+              background: activeTheme.bgCard,
+              border: `1px solid ${activeTheme.border}`,
+              borderRadius: '20px',
+              padding: '24px',
+              boxShadow: '0 10px 30px rgba(0, 0, 0, 0.25)',
+            }}
+          >
+            <h3 style={{ color: activeTheme.textMain, fontSize: '17px', fontWeight: 'bold', margin: '0 0 8px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <Sparkles size={20} color={activeTheme.accentLight} />
+              <span>{editingKbId ? 'تعديل موضوع بقاعدة معرفة المستشار الذكي' : 'إضافة سؤال وإجابة جديدة بقاعدة معرفة الذكاء الاصطناعي'}</span>
+            </h3>
+            <p style={{ color: activeTheme.textMuted, fontSize: '13px', margin: '0 0 20px' }}>
+              المواضيع المدخلة هنا يتم اعتمادها فوراً كمصدر معتمد (Ground Truth) يجيب بها المستشار الأكاديمي الذكي على جميع استفسارات الطلاب.
+            </p>
+
+            {kbSuccessMsg && (
+              <div style={{ background: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#22c55e', padding: '12px', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold', marginBottom: '16px' }}>
+                {kbSuccessMsg}
+              </div>
+            )}
+
+            <form onSubmit={handleSaveKb} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+              <div>
+                <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                  السؤال / الاستفسار الأكاديمي المباشر *
+                </label>
+                <input
+                  type="text"
+                  required
+                  placeholder="مثال: ما هي خطوات تجديد الإقامة الدراسية بمصر؟ / كيف يحسب الـ GPA؟"
+                  value={newKbQuestion}
+                  onChange={(e) => setNewKbQuestion(e.target.value)}
+                  style={inputStyle(activeTheme)}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                  الإجابة النموذجية المعتمدة من الإدارة *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  placeholder="اكتب الإجابة المفصلة التي سيجيب بها المستشار الذكي على الطلاب..."
+                  value={newKbAnswer}
+                  onChange={(e) => setNewKbAnswer(e.target.value)}
+                  style={inputStyle(activeTheme)}
+                />
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 240px), 1fr))', gap: '16px' }}>
+                <div>
+                  <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                    التصنيف / الفئة
+                  </label>
+                  <select
+                    value={newKbCategory}
+                    onChange={(e) => setNewKbCategory(e.target.value)}
+                    style={inputStyle(activeTheme)}
+                  >
+                    <option value="academic">أكاديمي وكلية العلوم</option>
+                    <option value="residency">إجراءات الإقامة والفيزا</option>
+                    <option value="housing">السكن الطلابي بمصر</option>
+                    <option value="registration">التسجيل والقيد</option>
+                    <option value="general">عام وخدمات الرابطة</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                    الكلمات المفتاحية للبحث (مفصولة بفواصل)
+                  </label>
+                  <input
+                    type="text"
+                    placeholder="مثال: إقامة, للجوازات, العباسية, السكن"
+                    value={newKbKeywords}
+                    onChange={(e) => setNewKbKeywords(e.target.value)}
+                    style={inputStyle(activeTheme)}
+                  />
+                </div>
+              </div>
+
+              <div style={{ display: 'flex', gap: '10px', marginTop: '10px' }}>
+                <button
+                  type="submit"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: `linear-gradient(135deg, ${activeTheme.accent} 0%, #d97706 100%)`,
+                    color: '#0b1622',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '12px',
+                    fontWeight: 'bold',
+                    fontSize: '14px',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)',
+                  }}
+                >
+                  <Plus size={16} />
+                  <span>{editingKbId ? 'حفظ التعديلات' : 'إضافة إلى قاعدة المعرفة'}</span>
+                </button>
+
+                {editingKbId && (
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setEditingKbId(null);
+                      setNewKbQuestion('');
+                      setNewKbAnswer('');
+                      setNewKbCategory('general');
+                      setNewKbKeywords('');
+                    }}
+                    style={{
+                      background: 'rgba(255, 255, 255, 0.08)',
+                      border: `1px solid ${activeTheme.border}`,
+                      color: activeTheme.textMuted,
+                      padding: '12px 20px',
+                      borderRadius: '12px',
+                      fontWeight: 'bold',
+                      fontSize: '13px',
+                      cursor: 'pointer',
+                    }}
+                  >
+                    إلغاء التعديل
+                  </button>
+                )}
+              </div>
+            </form>
+          </div>
+
+          {/* قائمة الأسئلة المعرفة حالياً */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+            <h3 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: 0 }}>
+              المواضيع والأسئلة النشطة بقاعدة المعرفة ({kbItems.length}):
+            </h3>
+
+            {kbItems.length === 0 ? (
+              <div style={emptyCardStyle(activeTheme)}>
+                <Sparkles size={40} color={activeTheme.accentLight} style={{ marginBottom: '12px' }} />
+                <div style={{ fontWeight: 'bold', fontSize: '16px' }}>لا توجد أسئلة مخصصة في قاعدة المعرفة حتى الآن</div>
+                <div style={{ fontSize: '13px', color: activeTheme.textMuted, marginTop: '4px' }}>
+                  استخدم النموذج أعلاه لإضافة توجيهات وإجابات معتمدة للمستشار الذكي.
+                </div>
+              </div>
+            ) : (
+              kbItems.map((item) => (
+                <div
+                  key={item._id}
+                  style={{
+                    background: activeTheme.bgCard,
+                    border: `1px solid ${item.isActive ? activeTheme.border : 'rgba(239, 68, 68, 0.3)'}`,
+                    opacity: item.isActive ? 1 : 0.65,
+                    borderRadius: '16px',
+                    padding: '20px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '12px',
+                    boxShadow: '0 6px 18px rgba(0,0,0,0.2)',
+                  }}
+                >
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: '10px' }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      <span
+                        style={{
+                          background: item.isActive ? 'rgba(34, 197, 94, 0.15)' : 'rgba(239, 68, 68, 0.15)',
+                          color: item.isActive ? '#22c55e' : '#ef4444',
+                          border: `1px solid ${item.isActive ? '#22c55e' : '#ef4444'}`,
+                          fontSize: '11px',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontWeight: 'bold',
+                        }}
+                      >
+                        {item.isActive ? 'مفعل للمستشار الذكي ✅' : 'معطل مؤقتاً ⚠️'}
+                      </span>
+                      <span style={{ fontSize: '11px', color: activeTheme.accentLight, fontWeight: 'bold' }}>
+                        [{item.category || 'عام'}]
+                      </span>
+                    </div>
+
+                    <div style={{ display: 'flex', gap: '8px' }}>
+                      <button
+                        onClick={() => handleToggleKb(item._id)}
+                        style={{
+                          background: item.isActive ? 'rgba(239, 68, 68, 0.15)' : 'rgba(34, 197, 94, 0.15)',
+                          color: item.isActive ? '#ef4444' : '#22c55e',
+                          border: `1px solid ${item.isActive ? '#ef4444' : '#22c55e'}`,
+                          padding: '5px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        {item.isActive ? 'تعطيل' : 'تفعيل'}
+                      </button>
+
+                      <button
+                        onClick={() => handleEditKb(item)}
+                        style={{
+                          background: 'rgba(59, 130, 246, 0.15)',
+                          color: '#60a5fa',
+                          border: '1px solid #3b82f6',
+                          padding: '5px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        تعديل
+                      </button>
+
+                      <button
+                        onClick={() => handleDeleteKb(item._id)}
+                        style={{
+                          background: 'rgba(239, 68, 68, 0.15)',
+                          color: '#ef4444',
+                          border: '1px solid #ef4444',
+                          padding: '5px 12px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        حذف
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <h4 style={{ color: activeTheme.textMain, fontSize: '15px', fontWeight: 'bold', margin: '0 0 6px' }}>
+                      السؤال: {item.question}
+                    </h4>
+                    <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-line' }}>
+                      الإجابة: {item.answer}
+                    </p>
+                  </div>
+
+                  {item.keywords && item.keywords.length > 0 && (
+                    <div style={{ display: 'flex', gap: '6px', flexWrap: 'wrap', fontSize: '11px', color: activeTheme.accentLight }}>
+                      <span>🔑 الكلمات المفتاحية:</span>
+                      {item.keywords.map((kw, i) => (
+                        <span key={i} style={{ background: 'rgba(255,255,255,0.06)', padding: '1px 6px', borderRadius: '4px' }}>
+                          {kw}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              ))
+            )}
+          </div>
+        </div>
+      )}
 
       {/* 0. تبويب التحليلات والإحصائيات */}
       {activeTab === 'analytics' && (

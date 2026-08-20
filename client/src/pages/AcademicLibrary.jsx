@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useTheme } from '../context/ThemeContext';
+import AcademicCalendar from '../components/AcademicCalendar';
 import {
   BookOpen,
   FileText,
@@ -14,7 +15,8 @@ import {
   FlaskConical,
   Calculator,
   Cpu,
-  Globe
+  Globe,
+  Calendar
 } from 'lucide-react';
 
 const ACADEMIC_LEVELS = [
@@ -164,6 +166,7 @@ const INITIAL_RESOURCES = [
 export default function AcademicLibrary() {
   const { activeTheme } = useTheme();
 
+  const [mainTab, setMainTab] = useState('library'); // 'library' | 'calendar'
   const [resources, setResources] = useState(INITIAL_RESOURCES);
   const [selectedLevel, setSelectedLevel] = useState('الكل');
   const [selectedDept, setSelectedDept] = useState('جميع التخصصات');
@@ -185,12 +188,10 @@ export default function AcademicLibrary() {
   });
 
   const handleDownload = (item) => {
-    // زيادة عداد التنزيلات
     setResources((prev) =>
       prev.map((r) => (r.id === item.id ? { ...r, downloads: r.downloads + 1 } : r))
     );
 
-    // إشعار التحميل
     setDownloadSuccess(`جاري بدء تحميل "${item.title}"...`);
     setTimeout(() => {
       setDownloadSuccess('');
@@ -200,20 +201,69 @@ export default function AcademicLibrary() {
   return (
     <div style={{ maxWidth: '1200px', margin: '24px auto', padding: '0 20px 80px', direction: 'rtl' }}>
       
-      {/* 1. هيدر المكتبة الرقمية */}
-      <div
-        style={{
-          background: `linear-gradient(135deg, ${activeTheme.bgCard} 0%, rgba(11, 19, 43, 0.95) 100%)`,
-          border: `1px solid ${activeTheme.border}`,
-          borderRadius: '24px',
-          padding: '36px 28px',
-          marginBottom: '32px',
-          boxShadow: '0 20px 45px rgba(0, 0, 0, 0.4)',
-          textAlign: 'center',
-          position: 'relative',
-          overflow: 'hidden',
-        }}
-      >
+      {/* 0. أزرار تبديل المحتوى: المكتبة vs التقويم الأكاديمي */}
+      <div style={{ display: 'flex', gap: '12px', marginBottom: '24px', flexWrap: 'wrap' }}>
+        <button
+          onClick={() => setMainTab('library')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            border: `1px solid ${mainTab === 'library' ? activeTheme.accent : activeTheme.border}`,
+            background: mainTab === 'library' ? activeTheme.primary : activeTheme.bgCard,
+            color: mainTab === 'library' && !activeTheme.isDark ? '#0b1622' : '#ffffff',
+            boxShadow: mainTab === 'library' ? '0 6px 20px rgba(245, 158, 11, 0.3)' : 'none',
+          }}
+        >
+          <BookOpen size={18} />
+          <span>📚 المكتبة الأكاديمية وأرشيف المذكرات</span>
+        </button>
+
+        <button
+          onClick={() => setMainTab('calendar')}
+          style={{
+            display: 'flex',
+            alignItems: 'center',
+            gap: '8px',
+            padding: '12px 24px',
+            borderRadius: '12px',
+            fontSize: '14px',
+            fontWeight: 'bold',
+            cursor: 'pointer',
+            border: `1px solid ${mainTab === 'calendar' ? activeTheme.accent : activeTheme.border}`,
+            background: mainTab === 'calendar' ? activeTheme.primary : activeTheme.bgCard,
+            color: mainTab === 'calendar' && !activeTheme.isDark ? '#0b1622' : '#ffffff',
+            boxShadow: mainTab === 'calendar' ? '0 6px 20px rgba(245, 158, 11, 0.3)' : 'none',
+          }}
+        >
+          <Calendar size={18} />
+          <span>🗓️ التقويم الأكاديمي وجدول امتحانات الكلية</span>
+        </button>
+      </div>
+
+      {mainTab === 'calendar' ? (
+        <AcademicCalendar />
+      ) : (
+        <>
+          {/* 1. هيدر المكتبة الرقمية */}
+          <div
+            style={{
+              background: `linear-gradient(135deg, ${activeTheme.bgCard} 0%, rgba(11, 19, 43, 0.95) 100%)`,
+              border: `1px solid ${activeTheme.border}`,
+              borderRadius: '24px',
+              padding: '36px 28px',
+              marginBottom: '32px',
+              boxShadow: '0 20px 45px rgba(0, 0, 0, 0.4)',
+              textAlign: 'center',
+              position: 'relative',
+              overflow: 'hidden',
+            }}
+          >
         <div
           style={{
             width: '64px',
@@ -478,6 +528,8 @@ export default function AcademicLibrary() {
             </div>
           ))}
         </div>
+      )}
+        </>
       )}
     </div>
   );
