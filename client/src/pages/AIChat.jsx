@@ -80,7 +80,7 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      const apiEndpoint = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api/ai/chat`;
+      const apiEndpoint = `${import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api')}/ai/chat`;
       const res = await axios.post(apiEndpoint, {
         messages: newMessages,
         studentName: studentName,

@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { Megaphone, Bell, Sparkles } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
+import { API_BASE } from '../config/api';
 
 export default function AnnouncementTicker() {
   const { activeTheme } = useTheme();
@@ -14,9 +15,8 @@ export default function AnnouncementTicker() {
 
   useEffect(() => {
     // محاولة جلب الإعلانات النشطة من السيرفر أو التخزين المحلي
-    const apiBase = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
     axios
-      .get(`${apiBase}/admin/announcements`)
+      .get(`${API_BASE}/admin/announcements`)
       .then((res) => {
         if (res.data && res.data.length > 0) {
           const titles = res.data.map((a) => `📢 ${a.title}: ${a.content}`);

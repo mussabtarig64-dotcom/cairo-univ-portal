@@ -1,5 +1,6 @@
 import React, { createContext, useContext, useState, useEffect } from 'react';
 import axios from 'axios';
+import { API_BASE } from '../config/api';
 
 export const THEMES = {
   'classic-gold-blue': {
@@ -98,17 +99,15 @@ const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
   const [currentThemeKey, setCurrentThemeKey] = useState(() => {
-    const saved = localStorage.getItem('ssa_active_theme');
-    return saved && THEMES[saved] ? saved : 'classic-gold-blue';
+    return localStorage.getItem('ssa_active_theme') || 'classic-gold-blue';
   });
 
   const [activeTheme, setActiveTheme] = useState(THEMES[currentThemeKey] || THEMES['classic-gold-blue']);
 
   // مزامنة المظهر عند التحميل من الخادم
   useEffect(() => {
-    const apiBase = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
     axios
-      .get(`${apiBase}/admin/settings`)
+      .get(`${API_BASE}/admin/settings`)
       .then((res) => {
         if (res.data && res.data.activeTheme && THEMES[res.data.activeTheme]) {
           setCurrentThemeKey(res.data.activeTheme);
@@ -154,8 +153,7 @@ export function ThemeProvider({ children }) {
 
       // حفظ التفضيل عالمياً في الباك إند
       try {
-        const apiBase = `${import.meta.env.VITE_API_URL || 'http://localhost:5000'}/api`;
-        await axios.post(`${apiBase}/admin/settings`, {
+        await axios.post(`${API_BASE}/admin/settings`, {
           activeTheme: themeKey,
           themeTitle: THEMES[themeKey].name,
         });
