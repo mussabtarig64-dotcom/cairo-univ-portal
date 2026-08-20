@@ -1,0 +1,192 @@
+const mongoose = require('mongoose');
+
+const userSchema = new mongoose.Schema(
+  {
+    // البيانات الشخصية واستبيان السكن
+    fullName: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    name: {
+      type: String,
+      trim: true,
+    },
+    email: {
+      type: String,
+      required: true,
+      unique: true,
+      lowercase: true,
+      trim: true,
+    },
+    password: {
+      type: String,
+      required: true,
+    },
+    age: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    phone: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    whatsapp: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    residence: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    cairoAddress: {
+      type: String,
+      trim: true,
+      default: 'القاهرة، مصر',
+    },
+
+    // البيانات الأكاديمية - كلية العلوم جامعة القاهرة
+    studentId: {
+      type: String,
+      required: true,
+      trim: true,
+    },
+    academicId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    department: {
+      type: String,
+      required: true,
+      default: 'العلوم العامة',
+    },
+    academicLevel: {
+      type: String,
+      required: true,
+      default: 'المستوى الأول',
+    },
+    academicYear: {
+      type: String,
+      default: 'المستوى الأول',
+    },
+
+    // وثيقة إثبات الهوية (جواز السفر / الرقم الوطني / بطاقة الكلية)
+    idDocument: {
+      type: String,
+      default: '',
+    },
+    idCardUrl: {
+      type: String,
+      default: '',
+    },
+    passportOrNationalId: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+
+    // بيانات الاتصال في حالات الطوارئ
+    emergencyContact: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    emergencyContactName: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    emergencyContactRelation: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+    emergencyContactPhone: {
+      type: String,
+      default: '',
+      trim: true,
+    },
+
+    // حالة التحقق والرتبة الإدارية (admin / user)
+    status: {
+      type: String,
+      enum: ['pending', 'approved', 'rejected', 'verified'],
+      default: 'pending',
+    },
+    verificationStatus: {
+      type: String,
+      enum: ['pending', 'verified', 'approved', 'rejected'],
+      default: 'pending',
+    },
+    role: {
+      type: String,
+      enum: ['user', 'admin', 'student'],
+      default: 'user',
+    },
+    notes: {
+      type: String,
+      default: '',
+    },
+    createdAt: {
+      type: Date,
+      default: Date.now,
+    },
+  },
+  {
+    timestamps: true,
+  }
+);
+
+// Middleware لمزامنة الحقول المترادفة تلقائياً
+userSchema.pre('save', function () {
+  if (!this.name && this.fullName) {
+    this.name = this.fullName;
+  }
+  if (!this.fullName && this.name) {
+    this.fullName = this.name;
+  }
+  if (!this.cairoAddress && this.residence) {
+    this.cairoAddress = this.residence;
+  }
+  if (!this.residence && this.cairoAddress) {
+    this.residence = this.cairoAddress;
+  }
+  if (!this.studentId && this.academicId) {
+    this.studentId = this.academicId;
+  }
+  if (!this.academicId && this.studentId) {
+    this.academicId = this.studentId;
+  }
+  if (!this.idDocument && this.idCardUrl) {
+    this.idDocument = this.idCardUrl;
+  }
+  if (!this.idCardUrl && this.idDocument) {
+    this.idCardUrl = this.idDocument;
+  }
+  if (!this.whatsapp && this.phone) {
+    this.whatsapp = this.phone;
+  }
+  if (!this.academicLevel && this.academicYear) {
+    this.academicLevel = this.academicYear;
+  }
+  if (!this.academicYear && this.academicLevel) {
+    this.academicYear = this.academicLevel;
+  }
+  if (this.role === 'student') {
+    this.role = 'user';
+  }
+  if (this.verificationStatus === 'approved') {
+    this.verificationStatus = 'verified';
+    this.status = 'approved';
+  }
+  if (this.status === 'approved') {
+    this.verificationStatus = 'verified';
+  }
+});
+
+module.exports = mongoose.models.User || mongoose.model('User', userSchema);

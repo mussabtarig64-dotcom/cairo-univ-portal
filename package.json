@@ -1,0 +1,17 @@
+{
+  "name": "cairo-univ-portal",
+  "version": "1.0.0",
+  "description": "Official Portal for the Sudanese Students Association - Faculty of Science, Cairo University (SSA-FS-CU)",
+  "scripts": {
+    "start": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
+    "dev": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
+    "server": "node server/server.js",
+    "client": "npm run dev --prefix client"
+  },
+  "dependencies": {
+    "bcryptjs": "^3.0.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
+  }
+}
