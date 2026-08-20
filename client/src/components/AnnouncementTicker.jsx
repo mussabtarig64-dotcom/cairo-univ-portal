@@ -38,11 +38,12 @@ export default function AnnouncementTicker() {
 
   return (
     <div
+      className="announcement-ticker-container"
       style={{
         background: 'linear-gradient(90deg, #0b132b 0%, #1c2541 50%, #0b132b 100%)',
         borderBottom: `1px solid ${activeTheme.border || 'rgba(255,255,255,0.1)'}`,
         color: '#ffffff',
-        padding: '6px 16px',
+        padding: '6px 12px',
         fontSize: '12px',
         display: 'flex',
         alignItems: 'center',
@@ -50,10 +51,13 @@ export default function AnnouncementTicker() {
         position: 'relative',
         zIndex: 40,
         direction: 'rtl',
+        width: '100%',
+        boxSizing: 'border-box',
       }}
     >
       {/* شارة الشريط */}
       <div
+        className="ticker-badge"
         style={{
           display: 'flex',
           alignItems: 'center',
@@ -62,12 +66,13 @@ export default function AnnouncementTicker() {
           color: '#0b1622',
           fontWeight: '900',
           fontSize: '11px',
-          padding: '3px 10px',
+          padding: '4px 10px',
           borderRadius: '6px',
           flexShrink: 0,
           boxShadow: '0 2px 6px rgba(245, 158, 11, 0.4)',
-          marginLeft: '12px',
+          marginLeft: '10px',
           zIndex: 2,
+          whiteSpace: 'nowrap',
         }}
       >
         <Megaphone size={13} />
@@ -78,15 +83,17 @@ export default function AnnouncementTicker() {
       <div
         style={{
           flex: 1,
+          minWidth: 0,
           overflow: 'hidden',
           whiteSpace: 'nowrap',
           position: 'relative',
+          display: 'flex',
         }}
       >
         <div className="ticker-track">
           {announcements.map((text, idx) => (
             <span
-              key={idx}
+              key={`ann-${idx}`}
               style={{
                 display: 'inline-flex',
                 alignItems: 'center',
@@ -100,7 +107,7 @@ export default function AnnouncementTicker() {
               <span style={{ color: '#f59e0b', fontSize: '10px' }}>✦</span>
             </span>
           ))}
-          {/* تكرار للتأكد من انسيابية الحركة */}
+          {/* تكرار لضمان انسيابية واستمرارية الحركة */}
           {announcements.map((text, idx) => (
             <span
               key={`repeat-${idx}`}
@@ -122,16 +129,25 @@ export default function AnnouncementTicker() {
 
       <style>{`
         .ticker-track {
-          display: inline-block;
+          display: inline-flex;
           white-space: nowrap;
           animation: ticker-anim 35s linear infinite;
+          will-change: transform;
         }
         .ticker-track:hover {
           animation-play-state: paused;
         }
         @keyframes ticker-anim {
-          0% { transform: translateX(-50%); }
-          100% { transform: translateX(0%); }
+          0% { transform: translateX(0); }
+          100% { transform: translateX(50%); }
+        }
+        @media (max-width: 640px) {
+          .ticker-badge span {
+            font-size: 10px;
+          }
+          .ticker-track span {
+            font-size: 11px;
+          }
         }
       `}</style>
     </div>

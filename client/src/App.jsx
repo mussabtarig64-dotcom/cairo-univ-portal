@@ -111,21 +111,33 @@ function NavigationBar() {
           {/* شعار الرابطة والاسم الكامل */}
           <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
             <div
+              className="logo-wrapper rounded-full overflow-hidden"
               style={{
                 width: '46px',
                 height: '46px',
                 borderRadius: '50%',
+                overflow: 'hidden',
                 backgroundColor: '#ffffff',
-                padding: '2px',
+                padding: '3px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: `2px solid ${activeTheme.accent}`,
-                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.4)',
+                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.35)',
                 flexShrink: 0,
               }}
             >
-              <img src={logoImg} alt="SSA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+              <img
+                src={logoImg}
+                alt="SSA Logo"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  borderRadius: '50%',
+                  display: 'block',
+                }}
+              />
             </div>
 
             <div>
@@ -397,21 +409,33 @@ function Footer() {
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
             <div
+              className="logo-wrapper rounded-full overflow-hidden"
               style={{
-                width: '38px',
-                height: '38px',
-                borderRadius: '8px',
-                background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)`,
-                border: `1px solid ${activeTheme.accent}`,
+                width: '42px',
+                height: '42px',
+                borderRadius: '50%',
+                overflow: 'hidden',
+                backgroundColor: '#ffffff',
+                padding: '2px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                color: '#fff',
-                fontWeight: 'bold',
-                fontSize: '14px',
+                border: `2px solid ${activeTheme.accent}`,
+                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
+                flexShrink: 0,
               }}
             >
-              SSA
+              <img
+                src={logoImg}
+                alt="SSA Logo"
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'contain',
+                  borderRadius: '50%',
+                  display: 'block',
+                }}
+              />
             </div>
             <div>
               <div style={{ color: activeTheme.textMain, fontWeight: '900', fontSize: '15px' }}>

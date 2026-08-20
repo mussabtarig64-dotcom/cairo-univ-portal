@@ -180,19 +180,22 @@ export default function Register() {
   };
 
   return (
-    <div style={{ maxWidth: '850px', margin: '30px auto', padding: '0 20px', paddingBottom: '70px', direction: 'rtl' }}>
+    <div style={{ maxWidth: '850px', width: '100%', margin: '24px auto', padding: '0 16px', paddingBottom: '70px', direction: 'rtl', boxSizing: 'border-box' }}>
       <div
+        className="register-card"
         style={{
           background: activeTheme.bgCard,
           border: `1px solid ${activeTheme.border}`,
           borderRadius: '24px',
-          padding: '36px 32px',
+          padding: '32px 24px',
           boxShadow: '0 25px 50px rgba(0, 0, 0, 0.45)',
           position: 'relative',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* هيدر الاستمارة */}
-        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
           <div
             style={{
               width: '64px',
@@ -211,7 +214,7 @@ export default function Register() {
             <UserPlus size={30} />
           </div>
 
-          <h1 style={{ color: activeTheme.textMain, fontSize: '24px', fontWeight: '900', margin: '0 0 8px' }}>
+          <h1 style={{ color: activeTheme.textMain, fontSize: '22px', fontWeight: '900', margin: '0 0 8px' }}>
             استمارة التسجيل المركزي واستبيان الطلاب
           </h1>
           <p style={{ color: activeTheme.accentLight, fontSize: '13px', margin: 0, fontWeight: 'bold' }}>
@@ -249,7 +252,7 @@ export default function Register() {
             </div>
           </div>
         ) : (
-          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          <form onSubmit={handleRegister} style={{ display: 'flex', flexDirection: 'column', gap: '24px', width: '100%', boxSizing: 'border-box' }}>
             {error && (
               <div
                 style={{
@@ -262,6 +265,7 @@ export default function Register() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
+                  wordBreak: 'break-word',
                 }}
               >
                 <AlertCircle size={18} style={{ flexShrink: 0 }} />
@@ -276,7 +280,7 @@ export default function Register() {
                 <span>1. البيانات الشخصية وبيانات السكن بمصر</span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
                 {/* الاسم كامل */}
                 <div>
                   <label style={labelStyle(activeTheme)}>الاسم كامل *</label>
@@ -355,7 +359,7 @@ export default function Register() {
                   <PhoneCall size={15} />
                   <span>بيانات جهة الاتصال في حالات الطوارئ بمصر أو السودان:</span>
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 190px), 1fr))', gap: '12px' }}>
                   <div>
                     <label style={labelStyle(activeTheme)}>اسم الشخص للطوارئ</label>
                     <input
@@ -403,7 +407,7 @@ export default function Register() {
                 <span>2. البيانات الأكاديمية بكلية العلوم جامعة القاهرة</span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
                 {/* الرقم الجامعي / القيد */}
                 <div>
                   <label style={labelStyle(activeTheme)}>الرقم الأكاديمي / رقم القيد / الجلوس *</label>
@@ -436,7 +440,7 @@ export default function Register() {
                 </div>
 
                 {/* السنة الدراسية / المستوى */}
-                <div style={{ gridColumn: 'span 2' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <label style={labelStyle(activeTheme)}>السنة الدراسية / المستوى الأكاديمي *</label>
                   <select
                     name="academicYear"
@@ -469,12 +473,14 @@ export default function Register() {
                 style={{
                   border: `2px dashed ${formData.idDocument ? '#22c55e' : activeTheme.accent}`,
                   borderRadius: '16px',
-                  padding: '24px',
+                  padding: '24px 16px',
                   textAlign: 'center',
                   background: 'rgba(0, 0, 0, 0.25)',
                   position: 'relative',
                   cursor: 'pointer',
                   transition: 'all 0.2s ease',
+                  maxWidth: '100%',
+                  boxSizing: 'border-box',
                 }}
               >
                 <input
@@ -494,16 +500,16 @@ export default function Register() {
                 />
 
                 {formData.idDocument ? (
-                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px' }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '10px', maxWidth: '100%' }}>
                     <CheckCircle size={36} color="#22c55e" />
-                    <div style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '14px' }}>
+                    <div style={{ color: '#22c55e', fontWeight: 'bold', fontSize: '14px', wordBreak: 'break-word' }}>
                       تم إرفاق الوثيقة بنجاح: {idDocFileName || 'مستند إثبات الهوية'}
                     </div>
                     {formData.idDocument.startsWith('data:image') && (
                       <img
                         src={formData.idDocument}
                         alt="معاينة الهوية"
-                        style={{ maxHeight: '140px', maxWidth: '240px', borderRadius: '8px', border: `1px solid ${activeTheme.border}`, marginTop: '8px' }}
+                        style={{ maxHeight: '140px', maxWidth: '100%', borderRadius: '8px', border: `1px solid ${activeTheme.border}`, marginTop: '8px', objectFit: 'contain' }}
                       />
                     )}
                     <span style={{ fontSize: '11px', color: activeTheme.textMuted }}>اضغط لاختيار ملف آخر إذا أردت الاستبدال</span>
@@ -529,8 +535,8 @@ export default function Register() {
                 <span>4. بيانات تسجيل الدخول والأمان</span>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
-                <div style={{ gridColumn: 'span 2' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 220px), 1fr))', gap: '16px' }}>
+                <div style={{ gridColumn: '1 / -1' }}>
                   <label style={labelStyle(activeTheme)}>البريد الإلكتروني الشخصي *</label>
                   <input
                     type="email"
@@ -590,6 +596,8 @@ export default function Register() {
                 cursor: loading ? 'not-allowed' : 'pointer',
                 boxShadow: `0 8px 25px rgba(245, 158, 11, 0.4)`,
                 transition: 'all 0.2s ease',
+                width: '100%',
+                boxSizing: 'border-box',
               }}
             >
               {loading ? (

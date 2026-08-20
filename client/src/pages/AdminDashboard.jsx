@@ -586,7 +586,7 @@ export default function AdminDashboard() {
 
         {/* حقل البحث */}
         {activeTab !== 'announcements' && activeTab !== 'themes' && (
-          <div style={{ position: 'relative', minWidth: '280px' }}>
+          <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: '100%', minWidth: 'min(100%, 240px)' }}>
             <input
               type="text"
               placeholder="بحث بالاسم، البريد، الهاتف، السكن أو القيد..."
