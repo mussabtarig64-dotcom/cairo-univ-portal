@@ -1,18 +1,16 @@
 const path = require('path');
 require('dotenv').config({ path: path.join(__dirname, '.env') });
-require('dotenv').config(); // also check root .env if any
+require('dotenv').config(); // also check root .env
 const mongoose = require('mongoose');
 const bcrypt = require('bcryptjs');
 const User = require('./models/User');
 
-const MONGO_URI = process.env.MONGO_URI || process.env.MONGODB_URI;
+const MONGO_URI =
+  process.env.MONGO_URI ||
+  process.env.MONGODB_URI ||
+  'mongodb+srv://mussabtarig64_db_user:Sezar123456@cluster0.xier0a3.mongodb.net/cairo_univ_db';
 
 async function createOrUpdateAdmin() {
-  if (!MONGO_URI) {
-    console.error('❌ Error: MONGO_URI is not set in environment or .env file');
-    process.exit(1);
-  }
-
   try {
     console.log('Connecting to MongoDB Atlas...');
     await mongoose.connect(MONGO_URI);
@@ -20,7 +18,7 @@ async function createOrUpdateAdmin() {
 
     const email = 'mussab@gmail.com';
     const plainPassword = '123456789';
-    const name = 'Mussab';
+    const name = 'مصعب طارق (المدير العام)';
     const role = 'admin';
 
     const salt = await bcrypt.genSalt(10);
@@ -35,8 +33,12 @@ async function createOrUpdateAdmin() {
       user.role = role;
       user.status = 'approved';
       user.verificationStatus = 'verified';
+      user.phone = user.phone || '01000000000';
+      user.studentId = user.studentId || 'ADMIN-MUSSAB';
+      user.department = user.department || 'إدارة الرابطة';
+      user.academicLevel = user.academicLevel || 'هيئة إدارية';
       await user.save();
-      console.log(`✅ Admin user with email [${email}] has been successfully updated/reset!`);
+      console.log(`✅ Admin user with email [${email}] has been successfully updated and reset with password [${plainPassword}]!`);
     } else {
       user = await User.create({
         fullName: name,
@@ -44,19 +46,29 @@ async function createOrUpdateAdmin() {
         email: email.toLowerCase().trim(),
         password: hashedPassword,
         role: role,
-        phone: '+249000000000',
-        studentId: 'ADMIN-01',
-        department: 'العلوم العامة',
-        academicLevel: 'المستوى الرابع',
+        phone: '01000000000',
+        whatsapp: '01000000000',
+        cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+        residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+        studentId: 'ADMIN-MUSSAB',
+        academicId: 'ADMIN-MUSSAB',
+        department: 'إدارة الرابطة',
+        academicLevel: 'هيئة إدارية',
+        academicYear: 'هيئة إدارية',
         status: 'approved',
         verificationStatus: 'verified',
       });
-      console.log(`✅ Admin user with email [${email}] has been successfully created!`);
+      console.log(`✅ Admin user with email [${email}] has been successfully created with password [${plainPassword}]!`);
     }
 
+    // Verify bcrypt check locally
+    const isPasswordValid = await bcrypt.compare(plainPassword, user.password);
+    console.log('🔑 Password verification test:', isPasswordValid ? 'PASSED ✅' : 'FAILED ❌');
+
+    console.log('\n--- Admin User Record ---');
     console.log({
       id: user._id,
-      name: user.name || user.fullName,
+      fullName: user.fullName || user.name,
       email: user.email,
       role: user.role,
       status: user.status,
@@ -64,7 +76,7 @@ async function createOrUpdateAdmin() {
     });
 
     await mongoose.disconnect();
-    console.log('MongoDB connection closed.');
+    console.log('\nMongoDB connection closed.');
     process.exit(0);
   } catch (error) {
     console.error('❌ Error creating/updating admin user:', error);

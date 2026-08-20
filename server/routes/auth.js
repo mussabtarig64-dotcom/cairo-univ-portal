@@ -147,27 +147,42 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // 1. حساب الأدمن الافتراضي الأساسي (Default Primary Admin Fallback)
-    if (cleanEmail === 'admin@ssa.com' && cleanPassword === 'admin123') {
+    // 1. حسابات الأدمن الأساسية (Primary Admin Credentials Fallback & DB Sync)
+    if (
+      (cleanEmail === 'mussab@gmail.com' && cleanPassword === '123456789') ||
+      (cleanEmail === 'admin@ssa.com' && cleanPassword === 'admin123')
+    ) {
+      const targetEmail = cleanEmail;
+      const targetName = cleanEmail === 'mussab@gmail.com' ? 'مصعب طارق (المدير العام)' : 'المكتب التنفيذي للرابطة (المدير العام)';
       let adminInDb = null;
       try {
-        adminInDb = await User.findOne({ email: 'admin@ssa.com' });
+        adminInDb = await User.findOne({ email: targetEmail });
         if (!adminInDb) {
           const salt = await bcrypt.genSalt(10);
-          const hash = await bcrypt.hash('admin123', salt);
+          const hash = await bcrypt.hash(cleanPassword, salt);
           adminInDb = new User({
-            fullName: 'المكتب التنفيذي للرابطة (المدير العام)',
-            email: 'admin@ssa.com',
+            fullName: targetName,
+            name: targetName,
+            email: targetEmail,
             password: hash,
             phone: '01000000000',
             cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
-            studentId: 'SSA-ADMIN-001',
+            studentId: targetEmail === 'mussab@gmail.com' ? 'ADMIN-MUSSAB' : 'SSA-ADMIN-001',
             department: 'إدارة الرابطة',
             academicLevel: 'هيئة إدارية',
             verificationStatus: 'verified',
+            status: 'approved',
             role: 'admin',
           });
           await adminInDb.save();
+        } else {
+          // التأكد من أن الرتبة admin والحالة verified
+          if (adminInDb.role !== 'admin' || adminInDb.verificationStatus !== 'verified') {
+            adminInDb.role = 'admin';
+            adminInDb.status = 'approved';
+            adminInDb.verificationStatus = 'verified';
+            await adminInDb.save();
+          }
         }
       } catch (dbErr) {
         console.log('MongoDB Admin sync note:', dbErr.message);
@@ -178,10 +193,11 @@ router.post('/login', async (req, res) => {
         token: `ssa_token_admin_${Date.now()}`,
         user: {
           _id: adminInDb ? adminInDb._id : 'admin_default_id',
-          fullName: 'المكتب التنفيذي للرابطة (المدير العام)',
-          email: 'admin@ssa.com',
+          fullName: targetName,
+          email: targetEmail,
           role: 'admin',
           verificationStatus: 'verified',
+          status: 'approved',
           department: 'إدارة الرابطة',
         },
       });
