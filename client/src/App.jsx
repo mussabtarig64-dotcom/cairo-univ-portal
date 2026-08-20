@@ -19,6 +19,10 @@ import Posts from './pages/Posts';
 import Chat from './pages/Chat';
 import AIChat from './pages/AIChat';
 import AdminDashboard from './pages/AdminDashboard';
+import AcademicLibrary from './pages/AcademicLibrary';
+import FAQ from './pages/FAQ';
+import Contact from './pages/Contact';
+import DigitalIDPage from './pages/DigitalIDPage';
 import AnnouncementTicker from './components/AnnouncementTicker';
 import SocialLinks from './components/SocialLinks';
 
@@ -35,11 +39,17 @@ import {
   X,
   Clock,
   CheckCircle,
-  GraduationCap
+  GraduationCap,
+  Sun,
+  Moon,
+  BookOpen,
+  HelpCircle,
+  PhoneCall,
+  QrCode
 } from 'lucide-react';
 
 function NavigationBar() {
-  const { activeTheme } = useTheme();
+  const { currentThemeKey, activeTheme, switchTheme } = useTheme();
   const { user, isAuthenticated, isPending, isAdmin, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
@@ -50,23 +60,36 @@ function NavigationBar() {
     navigate('/login');
   };
 
+  const toggleThemeMode = () => {
+    const nextTheme = activeTheme.isDark ? 'clean-light' : 'classic-gold-blue';
+    switchTheme(nextTheme);
+  };
+
   let navLinks = [];
 
   if (!isAuthenticated) {
     navLinks = [
       { path: '/', label: 'الرئيسية', icon: HomeIcon },
+      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
+      { path: '/faq', label: 'الأسئلة الشائعة', icon: HelpCircle },
+      { path: '/contact', label: 'اتصل بنا', icon: PhoneCall },
       { path: '/register', label: 'استمارة التسجيل والاستبيان', icon: UserPlus, highlight: true },
       { path: '/login', label: 'دخول الأعضاء', icon: LogIn },
     ];
   } else if (isPending) {
     navLinks = [
       { path: '/', label: 'الرئيسية', icon: HomeIcon },
+      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
+      { path: '/faq', label: 'الأسئلة الشائعة', icon: HelpCircle },
+      { path: '/contact', label: 'اتصل بنا', icon: PhoneCall },
       { path: '/pending-approval', label: 'حالة القيد والاعتماد', icon: Clock, badge: 'قيد المراجعة' },
     ];
   } else if (isAdmin) {
     navLinks = [
       { path: '/', label: 'الرئيسية', icon: HomeIcon },
       { path: '/posts', label: 'الملتقى الأكاديمي', icon: MessageSquare },
+      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
+      { path: '/digital-id', label: 'بطاقتي الرقمية', icon: QrCode },
       { path: '/chat', label: 'غرف المذاكرة', icon: Users },
       { path: '/ai', label: 'المستشار الذكي', icon: Bot },
       { path: '/admin', label: 'لوحة الإدارة', icon: ShieldCheck, highlight: true },
@@ -75,8 +98,11 @@ function NavigationBar() {
     navLinks = [
       { path: '/', label: 'الرئيسية', icon: HomeIcon },
       { path: '/posts', label: 'الملتقى الأكاديمي', icon: MessageSquare },
+      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
+      { path: '/digital-id', label: 'بطاقتي الرقمية', icon: QrCode },
       { path: '/chat', label: 'غرف المذاكرة', icon: Users },
       { path: '/ai', label: 'المستشار الذكي', icon: Bot, isNew: true },
+      { path: '/faq', label: 'الأسئلة الشائعة', icon: HelpCircle },
     ];
   }
 
@@ -297,6 +323,26 @@ function NavigationBar() {
               </div>
             )}
 
+            {/* زر تبديل الوضع النهاري / الداكن Dark/Light Theme Toggle */}
+            <button
+              onClick={toggleThemeMode}
+              title={activeTheme.isDark ? 'التحويل للوضع النهاري (Light Mode)' : 'التحويل للوضع الداكن (Dark Mode)'}
+              style={{
+                background: 'rgba(255,255,255,0.08)',
+                border: `1px solid ${activeTheme.border}`,
+                color: activeTheme.accentLight,
+                padding: '8px',
+                borderRadius: '8px',
+                cursor: 'pointer',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                transition: 'all 0.2s ease',
+              }}
+            >
+              {activeTheme.isDark ? <Sun size={18} /> : <Moon size={18} />}
+            </button>
+
             {/* زر القائمة للشاشات الصغيرة */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
@@ -457,20 +503,23 @@ function Footer() {
             روابط المنصة السريعة
           </h4>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <Link to="/register" style={{ color: activeTheme.accentLight, textDecoration: 'none', fontWeight: '600' }}>
+            <Link to="/library" style={{ color: activeTheme.accentLight, textDecoration: 'none', fontWeight: 'bold' }}>
+              📚 المكتبة الأكاديمية وأرشيف الامتحانات
+            </Link>
+            <Link to="/digital-id" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
+              💳 بطاقة العضوية الرقمية (Digital ID)
+            </Link>
+            <Link to="/faq" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
+              ❓ الأسئلة الشائعة وتدقيق القيد
+            </Link>
+            <Link to="/contact" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
+              📍 اتصل بنا ومقر الرابطة
+            </Link>
+            <Link to="/register" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
               استمارة التسجيل المركزي والاستبيان
             </Link>
             <Link to="/posts" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
               غرفة المنشورات والملتقى الأكاديمي
-            </Link>
-            <Link to="/ai" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              المستشار الأكاديمي والرفيق الذكي
-            </Link>
-            <Link to="/chat" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              غرف المذاكرة ودليل المستجدين
-            </Link>
-            <Link to="/admin" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              لوحة الإدارة والسجل المركزي
             </Link>
           </div>
         </div>
@@ -516,6 +565,10 @@ function MainAppLayout() {
       <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/library" element={<AcademicLibrary />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/digital-id" element={<DigitalIDPage />} />
           <Route path="/login" element={<GuestOnlyRoute><Login /></GuestOnlyRoute>} />
           <Route path="/register" element={<GuestOnlyRoute><Register /></GuestOnlyRoute>} />
           <Route path="/pending-approval" element={<PendingOrVerifiedRoute><PendingApproval /></PendingOrVerifiedRoute>} />

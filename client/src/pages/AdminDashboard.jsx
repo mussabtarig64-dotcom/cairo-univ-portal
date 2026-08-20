@@ -26,7 +26,10 @@ import {
   Sparkles,
   PhoneCall,
   Palette,
-  CheckCircle2
+  CheckCircle2,
+  BarChart3,
+  PieChart,
+  TrendingUp
 } from 'lucide-react';
 
 import { API_BASE } from '../config/api';
@@ -613,6 +616,114 @@ export default function AdminDashboard() {
           </div>
         )}
       </div>
+
+      {/* 0. تبويب التحليلات والإحصائيات */}
+      {activeTab === 'analytics' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
+          {/* كروت المؤشرات الإجمالية */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 200px), 1fr))', gap: '16px' }}>
+            <div style={statCardStyle(activeTheme, activeTheme.accent)}>
+              <div style={{ fontSize: '12px', color: activeTheme.textMuted }}>إجمالي حسابات الطلاب المسجلة</div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: activeTheme.textMain, margin: '6px 0' }}>
+                {pendingUsers.length + approvedUsers.length + rejectedUsers.length}
+              </div>
+              <div style={{ fontSize: '11px', color: activeTheme.accentLight }}>سجل السيرفر والطلبات المركزية</div>
+            </div>
+
+            <div style={statCardStyle(activeTheme, '#22c55e')}>
+              <div style={{ fontSize: '12px', color: activeTheme.textMuted }}>الأعضاء المعتمدون ✅</div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#22c55e', margin: '6px 0' }}>
+                {approvedUsers.length}
+              </div>
+              <div style={{ fontSize: '11px', color: '#86efac' }}>حسابات نشطة ومفعلة بالكامل</div>
+            </div>
+
+            <div style={statCardStyle(activeTheme, '#f59e0b')}>
+              <div style={{ fontSize: '12px', color: activeTheme.textMuted }}>طلبات قيد المراجعة ⏳</div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#f59e0b', margin: '6px 0' }}>
+                {pendingUsers.length}
+              </div>
+              <div style={{ fontSize: '11px', color: '#fde047' }}>تتطلب تدقيق وثيقة الهوية</div>
+            </div>
+
+            <div style={statCardStyle(activeTheme, '#ef4444')}>
+              <div style={{ fontSize: '12px', color: activeTheme.textMuted }}>الحسابات المرفوضة ❌</div>
+              <div style={{ fontSize: '26px', fontWeight: '900', color: '#ef4444', margin: '6px 0' }}>
+                {rejectedUsers.length}
+              </div>
+              <div style={{ fontSize: '11px', color: '#fca5a5' }}>تم رفضها وتستلزم المراجعة</div>
+            </div>
+          </div>
+
+          {/* توزيع الطلاب حسب المستويات والأقسام */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 340px), 1fr))', gap: '20px' }}>
+            
+            {/* توزيع المستويات الدراسية */}
+            <div style={{ background: activeTheme.bgCard, border: `1px solid ${activeTheme.border}`, borderRadius: '18px', padding: '24px' }}>
+              <h3 style={{ color: activeTheme.accentLight, fontSize: '16px', fontWeight: 'bold', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <GraduationCap size={18} />
+                <span>توزيع الطلاب حسب المستوى الأكاديمي</span>
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {[
+                  { label: 'المستوى الأول (إعدادي علوم)', count: [...pendingUsers, ...approvedUsers].filter(s => (s.academicYear || s.academicLevel || '').includes('الأول')).length },
+                  { label: 'المستوى الثاني', count: [...pendingUsers, ...approvedUsers].filter(s => (s.academicYear || s.academicLevel || '').includes('الثاني')).length },
+                  { label: 'المستوى الثالث', count: [...pendingUsers, ...approvedUsers].filter(s => (s.academicYear || s.academicLevel || '').includes('الثالث')).length },
+                  { label: 'المستوى الرابع (تخرج)', count: [...pendingUsers, ...approvedUsers].filter(s => (s.academicYear || s.academicLevel || '').includes('الرابع')).length },
+                  { label: 'الدراسات العليا', count: [...pendingUsers, ...approvedUsers].filter(s => (s.academicYear || s.academicLevel || '').includes('عليا')).length },
+                ].map((item, idx) => {
+                  const total = pendingUsers.length + approvedUsers.length || 1;
+                  const pct = Math.round((item.count / total) * 100) || 0;
+                  return (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                        <span style={{ color: activeTheme.textMain, fontWeight: 'bold' }}>{item.label}</span>
+                        <span style={{ color: activeTheme.accentLight }}>{item.count} طالب ({pct}%)</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.max(pct, 4)}%`, height: '100%', background: activeTheme.accent, borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* توزيع الأقسام والتخصصات */}
+            <div style={{ background: activeTheme.bgCard, border: `1px solid ${activeTheme.border}`, borderRadius: '18px', padding: '24px' }}>
+              <h3 style={{ color: activeTheme.accentLight, fontSize: '16px', fontWeight: 'bold', margin: '0 0 16px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <PieChart size={18} />
+                <span>توزيع الطلاب حسب القسم العلمي والتخصص</span>
+              </h3>
+
+              <div style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+                {[
+                  { label: 'العلوم العامة', count: [...pendingUsers, ...approvedUsers].filter(s => (s.department || '').includes('العامة')).length },
+                  { label: 'علوم الحاسب والمعلومات', count: [...pendingUsers, ...approvedUsers].filter(s => (s.department || '').includes('الحاسب')).length },
+                  { label: 'الكيمياء والكيمياء الحيوية', count: [...pendingUsers, ...approvedUsers].filter(s => (s.department || '').includes('الكيمياء')).length },
+                  { label: 'الفيزياء والبيوفيزياء', count: [...pendingUsers, ...approvedUsers].filter(s => (s.department || '').includes('الفيزياء')).length },
+                  { label: 'أقسام النبات والحيوان والجيولوجيا', count: [...pendingUsers, ...approvedUsers].filter(s => (s.department || '').match(/النبات|الحيوان|الجيولوجيا/)).length },
+                ].map((item, idx) => {
+                  const total = pendingUsers.length + approvedUsers.length || 1;
+                  const pct = Math.round((item.count / total) * 100) || 0;
+                  return (
+                    <div key={idx}>
+                      <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: '12px', marginBottom: '4px' }}>
+                        <span style={{ color: activeTheme.textMain, fontWeight: 'bold' }}>{item.label}</span>
+                        <span style={{ color: '#22c55e' }}>{item.count} طالب ({pct}%)</span>
+                      </div>
+                      <div style={{ width: '100%', height: '8px', borderRadius: '4px', background: 'rgba(0,0,0,0.3)', overflow: 'hidden' }}>
+                        <div style={{ width: `${Math.max(pct, 4)}%`, height: '100%', background: '#22c55e', borderRadius: '4px', transition: 'width 0.4s ease' }} />
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* 1. تبويب طلبات التسجيل المعلقة واستبيان الهوية */}
       {activeTab === 'pending' && (
@@ -1408,4 +1519,12 @@ const inputStyle = (theme) => ({
   fontSize: '13px',
   boxSizing: 'border-box',
   direction: 'rtl',
+});
+
+const statCardStyle = (theme, accentColor) => ({
+  background: theme.bgCard,
+  border: `1px solid ${accentColor || theme.border}`,
+  borderRadius: '16px',
+  padding: '18px 20px',
+  boxShadow: '0 8px 20px rgba(0, 0, 0, 0.25)',
 });

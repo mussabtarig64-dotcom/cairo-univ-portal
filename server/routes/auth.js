@@ -300,4 +300,75 @@ router.get('/status/:email', async (req, res) => {
   }
 });
 
+// مسار الاستعلام العام الشامل برقم القيد أو الرقم الأكاديمي أو البريد أو الهاتف (Status Tracker Inquiry)
+router.get('/status-check/:query', async (req, res) => {
+  try {
+    const rawQuery = (req.params.query || '').trim();
+    if (!rawQuery) {
+      return res.status(400).json({ success: false, message: 'يرجى إدخال رقم القيد أو البريد الإلكتروني للاستعلام.' });
+    }
+
+    const cleanQuery = rawQuery.toLowerCase();
+    const queryRegex = new RegExp(`^${rawQuery}$`, 'i');
+
+    const searchConditions = [
+      { studentId: queryRegex },
+      { academicId: queryRegex },
+      { email: cleanQuery },
+      { phone: rawQuery },
+      { passportOrNationalId: rawQuery },
+    ];
+
+    if (rawQuery.match(/^[0-9a-fA-F]{24}$/)) {
+      searchConditions.push({ _id: rawQuery });
+    }
+
+    const user = await User.findOne({ $or: searchConditions }).select('-password');
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        found: false,
+        message: 'لم يتم العثور على طالب بهذ الرقم الأكاديمي أو البيانات المدخلة في السجل المركزي.',
+      });
+    }
+
+    const isRejected = user.verificationStatus === 'rejected' || user.status === 'rejected';
+    const isApproved =
+      !isRejected &&
+      (user.verificationStatus === 'verified' || user.verificationStatus === 'approved' || user.status === 'approved');
+
+    const statusKey = isRejected ? 'rejected' : isApproved ? 'approved' : 'pending';
+    const statusLabel = isRejected
+      ? 'مرفوض ❌'
+      : isApproved
+      ? 'عضو معتمد ✅'
+      : 'قيد المراجعة والاعتماد ⏳';
+
+    res.json({
+      success: true,
+      found: true,
+      statusKey,
+      statusLabel,
+      isApproved,
+      isRejected,
+      isPending: !isApproved && !isRejected,
+      student: {
+        _id: user._id,
+        fullName: user.fullName || user.name,
+        email: user.email,
+        studentId: user.studentId || user.academicId || 'SSA-STUDENT',
+        department: user.department || 'كلية العلوم',
+        academicYear: user.academicYear || user.academicLevel || 'المستوى الأول',
+        statusKey,
+        statusLabel,
+        createdAt: user.createdAt,
+      },
+    });
+  } catch (error) {
+    console.error('Status Check API Error:', error);
+    res.status(500).json({ success: false, message: 'حدث خطأ في النظام أثناء الاستعلام عن حالة الحساب.' });
+  }
+});
+
 module.exports = router;
