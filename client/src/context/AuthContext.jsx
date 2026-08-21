@@ -258,13 +258,15 @@ export function AuthProvider({ children }) {
           setUser(loggedUser);
           return { success: true, user: loggedUser };
         } else {
-          // حساب لا يزال معلقاً
+          // حساب جديد قيد المراجعة والتدقيق (Pending)
+          loggedUser.verificationStatus = 'pending';
+          loggedUser.status = 'pending';
           setUser(loggedUser);
           return {
-            success: false,
+            success: true,
             isPending: true,
             user: loggedUser,
-            message: 'طلب قيدك لا يزال قيد المراجعة والتدقيق بواسطة إدارة الرابطة.',
+            message: 'طلبك قيد المراجعة والتدقيق بواسطة إدارة الرابطة',
           };
         }
       }
@@ -343,13 +345,23 @@ export function AuthProvider({ children }) {
 
     const pendingUsers = JSON.parse(localStorage.getItem('pending_users') || '[]');
     const pendingFound = pendingUsers.find(
-      (u) => u.email?.trim().toLowerCase() === cleanEmail && u.password === cleanPassword
+      (u) => u.email?.trim().toLowerCase() === cleanEmail && (u.password === cleanPassword || !u.password)
     );
     if (pendingFound) {
+      const u = {
+        ...pendingFound,
+        name: pendingFound.name || pendingFound.fullName,
+        fullName: pendingFound.fullName || pendingFound.name,
+        role: 'user',
+        verificationStatus: 'pending',
+        status: 'pending',
+      };
+      setUser(u);
       return {
-        success: false,
+        success: true,
         isPending: true,
-        message: 'طلب قيدك لا يزال قيد المراجعة والتدقيق بواسطة إدارة الرابطة.',
+        user: u,
+        message: 'طلبك قيد المراجعة والتدقيق بواسطة إدارة الرابطة',
       };
     }
 

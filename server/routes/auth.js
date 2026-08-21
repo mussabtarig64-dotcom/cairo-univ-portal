@@ -363,8 +363,8 @@ router.post('/login', async (req, res) => {
     }
 
     // فحص ما إذا كان الحساب مرفوضاً من قبل الإدارة
-    const isRejected = user.verificationStatus === 'rejected' || user.status === 'rejected';
-    if (isRejected && user.role !== 'admin') {
+    const isRejected = (user.verificationStatus === 'rejected' || user.status === 'rejected') && user.role !== 'admin';
+    if (isRejected) {
       return res.status(403).json({
         success: false,
         isRejected: true,
@@ -373,8 +373,9 @@ router.post('/login', async (req, res) => {
     }
 
     const isApproved = user.verificationStatus === 'verified' || user.verificationStatus === 'approved' || user.status === 'approved';
-    const finalVerificationStatus = isApproved ? 'verified' : (user.verificationStatus || 'pending');
-    const finalStatus = isApproved ? 'approved' : (user.status || 'pending');
+    const isPending = !isApproved && !isRejected;
+    const finalVerificationStatus = isApproved ? 'verified' : isRejected ? 'rejected' : 'pending';
+    const finalStatus = isApproved ? 'approved' : isRejected ? 'rejected' : 'pending';
 
     const userPayload = {
       _id: user._id,
@@ -388,6 +389,7 @@ router.post('/login', async (req, res) => {
       department: user.department,
       academicLevel: user.academicLevel,
       idDocument: user.idDocument,
+      idCardUrl: user.idCardUrl,
       emergencyContactName: user.emergencyContactName,
       emergencyContactPhone: user.emergencyContactPhone,
       verificationStatus: finalVerificationStatus,
@@ -395,9 +397,12 @@ router.post('/login', async (req, res) => {
       role: user.role || 'user',
     };
 
-    console.log(`✅ Login successful for [${cleanEmail}], role: ${userPayload.role}`);
+    console.log(`✅ Login response for [${cleanEmail}], role: ${userPayload.role}, isPending: ${isPending}`);
     res.json({
       success: true,
+      isPending,
+      isApproved,
+      message: isPending ? 'طلبك قيد المراجعة والتدقيق بواسطة إدارة الرابطة' : 'تم تسجيل الدخول بنجاح',
       token: `ssa_token_${user._id}_${Date.now()}`,
       user: userPayload,
     });

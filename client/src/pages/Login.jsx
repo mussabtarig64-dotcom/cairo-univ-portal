@@ -48,21 +48,17 @@ export default function Login() {
 
       if (res && res.isRejected) {
         setRejectedMessage(res.message || 'تم رفض طلب تسجيلك بواسطة إدارة الرابطة. يرجى التواصل مع الإدارة لإعادة تفعيل الحساب.');
+      } else if (res && (res.isPending || (res.user && (res.user.verificationStatus === 'pending' || res.user.status === 'pending') && res.user.verificationStatus !== 'verified' && res.user.status !== 'approved' && res.user.role !== 'admin'))) {
+        setPendingMessage(res.message || 'طلبك قيد المراجعة والتدقيق بواسطة إدارة الرابطة');
+        setTimeout(() => {
+          navigate('/pending-approval');
+        }, 1200);
       } else if (res && res.success && res.user) {
         if (res.user.role === 'admin') {
           navigate('/admin');
-        } else if (
-          (res.user.verificationStatus === 'pending' || res.user.status === 'pending') &&
-          res.user.verificationStatus !== 'verified' &&
-          res.user.verificationStatus !== 'approved' &&
-          res.user.status !== 'approved'
-        ) {
-          navigate('/pending-approval');
         } else {
           navigate('/');
         }
-      } else if (res && res.isPending) {
-        setPendingMessage(res.message || 'طلب قيدك لا يزال قيد التدقيق والمراجعة بواسطة إدارة الرابطة.');
       } else {
         setError(res?.message || 'بيانات الدخول غير صحيحة، يرجى التأكد من البريد الإلكتروني وكلمة المرور.');
       }
