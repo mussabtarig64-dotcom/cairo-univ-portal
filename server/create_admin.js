@@ -21,51 +21,42 @@ async function createOrUpdateAdmin() {
     const name = 'مصعب طارق (المدير العام)';
     const role = 'admin';
 
+    // 1. Delete any existing user with this email
+    const deleteResult = await User.deleteMany({
+      email: { $regex: new RegExp(`^${email}$`, 'i') }
+    });
+    console.log(`🗑️ Removed ${deleteResult.deletedCount} existing user document(s) for [${email}].`);
+
+    // 2. Hash the password with bcrypt
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
-    let user = await User.findOne({ email: email.toLowerCase().trim() });
+    // 3. Create fresh admin document
+    const user = await User.create({
+      fullName: name,
+      name: name,
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: role,
+      phone: '01000000000',
+      whatsapp: '01000000000',
+      cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+      residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+      studentId: 'ADMIN-MUSSAB',
+      academicId: 'ADMIN-MUSSAB',
+      department: 'إدارة الرابطة',
+      academicLevel: 'هيئة إدارية',
+      academicYear: 'هيئة إدارية',
+      status: 'approved',
+      verificationStatus: 'verified',
+    });
+    console.log(`✅ Fresh admin user with email [${email}] has been successfully created with password [${plainPassword}]!`);
 
-    if (user) {
-      user.fullName = name;
-      user.name = name;
-      user.password = hashedPassword;
-      user.role = role;
-      user.status = 'approved';
-      user.verificationStatus = 'verified';
-      user.phone = user.phone || '01000000000';
-      user.studentId = user.studentId || 'ADMIN-MUSSAB';
-      user.department = user.department || 'إدارة الرابطة';
-      user.academicLevel = user.academicLevel || 'هيئة إدارية';
-      await user.save();
-      console.log(`✅ Admin user with email [${email}] has been successfully updated and reset with password [${plainPassword}]!`);
-    } else {
-      user = await User.create({
-        fullName: name,
-        name: name,
-        email: email.toLowerCase().trim(),
-        password: hashedPassword,
-        role: role,
-        phone: '01000000000',
-        whatsapp: '01000000000',
-        cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
-        residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
-        studentId: 'ADMIN-MUSSAB',
-        academicId: 'ADMIN-MUSSAB',
-        department: 'إدارة الرابطة',
-        academicLevel: 'هيئة إدارية',
-        academicYear: 'هيئة إدارية',
-        status: 'approved',
-        verificationStatus: 'verified',
-      });
-      console.log(`✅ Admin user with email [${email}] has been successfully created with password [${plainPassword}]!`);
-    }
-
-    // Verify bcrypt check locally
+    // 4. Verify bcrypt check locally
     const isPasswordValid = await bcrypt.compare(plainPassword, user.password);
     console.log('🔑 Password verification test:', isPasswordValid ? 'PASSED ✅' : 'FAILED ❌');
 
-    console.log('\n--- Admin User Record ---');
+    console.log('\n--- Fresh Admin User Record in MongoDB ---');
     console.log({
       id: user._id,
       fullName: user.fullName || user.name,
@@ -73,6 +64,7 @@ async function createOrUpdateAdmin() {
       role: user.role,
       status: user.status,
       verificationStatus: user.verificationStatus,
+      createdAt: user.createdAt,
     });
 
     await mongoose.disconnect();
@@ -85,3 +77,4 @@ async function createOrUpdateAdmin() {
 }
 
 createOrUpdateAdmin();
+
