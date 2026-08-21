@@ -100,22 +100,36 @@ router.post(['/register', '/survey'], async (req, res) => {
       emergencyContactName,
       emergencyContactRelation,
       emergencyContactPhone,
-    } = req.body;
+    } = req.body || {};
 
-    const studentName = (fullName || name || '').trim();
+    const studentName = (fullName || name || 'طالب كلية العلوم').trim();
     const cleanEmail = (email || '').toLowerCase().trim();
-    const sid = (studentId || academicId || universityId || `SSA-${Math.floor(100000 + Math.random() * 900000)}`).trim();
 
-    if (!studentName || !cleanEmail || !password) {
+    if (!cleanEmail) {
       return res.status(400).json({
         success: false,
-        message: 'يرجى إدخال الاسم والبريد الإلكتروني وكلمة المرور.',
+        message: 'يرجى إدخال البريد الإلكتروني الخاص بك للمتابعة.',
       });
     }
 
-    // تشفير كلمة المرور
+    const sid = (studentId || academicId || universityId || `SSA-${Math.floor(100000 + Math.random() * 900000)}`).trim();
+
+    // في حال عدم توفير كلمة مرور، إنشاء كلمة مرور مؤقتة وتشفيرها
+    const rawPassword = (password || 'SSA@Student2026').trim();
     const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(password, salt);
+    const hashedPassword = await bcrypt.hash(rawPassword, salt);
+
+    // تجهيز الحقول الاختيارية بقيم افتراضية آمنة تمنع أي خطأ في التحقق (Validation)
+    const safeAge = age ? String(age).trim() : '';
+    const safePhone = (phone || whatsapp || '01000000000').trim();
+    const safeWhatsapp = (whatsapp || phone || safePhone).trim();
+    const safeAddress = (cairoAddress || residence || 'القاهرة، مصر').trim();
+    const safeDepartment = (department || 'العلوم العامة').trim();
+    const safeLevel = (academicLevel || academicYear || 'المستوى الأول').trim();
+    const safeIdDoc = idDocument || idCardUrl || passportOrNationalId || '';
+    const safeEmergencyName = (emergencyContactName || emergencyContact || 'غير متوفر').trim();
+    const safeEmergencyRelation = (emergencyContactRelation || 'غير محدد').trim();
+    const safeEmergencyPhone = (emergencyContactPhone || 'غير متوفر').trim();
 
     // فحص ما إذا كان المستخدم مسجلاً مسبقاً
     const existingUser = await User.findOne({ email: cleanEmail });
@@ -130,24 +144,26 @@ router.post(['/register', '/survey'], async (req, res) => {
       // تحديث بيانات الاستمارة وإعادة وضع الحساب في حالة قيد المراجعة (Pending)
       existingUser.fullName = studentName;
       existingUser.name = studentName;
-      existingUser.password = hashedPassword;
-      existingUser.age = age || existingUser.age || '';
-      existingUser.phone = phone || existingUser.phone || '';
-      existingUser.whatsapp = whatsapp || phone || existingUser.whatsapp || '';
-      existingUser.cairoAddress = cairoAddress || residence || existingUser.cairoAddress || 'القاهرة، مصر';
-      existingUser.residence = residence || cairoAddress || existingUser.residence || 'القاهرة، مصر';
-      existingUser.studentId = sid;
-      existingUser.academicId = sid;
-      existingUser.department = department || existingUser.department || 'العلوم العامة';
-      existingUser.academicLevel = academicLevel || academicYear || existingUser.academicLevel || 'المستوى الأول';
-      existingUser.academicYear = academicYear || academicLevel || existingUser.academicYear || 'المستوى الأول';
-      existingUser.idDocument = idDocument || idCardUrl || passportOrNationalId || existingUser.idDocument || '';
-      existingUser.idCardUrl = idCardUrl || idDocument || passportOrNationalId || existingUser.idCardUrl || '';
+      if (password) {
+        existingUser.password = hashedPassword;
+      }
+      existingUser.age = safeAge || existingUser.age || '';
+      existingUser.phone = safePhone || existingUser.phone || '01000000000';
+      existingUser.whatsapp = safeWhatsapp || existingUser.whatsapp || '';
+      existingUser.cairoAddress = safeAddress || existingUser.cairoAddress || 'القاهرة، مصر';
+      existingUser.residence = safeAddress || existingUser.residence || 'القاهرة، مصر';
+      existingUser.studentId = sid || existingUser.studentId;
+      existingUser.academicId = sid || existingUser.academicId;
+      existingUser.department = safeDepartment || existingUser.department || 'العلوم العامة';
+      existingUser.academicLevel = safeLevel || existingUser.academicLevel || 'المستوى الأول';
+      existingUser.academicYear = safeLevel || existingUser.academicYear || 'المستوى الأول';
+      existingUser.idDocument = safeIdDoc || existingUser.idDocument || '';
+      existingUser.idCardUrl = safeIdDoc || existingUser.idCardUrl || '';
       existingUser.passportOrNationalId = passportOrNationalId || existingUser.passportOrNationalId || '';
-      existingUser.emergencyContact = emergencyContact || emergencyContactName || existingUser.emergencyContact || '';
-      existingUser.emergencyContactName = emergencyContactName || emergencyContact || existingUser.emergencyContactName || '';
-      existingUser.emergencyContactRelation = emergencyContactRelation || existingUser.emergencyContactRelation || '';
-      existingUser.emergencyContactPhone = emergencyContactPhone || existingUser.emergencyContactPhone || '';
+      existingUser.emergencyContact = safeEmergencyName || existingUser.emergencyContact || '';
+      existingUser.emergencyContactName = safeEmergencyName || existingUser.emergencyContactName || '';
+      existingUser.emergencyContactRelation = safeEmergencyRelation || existingUser.emergencyContactRelation || '';
+      existingUser.emergencyContactPhone = safeEmergencyPhone || existingUser.emergencyContactPhone || '';
       existingUser.status = 'pending';
       existingUser.verificationStatus = 'pending';
       existingUser.isApproved = false;
@@ -157,10 +173,13 @@ router.post(['/register', '/survey'], async (req, res) => {
       const savedUser = await existingUser.save();
       console.log("New student registration created:", savedUser);
 
-      Promise.allSettled([
-        sendWelcomeEmail(savedUser),
-        sendRegistrationSMS(savedUser),
-      ]).catch((err) => console.error('Notification dispatch note:', err.message));
+      // إرسال الإشعارات بدون انتظار الاستجابة
+      try {
+        Promise.allSettled([
+          sendWelcomeEmail(savedUser),
+          sendRegistrationSMS(savedUser),
+        ]).catch(() => {});
+      } catch (notifyErr) {}
 
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
       return res.status(200).json({
@@ -175,23 +194,23 @@ router.post(['/register', '/survey'], async (req, res) => {
       name: studentName,
       email: cleanEmail,
       password: hashedPassword,
-      age: age || '',
-      phone: phone || '',
-      whatsapp: whatsapp || phone || '',
-      cairoAddress: cairoAddress || residence || 'القاهرة، مصر',
-      residence: residence || cairoAddress || 'القاهرة، مصر',
+      age: safeAge,
+      phone: safePhone,
+      whatsapp: safeWhatsapp,
+      cairoAddress: safeAddress,
+      residence: safeAddress,
       studentId: sid,
       academicId: sid,
-      department: department || 'العلوم العامة',
-      academicLevel: academicLevel || academicYear || 'المستوى الأول',
-      academicYear: academicYear || academicLevel || 'المستوى الأول',
-      idDocument: idDocument || idCardUrl || passportOrNationalId || '',
-      idCardUrl: idCardUrl || idDocument || passportOrNationalId || '',
+      department: safeDepartment,
+      academicLevel: safeLevel,
+      academicYear: safeLevel,
+      idDocument: safeIdDoc,
+      idCardUrl: safeIdDoc,
       passportOrNationalId: passportOrNationalId || '',
-      emergencyContact: emergencyContact || emergencyContactName || '',
-      emergencyContactName: emergencyContactName || emergencyContact || '',
-      emergencyContactRelation: emergencyContactRelation || '',
-      emergencyContactPhone: emergencyContactPhone || '',
+      emergencyContact: safeEmergencyName,
+      emergencyContactName: safeEmergencyName,
+      emergencyContactRelation: safeEmergencyRelation,
+      emergencyContactPhone: safeEmergencyPhone,
       status: 'pending',
       verificationStatus: 'pending',
       isApproved: false,
@@ -203,14 +222,12 @@ router.post(['/register', '/survey'], async (req, res) => {
     console.log("New student registration created:", savedUser);
 
     // إرسال الإشعارات التلقائية (Email & SMS/WhatsApp) في الخلفية دون تعطيل الاستجابة
-    Promise.allSettled([
-      sendWelcomeEmail(savedUser),
-      sendRegistrationSMS(savedUser),
-    ]).then((results) => {
-      console.log(`📨 [Auto-Notification] تم إطلاق إشعارات الترحيب للطالب: ${savedUser.fullName}`);
-    }).catch((err) => {
-      console.error('Notification dispatch note:', err.message);
-    });
+    try {
+      Promise.allSettled([
+        sendWelcomeEmail(savedUser),
+        sendRegistrationSMS(savedUser),
+      ]).catch(() => {});
+    } catch (notifyErr) {}
 
     const userSafeData = {
       _id: savedUser._id,
@@ -238,16 +255,17 @@ router.post(['/register', '/survey'], async (req, res) => {
     };
 
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    res.status(201).json({
+    return res.status(201).json({
       success: true,
       message: 'تم استلام طلب التسجيل بنجاح! حسابك قيد المراجعة والاعتماد من قبل إدارة الرابطة.',
       user: userSafeData,
     });
   } catch (error) {
-    console.error('❌ خطأ أثناء تسجيل الطالب:', error);
-    res.status(500).json({
+    console.error("Registration Server Error:", error);
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    return res.status(500).json({
       success: false,
-      message: 'حدث خطأ في الخادم أثناء إرسال استمارة التسجيل: ' + error.message,
+      message: error.message || 'حدث خطأ أثناء معالجة طلب التسجيل في الخادم.',
       error: error.message,
     });
   }

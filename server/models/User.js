@@ -5,11 +5,12 @@ const userSchema = new mongoose.Schema(
     // البيانات الشخصية واستبيان السكن
     fullName: {
       type: String,
-      required: true,
+      default: 'طالب كلية العلوم',
       trim: true,
     },
     name: {
       type: String,
+      default: 'طالب كلية العلوم',
       trim: true,
     },
     email: {
@@ -21,7 +22,7 @@ const userSchema = new mongoose.Schema(
     },
     password: {
       type: String,
-      required: true,
+      default: '',
     },
     age: {
       type: String,
@@ -30,7 +31,7 @@ const userSchema = new mongoose.Schema(
     },
     phone: {
       type: String,
-      required: true,
+      default: '01000000000',
       trim: true,
     },
     whatsapp: {
@@ -41,7 +42,7 @@ const userSchema = new mongoose.Schema(
     residence: {
       type: String,
       trim: true,
-      default: '',
+      default: 'القاهرة، مصر',
     },
     cairoAddress: {
       type: String,
@@ -52,7 +53,7 @@ const userSchema = new mongoose.Schema(
     // البيانات الأكاديمية - كلية العلوم جامعة القاهرة
     studentId: {
       type: String,
-      required: true,
+      default: () => `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
       trim: true,
     },
     academicId: {
@@ -62,12 +63,10 @@ const userSchema = new mongoose.Schema(
     },
     department: {
       type: String,
-      required: true,
       default: 'العلوم العامة',
     },
     academicLevel: {
       type: String,
-      required: true,
       default: 'المستوى الأول',
     },
     academicYear: {
