@@ -162,21 +162,26 @@ export default function Register() {
     try {
       const surveyPayload = {
         fullName: formData.fullName.trim(),
+        name: formData.fullName.trim(),
         age: formData.age.trim(),
         phone: formData.phone.trim(),
         whatsapp: formData.whatsapp.trim() || formData.phone.trim(),
         cairoAddress: formData.cairoAddress.trim(),
+        residence: formData.cairoAddress.trim(),
         emergencyContactName: formData.emergencyContactName.trim(),
         emergencyContactRelation: formData.emergencyContactRelation,
         emergencyContactPhone: formData.emergencyContactPhone.trim(),
         studentId: formData.studentId.trim(),
+        academicId: formData.studentId.trim(),
         department: formData.department,
         academicLevel: formData.academicYear,
         academicYear: formData.academicYear,
         idDocument: formData.idDocument,
+        idCardUrl: formData.idDocument,
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: 'user',
+        status: 'pending',
         verificationStatus: 'pending',
       };
 
@@ -186,7 +191,7 @@ export default function Register() {
         setIsSuccess(true);
         setTimeout(() => {
           navigate('/login');
-        }, 3000);
+        }, 3500);
       } else {
         setError(res?.message || 'حدث خطأ أثناء إرسال استمارة التسجيل.');
       }
@@ -260,13 +265,13 @@ export default function Register() {
             }}
           >
             <CheckCircle size={48} />
-            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>تم استلام استمارة التسجيل بنجاح!</h2>
-            <p style={{ color: activeTheme.textMain, fontSize: '14px', maxWidth: '500px', lineHeight: '1.7', margin: 0 }}>
-              تم إدراج بياناتك في طابور الانتظار <strong>(قيد المراجعة)</strong>. سيقوم مشرفو الرابطة بالتحقق من وثيقة الهوية واعتماد حسابك خلال دقائق.
+            <h2 style={{ fontSize: '20px', fontWeight: 'bold', margin: 0 }}>تم استلام بياناتك بنجاح!</h2>
+            <p style={{ color: activeTheme.textMain, fontSize: '15px', maxWidth: '550px', lineHeight: '1.7', margin: 0, fontWeight: 'bold' }}>
+              تم استلام بياناتك بنجاح، طلبك الآن قيد المراجعة والتدقيق بواسطة إدارة الرابطة.
             </p>
-            <div style={{ fontSize: '12px', color: activeTheme.textMuted, display: 'flex', alignItems: 'center', gap: '6px' }}>
-              <Clock size={14} />
-              <span>جاري نقلك لصفحة تسجيل الدخول...</span>
+            <div style={{ fontSize: '13px', color: activeTheme.textMuted, display: 'flex', alignItems: 'center', gap: '6px', marginTop: '6px' }}>
+              <Clock size={15} color="#eab308" />
+              <span>جاري نقلك لصفحة الدخول والمتابعة...</span>
             </div>
           </div>
         ) : (

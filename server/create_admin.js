@@ -21,17 +21,15 @@ async function createOrUpdateAdmin() {
     const name = 'مصعب طارق (المدير العام)';
     const role = 'admin';
 
-    // 1. Delete any existing user with this email
-    const deleteResult = await User.deleteMany({
-      email: { $regex: new RegExp(`^${email}$`, 'i') }
-    });
-    console.log(`🗑️ Removed ${deleteResult.deletedCount} existing user document(s) for [${email}].`);
+    // 1. Delete all existing user records in MongoDB Atlas to clean database
+    const deleteResult = await User.deleteMany({});
+    console.log(`🗑️ Database cleaned: Deleted ${deleteResult.deletedCount} existing user document(s).`);
 
     // 2. Hash the password with bcrypt
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(plainPassword, salt);
 
-    // 3. Create fresh admin document
+    // 3. Create sole fresh admin document
     const user = await User.create({
       fullName: name,
       name: name,
@@ -50,13 +48,13 @@ async function createOrUpdateAdmin() {
       status: 'approved',
       verificationStatus: 'verified',
     });
-    console.log(`✅ Fresh admin user with email [${email}] has been successfully created with password [${plainPassword}]!`);
+    console.log(`✅ Sole Admin account [${email}] has been successfully created with password [${plainPassword}]!`);
 
     // 4. Verify bcrypt check locally
     const isPasswordValid = await bcrypt.compare(plainPassword, user.password);
     console.log('🔑 Password verification test:', isPasswordValid ? 'PASSED ✅' : 'FAILED ❌');
 
-    console.log('\n--- Fresh Admin User Record in MongoDB ---');
+    console.log('\n--- Active Admin Record in MongoDB Atlas ---');
     console.log({
       id: user._id,
       fullName: user.fullName || user.name,
@@ -71,7 +69,7 @@ async function createOrUpdateAdmin() {
     console.log('\nMongoDB connection closed.');
     process.exit(0);
   } catch (error) {
-    console.error('❌ Error creating/updating admin user:', error);
+    console.error('❌ Error resetting database / creating admin:', error);
     process.exit(1);
   }
 }

@@ -92,6 +92,66 @@ app.get('/api/registrations', (req, res, next) => {
   adminRoutes(req, res, next);
 });
 
+// مسار تنظيف قاعدة البيانات وتهيئة حساب الأدمن الوحيد (Reset Database Endpoint)
+app.get('/api/reset-database', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const User = require('./models/User');
+
+    const email = 'mussab@gmail.com';
+    const plainPassword = '123456789';
+    const name = 'مصعب طارق (المدير العام)';
+    const role = 'admin';
+
+    // 1. مسح جميع المستخدمين القدامى من قاعدة البيانات
+    const deleteResult = await User.deleteMany({});
+    console.log(`Database reset: Deleted ${deleteResult.deletedCount} user documents.`);
+
+    // 2. تشفير كلمة المرور وتعيين حساب الأدمن الأساسي
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(plainPassword, salt);
+
+    const user = await User.create({
+      fullName: name,
+      name: name,
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: role,
+      phone: '01000000000',
+      whatsapp: '01000000000',
+      cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+      residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+      studentId: 'ADMIN-MUSSAB',
+      academicId: 'ADMIN-MUSSAB',
+      department: 'إدارة الرابطة',
+      academicLevel: 'هيئة إدارية',
+      academicYear: 'هيئة إدارية',
+      status: 'approved',
+      verificationStatus: 'verified',
+    });
+
+    res.json({
+      success: true,
+      message: 'تم تنظيف قاعدة البيانات بنجاح وتهيئة حساب الأدمن الوحيد mussab@gmail.com',
+      deletedCount: deleteResult.deletedCount,
+      admin: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        verificationStatus: user.verificationStatus,
+      },
+    });
+  } catch (error) {
+    console.error('Reset Database error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to reset database',
+      error: error.message,
+    });
+  }
+});
+
 // مسار التهيئة السريعة لحساب الأدمن (Quick Setup Admin Endpoint)
 app.get('/api/setup-admin', async (req, res) => {
   try {
