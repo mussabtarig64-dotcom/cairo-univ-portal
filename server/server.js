@@ -56,7 +56,7 @@ async function connectDB() {
     console.log('✅ تم الاتصال بالسجل المركزي لقاعدة البيانات MongoDB Atlas بنجاح');
     return conn;
   } catch (err) {
-    console.error('❌ خطأ في الاتصال بقاعدة بيانات MongoDB:', err.message);
+    console.error('❌ خطأ في الاتصال بقاعدة بيانات MongoDB:', err.message, err.stack);
     return null;
   }
 }

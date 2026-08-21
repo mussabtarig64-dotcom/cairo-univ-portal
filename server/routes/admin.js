@@ -65,8 +65,13 @@ router.get('/hard-reset-db', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Hard Reset DB Error:', error);
-    res.status(500).json({ success: false, message: 'Failed to hard reset database', error: error.message });
+    console.error('Hard Reset DB Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to hard reset database',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -101,8 +106,13 @@ router.get('/stats', async (req, res) => {
       adminCount,
     });
   } catch (error) {
-    console.error('Admin Stats Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب إحصائيات الإدارة' });
+    console.error('Admin Stats Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب إحصائيات الإدارة',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -140,8 +150,13 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
       users: pending,
     });
   } catch (error) {
-    console.error('Fetch Pending Students Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب بيانات الطلاب المعلقين', error: error.message });
+    console.error('Fetch Pending Students Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب بيانات الطلاب المعلقين',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -163,8 +178,13 @@ router.get(['/users', '/all-users'], async (req, res) => {
       students: users,
     });
   } catch (error) {
-    console.error('Fetch Users Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب بيانات المستخدمين', error: error.message });
+    console.error('Fetch Users Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب بيانات المستخدمين',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -217,8 +237,13 @@ router.get('/students', async (req, res) => {
 
     res.json({ success: true, count: students.length, students, users: students });
   } catch (error) {
-    console.error('Fetch Students Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب بيانات الطلاب' });
+    console.error('Fetch Students Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب بيانات الطلاب',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -264,8 +289,13 @@ router.patch('/students/:id/status', async (req, res) => {
       student,
     });
   } catch (error) {
-    console.error('Update Status Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في تحديث حالة الطالب' });
+    console.error('Update Status Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في تحديث حالة الطالب',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -307,8 +337,13 @@ router.patch('/students/:id/role', async (req, res) => {
       student,
     });
   } catch (error) {
-    console.error('Update Role Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في تحديث رتبة المستخدم' });
+    console.error('Update Role Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في تحديث رتبة المستخدم',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -322,8 +357,13 @@ router.delete('/students/:id', async (req, res) => {
     }
     res.json({ success: true, message: 'تم حذف سجل الطالب بنجاح' });
   } catch (error) {
-    console.error('Delete Student Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ أثناء حذف الطالب' });
+    console.error('Delete Student Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ أثناء حذف الطالب',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -381,8 +421,13 @@ router.get('/export', async (req, res) => {
     res.setHeader('Content-Disposition', `attachment; filename="SSA-FS-CU-Students-Database-${Date.now()}.csv"`);
     res.status(200).send(csvContent);
   } catch (error) {
-    console.error('Export CSV Error:', error);
-    res.status(500).json({ success: false, message: 'فشل تصدير ملف البيانات' });
+    console.error('Export CSV Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'فشل تصدير ملف البيانات',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -392,7 +437,13 @@ router.get('/announcements', async (req, res) => {
     const announcements = await Announcement.find().sort({ isPinned: -1, date: -1 });
     res.json(announcements);
   } catch (error) {
-    res.status(500).json({ message: 'خطأ في جلب الإعلانات' });
+    console.error('Fetch Announcements Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الإعلانات',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -425,7 +476,13 @@ router.post('/announcements', async (req, res) => {
 
     res.status(201).json({ success: true, announcement: newAnnouncement });
   } catch (error) {
-    res.status(500).json({ message: 'خطأ في حفظ الإعلان' });
+    console.error('Save Announcement Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في حفظ الإعلان',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -434,7 +491,13 @@ router.delete('/announcements/:id', async (req, res) => {
     await Announcement.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'تم حذف الإعلان' });
   } catch (error) {
-    res.status(500).json({ message: 'خطأ في حذف الإعلان' });
+    console.error('Delete Announcement Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في حذف الإعلان',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -448,7 +511,13 @@ router.get('/settings', async (req, res) => {
     }
     res.json(settings);
   } catch (error) {
-    res.status(500).json({ message: 'خطأ في جلب الإعدادات' });
+    console.error('Get Settings Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب الإعدادات',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -465,7 +534,13 @@ router.post('/settings', async (req, res) => {
     await settings.save();
     res.json({ success: true, settings });
   } catch (error) {
-    res.status(500).json({ message: 'خطأ في حفظ الإعدادات' });
+    console.error('Save Settings Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في حفظ الإعدادات',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -475,7 +550,13 @@ router.get('/faq', async (req, res) => {
     const items = await KnowledgeBase.find().sort({ createdAt: -1 });
     res.json({ success: true, items });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في جلب بيانات قاعدة المعرفة' });
+    console.error('Get FAQ Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب بيانات قاعدة المعرفة',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -497,7 +578,13 @@ router.post('/faq', async (req, res) => {
     await newItem.save();
     res.status(201).json({ success: true, message: 'تم إضافة السؤال إلى قاعدة المعرفة بنجاح', item: newItem });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في حفظ السؤال بقاعدة المعرفة' });
+    console.error('Save FAQ Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في حفظ السؤال بقاعدة المعرفة',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -521,7 +608,13 @@ router.put('/faq/:id', async (req, res) => {
 
     res.json({ success: true, message: 'تم تحديث عنصر قاعدة المعرفة بنجاح', item });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في تحديث عنصر قاعدة المعرفة' });
+    console.error('Update FAQ Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في تحديث عنصر قاعدة المعرفة',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -538,7 +631,13 @@ router.patch('/faq/:id/toggle', async (req, res) => {
 
     res.json({ success: true, message: 'تم تغيير حالة التفعيل بنجاح', isActive: item.isActive, item });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في تغيير حالة التفعيل' });
+    console.error('Toggle FAQ Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في تغيير حالة التفعيل',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -547,7 +646,13 @@ router.delete('/faq/:id', async (req, res) => {
     await KnowledgeBase.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'تم حذف السؤال من قاعدة المعرفة بنجاح' });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في حذف عنصر قاعدة المعرفة' });
+    console.error('Delete FAQ Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في حذف عنصر قاعدة المعرفة',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 

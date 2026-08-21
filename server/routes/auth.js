@@ -81,11 +81,12 @@ router.get('/setup-admin', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Setup Admin error:', error);
+    console.error('Setup Admin error:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to initialize admin account',
       error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
@@ -289,12 +290,13 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
       user: userSafeData,
     });
   } catch (error) {
-    console.error("Registration Server Error:", error);
+    console.error("Registration Server Error:", error.message, error.stack);
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     return res.status(400).json({
       success: false,
       message: error.message || 'حدث خطأ أثناء معالجة طلب التسجيل في الخادم.',
       error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
@@ -466,11 +468,12 @@ router.post('/login', async (req, res) => {
       user: userPayload,
     });
   } catch (error) {
-    console.error('❌ خطأ في تسجيل الدخول:', error);
+    console.error('❌ خطأ في تسجيل الدخول:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'خطأ في الخادم أثناء تسجيل الدخول.',
       error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
@@ -511,8 +514,13 @@ router.get('/status/:email', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Live Status Check Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ أثناء التحقق من حالة المستخدم.' });
+    console.error('Live Status Check Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ أثناء التحقق من حالة المستخدم.',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+    });
   }
 });
 
@@ -582,8 +590,13 @@ router.get('/status-check/:query', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Status Check API Error:', error);
-    res.status(500).json({ success: false, message: 'حدث خطأ في النظام أثناء الاستعلام عن حالة الحساب.' });
+    console.error('Status Check API Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'حدث خطأ في النظام أثناء الاستعلام عن حالة الحساب.',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+    });
   }
 });
 
