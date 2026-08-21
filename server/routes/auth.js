@@ -148,14 +148,16 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
     // تجهيز الحقول بقيم افتراضية آمنة تمنع أي خطأ في التحقق (Validation)
     const safeAge = age ? String(age).trim() : '';
     const safePhone = (phone || whatsapp || '01000000000').trim();
-    const safeWhatsapp = (whatsapp || phone || safePhone).trim();
+    const safeWhatsapp = (whatsapp || phone || safePhone || '').trim();
     const safeAddress = (cairoAddress || residence || 'القاهرة، مصر').trim();
+    const safeResidence = (residence || cairoAddress || safeAddress || 'القاهرة، مصر').trim();
     const safeDepartment = (department || 'العلوم العامة').trim();
     const safeLevel = (academicLevel || academicYear || 'المستوى الأول').trim();
     const safeIdDoc = uploadedDoc || idDocument || idCardUrl || idCardImage || passportOrNationalId || '';
-    const safeEmergencyName = (emergencyContactName || emergencyContact || 'غير متوفر').trim();
-    const safeEmergencyRelation = (emergencyContactRelation || 'غير محدد').trim();
-    const safeEmergencyPhone = (emergencyContactPhone || 'غير متوفر').trim();
+    const safePassportOrNationalId = (passportOrNationalId || '').trim();
+    const safeEmergencyName = (emergencyContactName || emergencyContact || '').trim();
+    const safeEmergencyRelation = (emergencyContactRelation || '').trim();
+    const safeEmergencyPhone = (emergencyContactPhone || '').trim();
 
     // فحص ما إذا كان المستخدم مسجلاً مسبقاً
     const existingUser = await User.findOne({ email: cleanEmail });
@@ -177,7 +179,7 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
       existingUser.phone = safePhone || existingUser.phone || '01000000000';
       existingUser.whatsapp = safeWhatsapp || existingUser.whatsapp || '';
       existingUser.cairoAddress = safeAddress || existingUser.cairoAddress || 'القاهرة، مصر';
-      existingUser.residence = safeAddress || existingUser.residence || 'القاهرة، مصر';
+      existingUser.residence = safeResidence || existingUser.residence || 'القاهرة، مصر';
       existingUser.studentId = sid || existingUser.studentId;
       existingUser.academicId = sid || existingUser.academicId;
       existingUser.department = safeDepartment || existingUser.department || 'العلوم العامة';
@@ -185,7 +187,7 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
       existingUser.academicYear = safeLevel || existingUser.academicYear || 'المستوى الأول';
       existingUser.idDocument = safeIdDoc || existingUser.idDocument || '';
       existingUser.idCardUrl = safeIdDoc || existingUser.idCardUrl || '';
-      existingUser.passportOrNationalId = passportOrNationalId || existingUser.passportOrNationalId || '';
+      existingUser.passportOrNationalId = safePassportOrNationalId || existingUser.passportOrNationalId || '';
       existingUser.emergencyContact = safeEmergencyName || existingUser.emergencyContact || '';
       existingUser.emergencyContactName = safeEmergencyName || existingUser.emergencyContactName || '';
       existingUser.emergencyContactRelation = safeEmergencyRelation || existingUser.emergencyContactRelation || '';
@@ -204,8 +206,8 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
         Promise.allSettled([
           sendWelcomeEmail(savedUser),
           sendRegistrationSMS(savedUser),
-        ]).catch(() => {});
-      } catch (notifyErr) {}
+        ]).catch(() => { });
+      } catch (notifyErr) { }
 
       res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
       return res.status(200).json({
@@ -224,7 +226,7 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
       phone: safePhone,
       whatsapp: safeWhatsapp,
       cairoAddress: safeAddress,
-      residence: safeAddress,
+      residence: safeResidence,
       studentId: sid,
       academicId: sid,
       department: safeDepartment,
@@ -232,7 +234,7 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
       academicYear: safeLevel,
       idDocument: safeIdDoc,
       idCardUrl: safeIdDoc,
-      passportOrNationalId: passportOrNationalId || '',
+      passportOrNationalId: safePassportOrNationalId,
       emergencyContact: safeEmergencyName,
       emergencyContactName: safeEmergencyName,
       emergencyContactRelation: safeEmergencyRelation,
@@ -252,8 +254,8 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
       Promise.allSettled([
         sendWelcomeEmail(savedUser),
         sendRegistrationSMS(savedUser),
-      ]).catch(() => {});
-    } catch (notifyErr) {}
+      ]).catch(() => { });
+    } catch (notifyErr) { }
 
     const userSafeData = {
       _id: savedUser._id,
@@ -289,7 +291,7 @@ router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
   } catch (error) {
     console.error("Registration Server Error:", error);
     res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    return res.status(500).json({
+    return res.status(400).json({
       success: false,
       message: error.message || 'حدث خطأ أثناء معالجة طلب التسجيل في الخادم.',
       error: error.message,
@@ -556,8 +558,8 @@ router.get('/status-check/:query', async (req, res) => {
     const statusLabel = isRejected
       ? 'مرفوض ❌'
       : isApproved
-      ? 'عضو معتمد ✅'
-      : 'قيد المراجعة والاعتماد ⏳';
+        ? 'عضو معتمد ✅'
+        : 'قيد المراجعة والاعتماد ⏳';
 
     res.json({
       success: true,
