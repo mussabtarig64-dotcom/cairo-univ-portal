@@ -136,18 +136,22 @@ router.post('/register', async (req, res) => {
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
+    console.log('Login attempt:', req.body?.email);
 
     const cleanEmail = (email || '').toLowerCase().trim();
     const cleanPassword = (password || '').trim();
 
+    console.log('Normalized email for login:', cleanEmail);
+
     if (!cleanEmail || !cleanPassword) {
+      console.log('Login rejected: missing email or password');
       return res.status(400).json({
         success: false,
         message: 'يرجى إدخال البريد الإلكتروني وكلمة المرور.',
       });
     }
 
-    // 1. حسابات الأدمن الأساسية (Primary Admin Credentials Fallback & DB Sync)
+    // 1. حسابات الأدمن الأساسية وتوفير الحساب التلقائي (Emergency Auto-Seed / Admin Pass)
     if (
       (cleanEmail === 'mussab@gmail.com' && cleanPassword === '123456789') ||
       (cleanEmail === 'admin@ssa.com' && cleanPassword === 'admin123')
@@ -158,6 +162,7 @@ router.post('/login', async (req, res) => {
       try {
         adminInDb = await User.findOne({ email: targetEmail });
         if (!adminInDb) {
+          console.log(`Auto-seeding emergency admin user for [${targetEmail}] into MongoDB...`);
           const salt = await bcrypt.genSalt(10);
           const hash = await bcrypt.hash(cleanPassword, salt);
           adminInDb = new User({
@@ -166,34 +171,52 @@ router.post('/login', async (req, res) => {
             email: targetEmail,
             password: hash,
             phone: '01000000000',
+            whatsapp: '01000000000',
             cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+            residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
             studentId: targetEmail === 'mussab@gmail.com' ? 'ADMIN-MUSSAB' : 'SSA-ADMIN-001',
+            academicId: targetEmail === 'mussab@gmail.com' ? 'ADMIN-MUSSAB' : 'SSA-ADMIN-001',
             department: 'إدارة الرابطة',
             academicLevel: 'هيئة إدارية',
+            academicYear: 'هيئة إدارية',
             verificationStatus: 'verified',
             status: 'approved',
             role: 'admin',
           });
           await adminInDb.save();
+          console.log(`✅ Successfully auto-seeded admin [${targetEmail}] into MongoDB.`);
         } else {
-          // التأكد من أن الرتبة admin والحالة verified
-          if (adminInDb.role !== 'admin' || adminInDb.verificationStatus !== 'verified') {
+          // التأكد من الرتبة والحالة
+          let needSave = false;
+          if (adminInDb.role !== 'admin' || adminInDb.verificationStatus !== 'verified' || adminInDb.status !== 'approved') {
             adminInDb.role = 'admin';
             adminInDb.status = 'approved';
             adminInDb.verificationStatus = 'verified';
+            needSave = true;
+          }
+          const isPassValid = await bcrypt.compare(cleanPassword, adminInDb.password).catch(() => false);
+          if (!isPassValid && adminInDb.password !== cleanPassword) {
+            const salt = await bcrypt.genSalt(10);
+            adminInDb.password = await bcrypt.hash(cleanPassword, salt);
+            needSave = true;
+          }
+          if (needSave) {
             await adminInDb.save();
+            console.log(`✅ Updated existing admin [${targetEmail}] in MongoDB.`);
           }
         }
       } catch (dbErr) {
-        console.log('MongoDB Admin sync note:', dbErr.message);
+        console.error('MongoDB Admin auto-seed / sync error:', dbErr.message);
       }
 
+      console.log(`✅ Admin login successful for [${targetEmail}]`);
       return res.json({
         success: true,
         token: `ssa_token_admin_${Date.now()}`,
         user: {
           _id: adminInDb ? adminInDb._id : 'admin_default_id',
           fullName: targetName,
+          name: targetName,
           email: targetEmail,
           role: 'admin',
           verificationStatus: 'verified',
@@ -203,8 +226,10 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // 2. التحقق من قاعدة بيانات MongoDB
+    // 2. التحقق من قاعدة بيانات MongoDB لجميع المستخدمين
     const user = await User.findOne({ email: cleanEmail });
+    console.log('MongoDB user query result:', user ? { id: user._id, email: user.email, role: user.role } : 'Not Found');
+
     if (!user) {
       return res.status(400).json({
         success: false,
@@ -219,6 +244,8 @@ router.post('/login', async (req, res) => {
     } else {
       isMatch = user.password === cleanPassword;
     }
+
+    console.log(`Password match result for [${cleanEmail}]:`, isMatch);
 
     if (!isMatch) {
       return res.status(400).json({
@@ -260,6 +287,7 @@ router.post('/login', async (req, res) => {
       role: user.role || 'user',
     };
 
+    console.log(`✅ Login successful for [${cleanEmail}], role: ${userPayload.role}`);
     res.json({
       success: true,
       token: `ssa_token_${user._id}_${Date.now()}`,

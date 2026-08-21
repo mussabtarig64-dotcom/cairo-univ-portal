@@ -158,18 +158,40 @@ export function AuthProvider({ children }) {
     const cleanPassword = password.trim();
 
     // 1. فحص حساب الأدمن الأساسي المباشر
-    if (cleanEmail === 'admin@ssa.com' && cleanPassword === 'admin123') {
+    if (
+      (cleanEmail === 'mussab@gmail.com' && cleanPassword === '123456789') ||
+      (cleanEmail === 'admin@ssa.com' && cleanPassword === 'admin123')
+    ) {
+      const isMussab = cleanEmail === 'mussab@gmail.com';
       const adminUser = {
-        _id: 'admin_master_id',
-        id: 'admin_master_id',
-        fullName: 'المكتب التنفيذي للرابطة (المدير العام)',
-        name: 'المكتب التنفيذي',
-        email: 'admin@ssa.com',
+        _id: isMussab ? 'admin_mussab_id' : 'admin_master_id',
+        id: isMussab ? 'admin_mussab_id' : 'admin_master_id',
+        fullName: isMussab ? 'مصعب طارق (المدير العام)' : 'المكتب التنفيذي للرابطة (المدير العام)',
+        name: isMussab ? 'مصعب طارق (المدير العام)' : 'المكتب التنفيذي',
+        email: cleanEmail,
         role: 'admin',
         verificationStatus: 'verified',
         status: 'approved',
         department: 'إدارة الرابطة',
       };
+
+      try {
+        const res = await axios.post(`${API_BASE}/auth/login`, { email: cleanEmail, password: cleanPassword });
+        if (res.data?.success && res.data?.user) {
+          const finalUser = {
+            ...adminUser,
+            ...res.data.user,
+            role: 'admin',
+            verificationStatus: 'verified',
+            status: 'approved',
+          };
+          setUser(finalUser);
+          return { success: true, user: finalUser };
+        }
+      } catch (err) {
+        console.log('Server admin sync note, proceeding with master admin credentials:', err?.message);
+      }
+
       setUser(adminUser);
       return { success: true, user: adminUser };
     }
