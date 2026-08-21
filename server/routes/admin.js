@@ -73,6 +73,10 @@ router.get('/hard-reset-db', async (req, res) => {
 // 1. جلب إحصائيات لوحة الإدارة
 router.get('/stats', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     const totalStudents = await User.countDocuments({ role: { $ne: 'admin' } });
     const verifiedStudents = await User.countDocuments({
       role: { $ne: 'admin' },
@@ -102,9 +106,75 @@ router.get('/stats', async (req, res) => {
   }
 });
 
+// 1.1 جلب الطلاب المعلقين مباشرة (Pending Registrations Endpoint)
+router.get(['/pending', '/pending-students', '/pending-registrations'], async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const pending = await User.find({
+      role: { $ne: 'admin' },
+      $or: [
+        { verificationStatus: 'pending' },
+        { status: 'pending' },
+        { isApproved: false },
+        { verificationStatus: { $exists: false } },
+        { verificationStatus: null },
+      ],
+      $and: [
+        { verificationStatus: { $ne: 'rejected' } },
+        { status: { $ne: 'rejected' } },
+        { verificationStatus: { $nin: ['verified', 'approved'] } },
+        { status: { $ne: 'approved' } },
+        { isApproved: { $ne: true } },
+      ],
+    })
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: pending.length,
+      students: pending,
+      users: pending,
+    });
+  } catch (error) {
+    console.error('Fetch Pending Students Error:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب بيانات الطلاب المعلقين', error: error.message });
+  }
+});
+
+// 1.2 جلب جميع المستخدمين مباشرة (All Users Endpoint)
+router.get(['/users', '/all-users'], async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const users = await User.find()
+      .select('-password')
+      .sort({ createdAt: -1 });
+
+    res.json({
+      success: true,
+      count: users.length,
+      users,
+      students: users,
+    });
+  } catch (error) {
+    console.error('Fetch Users Error:', error);
+    res.status(500).json({ success: false, message: 'خطأ في جلب بيانات المستخدمين', error: error.message });
+  }
+});
+
 // 2. جلب قائمة الطلاب
 router.get('/students', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     const { search, status, role, limit = 500 } = req.query;
     const filter = {};
 
@@ -145,7 +215,7 @@ router.get('/students', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit, 10));
 
-    res.json({ success: true, count: students.length, students });
+    res.json({ success: true, count: students.length, students, users: students });
   } catch (error) {
     console.error('Fetch Students Error:', error);
     res.status(500).json({ success: false, message: 'خطأ في جلب بيانات الطلاب' });

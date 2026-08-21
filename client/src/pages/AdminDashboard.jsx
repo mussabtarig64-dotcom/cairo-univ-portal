@@ -61,27 +61,56 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     loadDashboardData();
+    // إعادة التحميل الدوري كل 10 ثوانٍ لضمان ظهور الاستمارات الجديدة تلقائياً
+    const interval = setInterval(() => {
+      loadDashboardData();
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
+  // إعادة التحميل عند تغيير التبويب
+  useEffect(() => {
+    loadDashboardData();
+  }, [activeTab]);
+
   const loadDashboardData = async () => {
-    // 1. تحميل البيانات من السيرفر
+    const noCacheConfig = {
+      headers: {
+        'Cache-Control': 'no-cache, no-store, must-revalidate',
+        Pragma: 'no-cache',
+        Expires: '0',
+      },
+      params: { _t: Date.now() },
+    };
+
+    // 1. تحميل البيانات الحية من قاعدة بيانات MongoDB Atlas
     try {
-      const [studentsRes, annRes, kbRes] = await Promise.allSettled([
-        axios.get(`${API_BASE}/admin/students`),
-        axios.get(`${API_BASE}/admin/announcements`),
-        axios.get(`${API_BASE}/admin/faq`),
+      const [studentsRes, pendingRes, annRes, kbRes] = await Promise.allSettled([
+        axios.get(`${API_BASE}/admin/students`, noCacheConfig),
+        axios.get(`${API_BASE}/admin/pending`, noCacheConfig),
+        axios.get(`${API_BASE}/admin/announcements`, noCacheConfig),
+        axios.get(`${API_BASE}/admin/faq`, noCacheConfig),
       ]);
 
       if (kbRes.status === 'fulfilled' && kbRes.value.data?.items) {
         setKbItems(kbRes.value.data.items);
       }
 
-      if (studentsRes.status === 'fulfilled' && studentsRes.value.data?.students) {
-        const all = studentsRes.value.data.students;
-        setAllStudents(all);
+      let all = [];
+      let pendingList = [];
 
+      if (studentsRes.status === 'fulfilled' && studentsRes.value.data?.students) {
+        all = studentsRes.value.data.students;
+        setAllStudents(all);
+      }
+
+      if (pendingRes.status === 'fulfilled' && pendingRes.value.data?.students) {
+        pendingList = pendingRes.value.data.students;
+      }
+
+      if (all.length > 0 || pendingList.length > 0) {
         // الطلاب المعلقون (Pending Registration Forms from MongoDB Atlas)
-        const p = all.filter(
+        const p = pendingList.length > 0 ? pendingList : all.filter(
           (s) =>
             s.role !== 'admin' &&
             !s.isAdmin &&
@@ -128,6 +157,7 @@ export default function AdminDashboard() {
         setAnnouncements(annRes.value.data);
       }
     } catch (e) {
+      console.warn('Dashboard live sync note:', e.message);
       fallbackToLocalStorage();
     }
   };

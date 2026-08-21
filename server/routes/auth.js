@@ -154,17 +154,19 @@ router.post(['/register', '/survey'], async (req, res) => {
       existingUser.isAdmin = false;
       existingUser.role = 'user';
 
-      await existingUser.save();
+      const savedUser = await existingUser.save();
+      console.log("New student registration created:", savedUser);
 
       Promise.allSettled([
-        sendWelcomeEmail(existingUser),
-        sendRegistrationSMS(existingUser),
+        sendWelcomeEmail(savedUser),
+        sendRegistrationSMS(savedUser),
       ]).catch((err) => console.error('Notification dispatch note:', err.message));
 
+      res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
       return res.status(200).json({
         success: true,
         message: 'تم استلام وتحديث استمارة طلب التسجيل بنجاح! حسابك قيد المراجعة والتدقيق بواسطة إدارة الرابطة.',
-        user: existingUser,
+        user: savedUser,
       });
     }
 
@@ -197,39 +199,45 @@ router.post(['/register', '/survey'], async (req, res) => {
       role: 'user',
     });
 
-    await newUser.save();
+    const savedUser = await newUser.save();
+    console.log("New student registration created:", savedUser);
 
     // إرسال الإشعارات التلقائية (Email & SMS/WhatsApp) في الخلفية دون تعطيل الاستجابة
     Promise.allSettled([
-      sendWelcomeEmail(newUser),
-      sendRegistrationSMS(newUser),
+      sendWelcomeEmail(savedUser),
+      sendRegistrationSMS(savedUser),
     ]).then((results) => {
-      console.log(`📨 [Auto-Notification] تم إطلاق إشعارات الترحيب للطالب: ${newUser.fullName}`);
+      console.log(`📨 [Auto-Notification] تم إطلاق إشعارات الترحيب للطالب: ${savedUser.fullName}`);
     }).catch((err) => {
       console.error('Notification dispatch note:', err.message);
     });
 
     const userSafeData = {
-      _id: newUser._id,
-      fullName: newUser.fullName,
-      email: newUser.email,
-      phone: newUser.phone,
-      whatsapp: newUser.whatsapp,
-      age: newUser.age,
-      cairoAddress: newUser.cairoAddress,
-      residence: newUser.residence,
-      studentId: newUser.studentId,
-      academicId: newUser.academicId,
-      department: newUser.department,
-      academicLevel: newUser.academicLevel,
-      idDocument: newUser.idDocument,
-      idCardUrl: newUser.idCardUrl,
+      _id: savedUser._id,
+      fullName: savedUser.fullName,
+      name: savedUser.name,
+      email: savedUser.email,
+      phone: savedUser.phone,
+      whatsapp: savedUser.whatsapp,
+      age: savedUser.age,
+      cairoAddress: savedUser.cairoAddress,
+      residence: savedUser.residence,
+      studentId: savedUser.studentId,
+      academicId: savedUser.academicId,
+      department: savedUser.department,
+      academicLevel: savedUser.academicLevel,
+      academicYear: savedUser.academicYear,
+      idDocument: savedUser.idDocument,
+      idCardUrl: savedUser.idCardUrl,
       status: 'pending',
       verificationStatus: 'pending',
+      isApproved: false,
+      isAdmin: false,
       role: 'user',
-      createdAt: newUser.createdAt,
+      createdAt: savedUser.createdAt,
     };
 
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
     res.status(201).json({
       success: true,
       message: 'تم استلام طلب التسجيل بنجاح! حسابك قيد المراجعة والاعتماد من قبل إدارة الرابطة.',
@@ -239,7 +247,7 @@ router.post(['/register', '/survey'], async (req, res) => {
     console.error('❌ خطأ أثناء تسجيل الطالب:', error);
     res.status(500).json({
       success: false,
-      message: 'حدث خطأ في الخادم أثناء إرسال استمارة التسجيل.',
+      message: 'حدث خطأ في الخادم أثناء إرسال استمارة التسجيل: ' + error.message,
       error: error.message,
     });
   }

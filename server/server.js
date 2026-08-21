@@ -26,8 +26,8 @@ const io = new Server(server, {
 
 // الوسائط والـ Middlewares
 app.use(cors({ origin: '*' }));
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '50mb' }));
+app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 app.use('/uploads', express.static(path.join(__dirname, 'uploads')));
 
 // الاتصال بقاعدة بيانات MongoDB Atlas مع دعم بيئات Serverless (Vercel)
@@ -89,6 +89,22 @@ app.get('/api/students', (req, res, next) => {
 });
 app.get('/api/registrations', (req, res, next) => {
   req.url = '/students';
+  adminRoutes(req, res, next);
+});
+app.get('/api/admin/pending', (req, res, next) => {
+  req.url = '/pending';
+  adminRoutes(req, res, next);
+});
+app.get('/api/admin/users', (req, res, next) => {
+  req.url = '/users';
+  adminRoutes(req, res, next);
+});
+app.get('/api/pending', (req, res, next) => {
+  req.url = '/pending';
+  adminRoutes(req, res, next);
+});
+app.get('/api/users', (req, res, next) => {
+  req.url = '/users';
   adminRoutes(req, res, next);
 });
 app.get('/api/hard-reset-db', (req, res, next) => {

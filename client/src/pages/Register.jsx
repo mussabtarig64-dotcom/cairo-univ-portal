@@ -146,14 +146,10 @@ export default function Register() {
     setTouched(touchedAll);
 
     // التحقق من أن جميع الحقول صالحة
-    const hasErrors = allFields.some((f) => !!getFieldError(f)) || !formData.idDocument;
+    const hasErrors = allFields.some((f) => !!getFieldError(f));
 
     if (hasErrors) {
-      if (!formData.idDocument) {
-        setError('إثبات الهوية إلزامي! يرجى رفع صورة من (جواز السفر / الرقم الوطني / بطاقة الكلية).');
-      } else {
-        setError('يرجى مراجعة وتصحيح الحقول المحددة باللون الأحمر قبل إرسال الاستمارة.');
-      }
+      setError('يرجى مراجعة وتصحيح الحقول المحددة باللون الأحمر قبل إرسال الاستمارة.');
       return;
     }
 
@@ -176,8 +172,8 @@ export default function Register() {
         department: formData.department,
         academicLevel: formData.academicYear,
         academicYear: formData.academicYear,
-        idDocument: formData.idDocument,
-        idCardUrl: formData.idDocument,
+        idDocument: formData.idDocument || '',
+        idCardUrl: formData.idDocument || '',
         email: formData.email.trim().toLowerCase(),
         password: formData.password,
         role: 'user',
@@ -196,7 +192,7 @@ export default function Register() {
         setError(res?.message || 'حدث خطأ أثناء إرسال استمارة التسجيل.');
       }
     } catch (err) {
-      setError('حدث خطأ في النظام أثناء إرسال البيانات. يرجى المحاولة لاحقاً.');
+      setError(err?.response?.data?.message || 'حدث خطأ في النظام أثناء إرسال البيانات. يرجى المحاولة لاحقاً.');
     } finally {
       setLoading(false);
     }
@@ -501,20 +497,20 @@ export default function Register() {
               </div>
             </div>
 
-            {/* 3. القسم الثالث: إثبات الهوية الإلزامي */}
+            {/* 3. القسم الثالث: إثبات الهوية */}
             <div style={sectionStyle(activeTheme)}>
               <div style={sectionHeaderStyle(activeTheme)}>
                 <ShieldCheck size={18} color={activeTheme.accentLight} />
-                <span>3. إثبات الهوية الإلزامي (Mandatory Identity Verification)</span>
+                <span>3. إثبات الهوية والتحقق الأكاديمي (اختياري / مستحسن)</span>
               </div>
 
               <p style={{ color: activeTheme.textMuted, fontSize: '12px', margin: '0 0 14px', lineHeight: '1.6' }}>
-                يلزم رفع صورة واضحة لوثيقة إثبات الهوية (جواز السفر، أو بطاقة الرقم الوطني السوداني، أو بطاقة الكلية / كارنيه الجامعة) لتدقيق الطلب واعتماد العضوية.
+                يمكنك رفع صورة لوثيقة إثبات الهوية (جواز السفر، أو بطاقة الرقم الوطني، أو بطاقة الكلية / كارنيه الجامعة) لتسريع تدقيق الطلب واعتماد العضوية.
               </p>
 
               <div
                 style={{
-                  border: `2px dashed ${formData.idDocument ? '#22c55e' : '#f59e0b'}`,
+                  border: `2px dashed ${formData.idDocument ? '#22c55e' : activeTheme.border}`,
                   borderRadius: '16px',
                   padding: '24px 16px',
                   textAlign: 'center',
@@ -529,7 +525,6 @@ export default function Register() {
                 <input
                   type="file"
                   accept="image/*,application/pdf"
-                  required={!formData.idDocument}
                   onChange={handleFileUpload}
                   style={{
                     position: 'absolute',
@@ -561,7 +556,7 @@ export default function Register() {
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
                     <Upload size={32} color={activeTheme.accentLight} />
                     <div style={{ color: activeTheme.textMain, fontWeight: 'bold', fontSize: '14px' }}>
-                      اضغط هنا لرفع صورة جواز السفر أو بطاقة الهوية / الكلية *
+                      اضغط هنا لرفع صورة جواز السفر أو بطاقة الهوية / الكلية (اختياري)
                     </div>
                     <div style={{ color: activeTheme.textMuted, fontSize: '11px' }}>
                       يقبل الصور (JPG, PNG) وملفات PDF بحد أقصى 5MB
