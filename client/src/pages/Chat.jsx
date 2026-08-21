@@ -22,7 +22,10 @@ import {
 
 let socket = null;
 try {
-  socket = io(import.meta.env.VITE_API_URL || 'http://localhost:5000', { reconnectionAttempts: 3 });
+  const socketUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
+  if (socketUrl) {
+    socket = io(socketUrl, { reconnectionAttempts: 3 });
+  }
 } catch (e) {
   console.log('Socket init note:', e.message);
 }

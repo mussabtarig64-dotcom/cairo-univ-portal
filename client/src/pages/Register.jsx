@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../config/api';
 import {
   User,
   Mail,
@@ -179,9 +181,11 @@ export default function Register() {
         role: 'user',
         status: 'pending',
         verificationStatus: 'pending',
+        isApproved: false,
       };
 
-      const res = await register(surveyPayload);
+      // إرسال الطلب مباشرة إلى المسار النسبي للإنتاج والسيرفر
+      let res = await register(surveyPayload);
 
       if (res && res.success) {
         setIsSuccess(true);
@@ -192,6 +196,7 @@ export default function Register() {
         setError(res?.message || 'حدث خطأ أثناء إرسال استمارة التسجيل.');
       }
     } catch (err) {
+      console.error('Submission error:', err);
       setError(err?.response?.data?.message || 'حدث خطأ في النظام أثناء إرسال البيانات. يرجى المحاولة لاحقاً.');
     } finally {
       setLoading(false);

@@ -74,47 +74,9 @@ app.use('/api/rooms', roomsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/payments', paymentsRoutes);
 
-// مسارات مباشرة متوافقة (Direct API Aliases)
-app.post('/api/register', (req, res, next) => {
-  req.url = '/register';
-  authRoutes(req, res, next);
-});
-app.post('/api/survey', (req, res, next) => {
-  req.url = '/survey';
-  authRoutes(req, res, next);
-});
-app.get('/api/students', (req, res, next) => {
-  req.url = '/students';
-  adminRoutes(req, res, next);
-});
-app.get('/api/registrations', (req, res, next) => {
-  req.url = '/students';
-  adminRoutes(req, res, next);
-});
-app.get('/api/admin/pending', (req, res, next) => {
-  req.url = '/pending';
-  adminRoutes(req, res, next);
-});
-app.get('/api/admin/users', (req, res, next) => {
-  req.url = '/users';
-  adminRoutes(req, res, next);
-});
-app.get('/api/pending', (req, res, next) => {
-  req.url = '/pending';
-  adminRoutes(req, res, next);
-});
-app.get('/api/users', (req, res, next) => {
-  req.url = '/users';
-  adminRoutes(req, res, next);
-});
-app.get('/api/hard-reset-db', (req, res, next) => {
-  req.url = '/hard-reset-db';
-  adminRoutes(req, res, next);
-});
-app.get('/api/admin/hard-reset-db', (req, res, next) => {
-  req.url = '/hard-reset-db';
-  adminRoutes(req, res, next);
-});
+// ربط المسارات المباشرة على /api لدعم المسارات النسبية في بيئات الإنتاج (Direct API Mounts)
+app.use('/api', authRoutes);
+app.use('/api', adminRoutes);
 
 
 // مسار تنظيف قاعدة البيانات وتهيئة حساب الأدمن الوحيد (Reset Database Endpoint)

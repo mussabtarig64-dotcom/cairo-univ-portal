@@ -134,14 +134,19 @@ export function AuthProvider({ children }) {
       // إرسال POST مباشر إلى نقطة التسجيل المركزية
       let res;
       try {
-        res = await axios.post(`${API_BASE}/auth/register`, surveyData, {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      } catch (postErr) {
-        // تجربة المسار البديل /api/register أو /api/survey
         res = await axios.post(`${API_BASE}/register`, surveyData, {
           headers: { 'Content-Type': 'application/json' },
         });
+      } catch (postErr) {
+        try {
+          res = await axios.post(`${API_BASE}/auth/register`, surveyData, {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        } catch (authErr) {
+          res = await axios.post('/api/register', surveyData, {
+            headers: { 'Content-Type': 'application/json' },
+          });
+        }
       }
 
       if (res.data && res.data.success) {

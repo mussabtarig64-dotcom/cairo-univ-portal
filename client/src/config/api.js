@@ -1,4 +1,9 @@
-export const BACKEND_URL = import.meta.env.VITE_API_URL || '';
+// عنوان الواجهة البرمجية الأساسي (Dynamic API Base URL)
 export const API_BASE =
   import.meta.env.VITE_API_BASE_URL ||
   (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api');
+
+export const BACKEND_URL =
+  import.meta.env.VITE_API_URL ||
+  (typeof window !== 'undefined' ? window.location.origin : '');
+
