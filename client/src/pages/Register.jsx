@@ -197,7 +197,7 @@ export default function Register() {
       }
     } catch (err) {
       console.error('Submission error:', err);
-      setError(err?.response?.data?.message || 'حدث خطأ في النظام أثناء إرسال البيانات. يرجى المحاولة لاحقاً.');
+      setError(err?.response?.data?.error || err?.response?.data?.message || err?.message || 'حدث خطأ في النظام أثناء إرسال البيانات. يرجى المحاولة لاحقاً.');
     } finally {
       setLoading(false);
     }

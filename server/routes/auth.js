@@ -6,16 +6,25 @@ const User = require('../models/User');
 const { sendWelcomeEmail } = require('../utils/emailService');
 const { sendRegistrationSMS } = require('../utils/smsService');
 
-// إعداد Multer في الذاكرة لبيئات Serverless و Vercel لمنع أي كتابة على القرص
+const JWT_SECRET = process.env.JWT_SECRET || 'ssa_default_fallback_jwt_secret_key_2026';
+
+// إعداد Multer في الذاكرة لبيئات Serverless و Vercel لمنع أي كتابة على القرص وتجنب تجاوز حد الـ 4.5MB
 const memoryUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 4.5 * 1024 * 1024 },
 });
 
 const handleMemoryUpload = (req, res, next) => {
   memoryUpload.any()(req, res, (err) => {
     if (err) {
-      console.warn('Memory upload note:', err.message);
+      console.error('Memory upload error:', err.message, err.stack);
+      return res.status(400).json({
+        success: false,
+        message: err.code === 'LIMIT_FILE_SIZE' 
+          ? 'حجم الملف كبير جداً. الحد الأقصى المسموح به هو 4.5 ميجابايت لتفادي مشاكل الخادم.'
+          : `خطأ في رفع الملف: ${err.message}`,
+        error: err.message
+      });
     }
     next();
   });

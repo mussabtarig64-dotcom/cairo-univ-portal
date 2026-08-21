@@ -38,8 +38,8 @@ try {
 
 // الاتصال بقاعدة بيانات MongoDB Atlas مع دعم بيئات Serverless (Vercel)
 const MONGO_URI =
-  process.env.MONGO_URI ||
   process.env.MONGODB_URI ||
+  process.env.MONGO_URI ||
   'mongodb+srv://mussabtarig64_db_user:Sezar123456@cluster0.xier0a3.mongodb.net/cairo_univ_db';
 
 let cached = global.mongoose;

@@ -7,12 +7,12 @@ const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { sendPaymentStatusEmail } = require('../utils/emailService');
 
-// إعداد Multer لتخزين الملفات في الذاكرة (Serverless-Safe Memory Storage)
+// إعداد Multer لتخزين الملفات في الذاكرة (Serverless-Safe Memory Storage) وتجنب تجاوز حد الـ 4.5MB
 const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 10 * 1024 * 1024 }, // 10MB limit
+  limits: { fileSize: 4.5 * 1024 * 1024 }, // 4.5MB limit
   fileFilter: (req, file, cb) => {
     if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
       cb(null, true);
@@ -27,7 +27,14 @@ const upload = multer({
 router.post('/', (req, res, next) => {
   upload.single('receiptFile')(req, res, (err) => {
     if (err) {
-      console.warn('Multer memory upload warning:', err.message);
+      console.error('Multer memory upload error:', err.message, err.stack);
+      return res.status(400).json({
+        success: false,
+        message: err.code === 'LIMIT_FILE_SIZE' 
+          ? 'حجم ملف الإيصال كبير جداً. الحد الأقصى المسموح به هو 4.5 ميجابايت.'
+          : `خطأ في رفع ملف الإيصال: ${err.message}`,
+        error: err.message
+      });
     }
     next();
   });

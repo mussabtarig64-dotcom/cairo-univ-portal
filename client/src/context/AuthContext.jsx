@@ -174,7 +174,7 @@ export function AuthProvider({ children }) {
       }
     } catch (err) {
       console.error('Registration API Error:', err.response?.data || err.message);
-      const serverMessage = err.response?.data?.message || err.message;
+      const serverMessage = err.response?.data?.error || err.response?.data?.message || err.message;
 
       // إذا كانت المشكلة هي أن البريد مسجل مسبقاً، لا نزيف النجاح
       if (err.response?.status === 400 && serverMessage.includes('مسجل بالفعل')) {
