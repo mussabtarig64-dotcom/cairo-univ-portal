@@ -123,6 +123,14 @@ const userSchema = new mongoose.Schema(
       enum: ['pending', 'verified', 'approved', 'rejected'],
       default: 'pending',
     },
+    isApproved: {
+      type: Boolean,
+      default: false,
+    },
+    isAdmin: {
+      type: Boolean,
+      default: false,
+    },
     role: {
       type: String,
       enum: ['user', 'admin', 'student'],
@@ -180,12 +188,23 @@ userSchema.pre('save', function () {
   if (this.role === 'student') {
     this.role = 'user';
   }
-  if (this.verificationStatus === 'approved') {
-    this.verificationStatus = 'verified';
+  if (this.role === 'admin') {
+    this.isAdmin = true;
+    this.isApproved = true;
     this.status = 'approved';
-  }
-  if (this.status === 'approved') {
     this.verificationStatus = 'verified';
+  } else if (this.status === 'approved' || this.verificationStatus === 'verified' || this.verificationStatus === 'approved') {
+    this.isApproved = true;
+    this.status = 'approved';
+    this.verificationStatus = 'verified';
+  } else if (this.status === 'rejected' || this.verificationStatus === 'rejected') {
+    this.isApproved = false;
+    this.status = 'rejected';
+    this.verificationStatus = 'rejected';
+  } else {
+    this.isApproved = false;
+    this.status = 'pending';
+    this.verificationStatus = 'pending';
   }
 });
 

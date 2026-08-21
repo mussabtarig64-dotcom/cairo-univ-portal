@@ -80,24 +80,29 @@ export default function AdminDashboard() {
         const all = studentsRes.value.data.students;
         setAllStudents(all);
 
-        // الطلاب المعلقون (Pending Registration Forms)
+        // الطلاب المعلقون (Pending Registration Forms from MongoDB Atlas)
         const p = all.filter(
           (s) =>
             s.role !== 'admin' &&
-            (s.verificationStatus === 'pending' ||
+            !s.isAdmin &&
+            (s.isApproved === false ||
+              s.verificationStatus === 'pending' ||
               s.status === 'pending' ||
-              (!s.verificationStatus && !s.status) ||
-              (s.verificationStatus !== 'verified' &&
-                s.verificationStatus !== 'approved' &&
-                s.status !== 'approved' &&
-                s.verificationStatus !== 'rejected' &&
-                s.status !== 'rejected'))
+              (!s.verificationStatus && !s.status)) &&
+            s.verificationStatus !== 'rejected' &&
+            s.status !== 'rejected' &&
+            s.verificationStatus !== 'verified' &&
+            s.verificationStatus !== 'approved' &&
+            s.status !== 'approved'
         );
 
         // الطلاب المعتمدون (Approved)
         const a = all.filter(
           (s) =>
-            (s.verificationStatus === 'verified' || s.verificationStatus === 'approved' || s.status === 'approved') &&
+            (s.isApproved === true ||
+              s.verificationStatus === 'verified' ||
+              s.verificationStatus === 'approved' ||
+              s.status === 'approved') &&
             s.verificationStatus !== 'rejected' &&
             s.status !== 'rejected'
         );
@@ -105,35 +110,16 @@ export default function AdminDashboard() {
         // الحسابات المرفوضة (Rejected)
         const r = all.filter((s) => s.verificationStatus === 'rejected' || s.status === 'rejected');
 
-        // مزامنة التخزين المحلي فوراً مع السيرفر لضمان تطابق البيانات
+        // تحديث التخزين المحلي ليكون مطابقاً بدقة لقاعدة بيانات MongoDB المركزية
         try {
-          const localPending = JSON.parse(localStorage.getItem('pending_users') || '[]');
-          const serverEmails = new Set(all.map((s) => s.email?.toLowerCase()).filter(Boolean));
-          const extraPending = localPending.filter((lp) => lp.email && !serverEmails.has(lp.email.toLowerCase()));
-          const mergedPending = [...p, ...extraPending];
+          localStorage.setItem('pending_users', JSON.stringify(p));
+          localStorage.setItem('approved_users', JSON.stringify(a));
+          localStorage.setItem('rejected_users', JSON.stringify(r));
+        } catch (e) {}
 
-          const localApproved = JSON.parse(localStorage.getItem('approved_users') || '[]');
-          const approvedEmails = new Set(a.map((s) => s.email?.toLowerCase()).filter(Boolean));
-          const rejectedEmails = new Set(r.map((s) => s.email?.toLowerCase()).filter(Boolean));
-          const extraApproved = localApproved.filter(
-            (la) => la.email && !approvedEmails.has(la.email.toLowerCase()) && !rejectedEmails.has(la.email.toLowerCase())
-          );
-          const mergedApproved = [...a, ...extraApproved];
-
-          const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
-          const extraRejected = localRejected.filter(
-            (lr) => lr.email && !rejectedEmails.has(lr.email.toLowerCase()) && !approvedEmails.has(lr.email.toLowerCase())
-          );
-          const mergedRejected = [...r, ...extraRejected];
-
-          setPendingUsers(mergedPending);
-          setApprovedUsers(mergedApproved);
-          setRejectedUsers(mergedRejected);
-        } catch (syncErr) {
-          setPendingUsers(p);
-          setApprovedUsers(a);
-          setRejectedUsers(r);
-        }
+        setPendingUsers(p);
+        setApprovedUsers(a);
+        setRejectedUsers(r);
       } else {
         fallbackToLocalStorage();
       }

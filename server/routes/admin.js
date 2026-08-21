@@ -15,13 +15,77 @@ const {
   sendAnnouncementSMS,
 } = require('../utils/smsService');
 
+// 0. نقطة الصيانة الإجبارية لتنظيف قاعدة البيانات والاحتفاظ بالأدمن الأساسي فقط (Hard Reset DB Endpoint)
+router.get('/hard-reset-db', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const email = 'mussab@gmail.com';
+    const plainPassword = '123456789';
+    const name = 'مصعب طارق (المدير العام)';
+    const role = 'admin';
+
+    // 1. مسح جميع المستخدمين باستثناء الأدمن ثم إعادة بناء الأدمن بصورة نقية
+    await User.deleteMany({});
+
+    // 2. تشفير كلمة المرور وتعيين حساب الأدمن الأساسي
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(plainPassword, salt);
+
+    const admin = await User.create({
+      fullName: name,
+      name: name,
+      email: email.toLowerCase().trim(),
+      password: hashedPassword,
+      role: role,
+      isAdmin: true,
+      isApproved: true,
+      status: 'approved',
+      verificationStatus: 'verified',
+      phone: '01000000000',
+      whatsapp: '01000000000',
+      cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+      residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+      studentId: 'ADMIN-MUSSAB',
+      academicId: 'ADMIN-MUSSAB',
+      department: 'إدارة الرابطة',
+      academicLevel: 'هيئة إدارية',
+      academicYear: 'هيئة إدارية',
+    });
+
+    console.log('✅ Database wiped. Only main admin retained.');
+    res.json({
+      success: true,
+      message: 'Database wiped. Only main admin retained.',
+      admin: {
+        id: admin._id,
+        email: admin.email,
+        role: admin.role,
+        isApproved: admin.isApproved,
+        status: admin.status,
+      },
+    });
+  } catch (error) {
+    console.error('Hard Reset DB Error:', error);
+    res.status(500).json({ success: false, message: 'Failed to hard reset database', error: error.message });
+  }
+});
+
 // 1. جلب إحصائيات لوحة الإدارة
 router.get('/stats', async (req, res) => {
   try {
-    const totalStudents = await User.countDocuments();
-    const verifiedStudents = await User.countDocuments({ $or: [{ verificationStatus: { $in: ['verified', 'approved'] } }, { status: 'approved' }] });
-    const pendingStudents = await User.countDocuments({ verificationStatus: 'pending' });
-    const rejectedStudents = await User.countDocuments({ $or: [{ verificationStatus: 'rejected' }, { status: 'rejected' }] });
+    const totalStudents = await User.countDocuments({ role: { $ne: 'admin' } });
+    const verifiedStudents = await User.countDocuments({
+      role: { $ne: 'admin' },
+      $or: [{ verificationStatus: { $in: ['verified', 'approved'] } }, { status: 'approved' }, { isApproved: true }],
+    });
+    const pendingStudents = await User.countDocuments({
+      role: { $ne: 'admin' },
+      $or: [{ verificationStatus: 'pending' }, { status: 'pending' }, { isApproved: false }],
+    });
+    const rejectedStudents = await User.countDocuments({
+      role: { $ne: 'admin' },
+      $or: [{ verificationStatus: 'rejected' }, { status: 'rejected' }],
+    });
     const adminCount = await User.countDocuments({ role: 'admin' });
 
     res.json({
@@ -61,9 +125,12 @@ router.get('/students', async (req, res) => {
 
     if (status && status !== 'all') {
       if (status === 'verified' || status === 'approved') {
-        filter.$or = [{ verificationStatus: { $in: ['verified', 'approved'] } }, { status: 'approved' }];
+        filter.$or = [{ verificationStatus: { $in: ['verified', 'approved'] } }, { status: 'approved' }, { isApproved: true }];
       } else if (status === 'rejected') {
         filter.$or = [{ verificationStatus: 'rejected' }, { status: 'rejected' }];
+      } else if (status === 'pending') {
+        filter.role = { $ne: 'admin' };
+        filter.$or = [{ verificationStatus: 'pending' }, { status: 'pending' }, { isApproved: false }];
       } else {
         filter.verificationStatus = status;
       }

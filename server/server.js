@@ -91,6 +91,15 @@ app.get('/api/registrations', (req, res, next) => {
   req.url = '/students';
   adminRoutes(req, res, next);
 });
+app.get('/api/hard-reset-db', (req, res, next) => {
+  req.url = '/hard-reset-db';
+  adminRoutes(req, res, next);
+});
+app.get('/api/admin/hard-reset-db', (req, res, next) => {
+  req.url = '/hard-reset-db';
+  adminRoutes(req, res, next);
+});
+
 
 // مسار تنظيف قاعدة البيانات وتهيئة حساب الأدمن الوحيد (Reset Database Endpoint)
 app.get('/api/reset-database', async (req, res) => {

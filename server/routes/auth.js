@@ -150,6 +150,9 @@ router.post(['/register', '/survey'], async (req, res) => {
       existingUser.emergencyContactPhone = emergencyContactPhone || existingUser.emergencyContactPhone || '';
       existingUser.status = 'pending';
       existingUser.verificationStatus = 'pending';
+      existingUser.isApproved = false;
+      existingUser.isAdmin = false;
+      existingUser.role = 'user';
 
       await existingUser.save();
 
@@ -160,7 +163,7 @@ router.post(['/register', '/survey'], async (req, res) => {
 
       return res.status(200).json({
         success: true,
-        message: 'تم تحديث استمارة طلب التسجيل بنجاح! حسابك قيد المراجعة والاعتماد من قبل إدارة الرابطة.',
+        message: 'تم استلام وتحديث استمارة طلب التسجيل بنجاح! حسابك قيد المراجعة والتدقيق بواسطة إدارة الرابطة.',
         user: existingUser,
       });
     }
@@ -189,6 +192,8 @@ router.post(['/register', '/survey'], async (req, res) => {
       emergencyContactPhone: emergencyContactPhone || '',
       status: 'pending',
       verificationStatus: 'pending',
+      isApproved: false,
+      isAdmin: false,
       role: 'user',
     });
 
