@@ -93,11 +93,12 @@ router.post('/', (req, res, next) => {
       payment: newPayment,
     });
   } catch (error) {
-    console.error('Payment Submission Error:', error);
+    console.error('Payment Submission Error:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'حدث خطأ في الخادم أثناء تسجيل إشعار الدفع.',
       error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 });
@@ -116,8 +117,13 @@ router.get('/my', async (req, res) => {
 
     res.json({ success: true, count: payments.length, payments });
   } catch (error) {
-    console.error('Fetch My Payments Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب سجل المدفوعات' });
+    console.error('Fetch My Payments Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب سجل المدفوعات',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -151,8 +157,13 @@ router.get('/', async (req, res) => {
 
     res.json({ success: true, count: payments.length, payments });
   } catch (error) {
-    console.error('Admin Fetch Payments Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب قائمة المدفوعات' });
+    console.error('Admin Fetch Payments Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب قائمة المدفوعات',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -196,8 +207,13 @@ router.get('/stats', async (req, res) => {
       activityStats,
     });
   } catch (error) {
-    console.error('Payment Stats Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في جلب إحصائيات المدفوعات' });
+    console.error('Payment Stats Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب إحصائيات المدفوعات',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -235,8 +251,13 @@ router.patch('/:id/status', async (req, res) => {
       emailPreview: emailResult.previewUrl || null,
     });
   } catch (error) {
-    console.error('Update Payment Status Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ في تحديث حالة الدفعة' });
+    console.error('Update Payment Status Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في تحديث حالة الدفعة',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -250,8 +271,13 @@ router.delete('/:id', async (req, res) => {
     }
     res.json({ success: true, message: 'تم حذف سجل المعاملة المالية بنجاح' });
   } catch (error) {
-    console.error('Delete Payment Error:', error);
-    res.status(500).json({ success: false, message: 'خطأ أثناء حذف المعاملة المالية' });
+    console.error('Delete Payment Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ أثناء حذف المعاملة المالية',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 

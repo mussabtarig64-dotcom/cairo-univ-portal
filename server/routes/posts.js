@@ -8,7 +8,12 @@ router.get('/', async (req, res) => {
     const posts = await Post.find().sort({ isPinned: -1, createdAt: -1 });
     res.json(posts);
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Fetch Posts Error:', err.message, err.stack);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+    });
   }
 });
 
@@ -48,7 +53,12 @@ router.post('/', async (req, res) => {
     await post.save();
     res.status(201).json({ message: 'تم نشر المنشور بنجاح', post });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Create Post Error:', err.message, err.stack);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+    });
   }
 });
 
@@ -72,7 +82,12 @@ router.post('/:id/like', async (req, res) => {
     await post.save();
     res.json({ post, isLiked });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Like Post Error:', err.message, err.stack);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+    });
   }
 });
 
@@ -97,7 +112,12 @@ router.post('/:id/comments', async (req, res) => {
     await post.save();
     res.status(201).json({ success: true, post });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Add Comment Error:', err.message, err.stack);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+    });
   }
 });
 
@@ -107,7 +127,12 @@ router.delete('/:id', async (req, res) => {
     await Post.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'تم حذف المنشور بنجاح' });
   } catch (err) {
-    res.status(500).json({ error: err.message });
+    console.error('Delete Post Error:', err.message, err.stack);
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+    });
   }
 });
 

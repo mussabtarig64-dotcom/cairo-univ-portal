@@ -26,7 +26,13 @@ router.get('/knowledge', async (req, res) => {
     const items = await KnowledgeBase.find({ isActive: true }).sort({ createdAt: -1 });
     res.json({ success: true, count: items.length, items });
   } catch (error) {
-    res.status(500).json({ success: false, message: 'خطأ في جلب عناصر قاعدة المعرفة' });
+    console.error('Fetch KB Items Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      message: 'خطأ في جلب عناصر قاعدة المعرفة',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
   }
 });
 
@@ -193,9 +199,11 @@ Guidelines:
 
     return res.json({ reply: dynamicReply });
   } catch (error) {
-    console.error('AI Route Error:', error);
+    console.error('AI Route Error:', error.message, error.stack);
     return res.json({
       reply: 'أهلاً بك يا زميلنا العزيز في كلية العلوم! 🌿\nفريق الرابطة الأكاديمي دائماً في عونك. يمكنك إعادة إرسال سؤالك وسأجيبك فوراً.',
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 });

@@ -42,35 +42,62 @@ const MONGO_URI =
   process.env.MONGODB_URI ||
   'mongodb+srv://mussabtarig64_db_user:Sezar123456@cluster0.xier0a3.mongodb.net/cairo_univ_db';
 
-let cachedConnection = null;
+let cached = global.mongoose;
+
+if (!cached) {
+  cached = global.mongoose = { conn: null, promise: null };
+}
 
 async function connectDB() {
-  if (cachedConnection && mongoose.connection.readyState === 1) {
-    return cachedConnection;
+  if (cached.conn) {
+    return cached.conn;
   }
-  try {
-    const conn = await mongoose.connect(MONGO_URI, {
+
+  if (!cached.promise) {
+    const opts = {
+      bufferCommands: false,
       serverSelectionTimeoutMS: 5000,
+    };
+
+    cached.promise = mongoose.connect(MONGO_URI, opts).then((mongooseInstance) => {
+      console.log('✅ تم الاتصال بالسجل المركزي لقاعدة البيانات MongoDB Atlas بنجاح');
+      return mongooseInstance;
+    }).catch((err) => {
+      console.error('❌ خطأ في الاتصال بقاعدة بيانات MongoDB:', err.message, err.stack);
+      cached.promise = null;
+      throw err;
     });
-    cachedConnection = conn;
-    console.log('✅ تم الاتصال بالسجل المركزي لقاعدة البيانات MongoDB Atlas بنجاح');
-    return conn;
-  } catch (err) {
-    console.error('❌ خطأ في الاتصال بقاعدة بيانات MongoDB:', err.message, err.stack);
-    return null;
   }
+  
+  try {
+    cached.conn = await cached.promise;
+  } catch (err) {
+    cached.conn = null;
+    cached.promise = null;
+    throw err;
+  }
+
+  return cached.conn;
 }
 
 // التأكد من جاهزية الاتصال بقاعدة البيانات قبل كل طلب
 app.use(async (req, res, next) => {
-  if (mongoose.connection.readyState !== 1) {
+  try {
     await connectDB();
+    next();
+  } catch (err) {
+    console.error('Database connection middleware error:', err.message, err.stack);
+    res.status(500).json({
+      success: false,
+      message: 'Database connection failed',
+      error: err.message,
+      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+    });
   }
-  next();
 });
 
 // محاولة الاتصال المبدئي
-connectDB();
+connectDB().catch(() => {});
 
 // تسجيل المسارات والـ API Endpoints
 app.use('/api/auth', authRoutes);
@@ -136,11 +163,12 @@ app.get('/api/reset-database', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Reset Database error:', error);
+    console.error('Reset Database error:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to reset database',
       error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 });
@@ -208,25 +236,35 @@ app.get('/api/setup-admin', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Setup Admin error:', error);
+    console.error('Setup Admin error:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'Failed to initialize admin account',
       error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
   }
 });
 
 // نقطة فحص صحة الخادم وقاعدة البيانات (Health Check)
 app.get('/api/health', async (req, res) => {
-  const isConnected = mongoose.connection.readyState === 1;
-  res.json({
-    status: 'online',
-    database: isConnected ? 'connected' : 'connecting_or_error',
-    readyState: mongoose.connection.readyState,
-    portal: 'رابطة الطلاب السودانيين - كلية العلوم - جامعة القاهرة (SSA-FS-CU)',
-    timestamp: new Date().toISOString(),
-  });
+  try {
+    const isConnected = mongoose.connection.readyState === 1;
+    res.json({
+      status: 'online',
+      database: isConnected ? 'connected' : 'connecting_or_error',
+      readyState: mongoose.connection.readyState,
+      portal: 'رابطة الطلاب السودانيين - كلية العلوم - جامعة القاهرة (SSA-FS-CU)',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    console.error('Health Check Error:', error.message, error.stack);
+    res.status(500).json({
+      success: false,
+      error: error.message,
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+    });
+  }
 });
 
 // إدارة اتصالات Socket.IO

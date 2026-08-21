@@ -8,7 +8,12 @@ router.get('/', async (req, res) => {
         const rooms = await Room.find().populate('createdBy', 'name email');
         res.json(rooms);
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Fetch Rooms Error:', err.message, err.stack);
+        res.status(500).json({
+            success: false,
+            error: err.message,
+            stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+        });
     }
 });
 
@@ -26,7 +31,12 @@ router.post('/', async (req, res) => {
         await room.save();
         res.status(201).json({ message: 'Room created successfully!', room });
     } catch (err) {
-        res.status(500).json({ error: err.message });
+        console.error('Create Room Error:', err.message, err.stack);
+        res.status(500).json({
+            success: false,
+            error: err.message,
+            stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
+        });
     }
 });
 
