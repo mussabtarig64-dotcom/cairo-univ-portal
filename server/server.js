@@ -74,6 +74,78 @@ app.use('/api/rooms', roomsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/payments', paymentsRoutes);
 
+// مسار التهيئة السريعة لحساب الأدمن (Quick Setup Admin Endpoint)
+app.get('/api/setup-admin', async (req, res) => {
+  try {
+    const bcrypt = require('bcryptjs');
+    const User = require('./models/User');
+
+    const email = 'mussab@gmail.com';
+    const plainPassword = '123456789';
+    const name = 'مصعب طارق (المدير العام)';
+    const role = 'admin';
+
+    const salt = await bcrypt.genSalt(10);
+    const hashedPassword = await bcrypt.hash(plainPassword, salt);
+
+    let user = await User.findOne({
+      email: { $regex: new RegExp(`^${email}$`, 'i') },
+    });
+
+    if (user) {
+      user.fullName = name;
+      user.name = name;
+      user.password = hashedPassword;
+      user.role = role;
+      user.status = 'approved';
+      user.verificationStatus = 'verified';
+      user.phone = user.phone || '01000000000';
+      user.studentId = user.studentId || 'ADMIN-MUSSAB';
+      user.department = user.department || 'إدارة الرابطة';
+      user.academicLevel = user.academicLevel || 'هيئة إدارية';
+      await user.save();
+    } else {
+      user = await User.create({
+        fullName: name,
+        name: name,
+        email: email.toLowerCase().trim(),
+        password: hashedPassword,
+        role: role,
+        phone: '01000000000',
+        whatsapp: '01000000000',
+        cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+        residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
+        studentId: 'ADMIN-MUSSAB',
+        academicId: 'ADMIN-MUSSAB',
+        department: 'إدارة الرابطة',
+        academicLevel: 'هيئة إدارية',
+        academicYear: 'هيئة إدارية',
+        status: 'approved',
+        verificationStatus: 'verified',
+      });
+    }
+
+    res.json({
+      success: true,
+      message: 'Admin account initialized successfully',
+      user: {
+        id: user._id,
+        email: user.email,
+        role: user.role,
+        status: user.status,
+        verificationStatus: user.verificationStatus,
+      },
+    });
+  } catch (error) {
+    console.error('Setup Admin error:', error);
+    res.status(500).json({
+      success: false,
+      message: 'Failed to initialize admin account',
+      error: error.message,
+    });
+  }
+});
+
 // نقطة فحص صحة الخادم وقاعدة البيانات (Health Check)
 app.get('/api/health', async (req, res) => {
   const isConnected = mongoose.connection.readyState === 1;
