@@ -1,9 +1,25 @@
 const express = require('express');
 const router = express.Router();
 const bcrypt = require('bcryptjs');
+const multer = require('multer');
 const User = require('../models/User');
 const { sendWelcomeEmail } = require('../utils/emailService');
 const { sendRegistrationSMS } = require('../utils/smsService');
+
+// إعداد Multer في الذاكرة لبيئات Serverless و Vercel لمنع أي كتابة على القرص
+const memoryUpload = multer({
+  storage: multer.memoryStorage(),
+  limits: { fileSize: 10 * 1024 * 1024 },
+});
+
+const handleMemoryUpload = (req, res, next) => {
+  memoryUpload.any()(req, res, (err) => {
+    if (err) {
+      console.warn('Memory upload note:', err.message);
+    }
+    next();
+  });
+};
 
 // مسار التهيئة السريعة لحساب الأدمن للطوارئ (Emergency Setup Admin Endpoint)
 router.get('/setup-admin', async (req, res) => {
@@ -75,7 +91,7 @@ router.get('/setup-admin', async (req, res) => {
 });
 
 // مسار إنشاء حساب وتسجيل طالب جديد واستبيان القيد (Register & Survey)
-router.post(['/register', '/survey'], async (req, res) => {
+router.post(['/register', '/survey'], handleMemoryUpload, async (req, res) => {
   try {
     const {
       fullName,
@@ -95,6 +111,7 @@ router.post(['/register', '/survey'], async (req, res) => {
       academicYear,
       idDocument,
       idCardUrl,
+      idCardImage,
       passportOrNationalId,
       emergencyContact,
       emergencyContactName,
@@ -119,14 +136,23 @@ router.post(['/register', '/survey'], async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(rawPassword, salt);
 
-    // تجهيز الحقول الاختيارية بقيم افتراضية آمنة تمنع أي خطأ في التحقق (Validation)
+    // معالجة ملف إثبات الهوية في الذاكرة دون كتابة على القرص
+    let uploadedDoc = '';
+    if (req.files && req.files.length > 0) {
+      const f = req.files[0];
+      uploadedDoc = `data:${f.mimetype};base64,${f.buffer.toString('base64')}`;
+    } else if (req.file) {
+      uploadedDoc = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
+    }
+
+    // تجهيز الحقول بقيم افتراضية آمنة تمنع أي خطأ في التحقق (Validation)
     const safeAge = age ? String(age).trim() : '';
     const safePhone = (phone || whatsapp || '01000000000').trim();
     const safeWhatsapp = (whatsapp || phone || safePhone).trim();
     const safeAddress = (cairoAddress || residence || 'القاهرة، مصر').trim();
     const safeDepartment = (department || 'العلوم العامة').trim();
     const safeLevel = (academicLevel || academicYear || 'المستوى الأول').trim();
-    const safeIdDoc = idDocument || idCardUrl || passportOrNationalId || '';
+    const safeIdDoc = uploadedDoc || idDocument || idCardUrl || idCardImage || passportOrNationalId || '';
     const safeEmergencyName = (emergencyContactName || emergencyContact || 'غير متوفر').trim();
     const safeEmergencyRelation = (emergencyContactRelation || 'غير محدد').trim();
     const safeEmergencyPhone = (emergencyContactPhone || 'غير متوفر').trim();

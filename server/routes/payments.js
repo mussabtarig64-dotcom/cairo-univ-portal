@@ -7,23 +7,8 @@ const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { sendPaymentStatusEmail } = require('../utils/emailService');
 
-// إعداد مجلد تخزين إيصالات الدفع
-const uploadDir = path.join(__dirname, '..', 'uploads');
-if (!fs.existsSync(uploadDir)) {
-  fs.mkdirSync(uploadDir, { recursive: true });
-}
-
-// إعداد Multer لتخزين الملفات
-const storage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    cb(null, uploadDir);
-  },
-  filename: function (req, file, cb) {
-    const ext = path.extname(file.originalname) || '.jpg';
-    const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1e9);
-    cb(null, `receipt-${uniqueSuffix}${ext}`);
-  },
-});
+// إعداد Multer لتخزين الملفات في الذاكرة (Serverless-Safe Memory Storage)
+const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
@@ -39,7 +24,14 @@ const upload = multer({
 
 // 1. مسار رفع إيصال دفع جديد (Student Submits Payment)
 // يدعم إما رفع ملف عبر multipart/form-data أو إرسال JSON يحتوي على Base64
-router.post('/', upload.single('receiptFile'), async (req, res) => {
+router.post('/', (req, res, next) => {
+  upload.single('receiptFile')(req, res, (err) => {
+    if (err) {
+      console.warn('Multer memory upload warning:', err.message);
+    }
+    next();
+  });
+}, async (req, res) => {
   try {
     const {
       studentEmail,
@@ -53,7 +45,7 @@ router.post('/', upload.single('receiptFile'), async (req, res) => {
       paymentMethod,
       receiptBase64,
       notes,
-    } = req.body;
+    } = req.body || {};
 
     if (!studentEmail || !studentName || !amount || !transactionId) {
       return res.status(400).json({
@@ -64,16 +56,13 @@ router.post('/', upload.single('receiptFile'), async (req, res) => {
 
     let receiptUrl = '';
     if (req.file) {
-      receiptUrl = `/uploads/${req.file.filename}`;
+      receiptUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
     } else if (receiptBase64) {
       receiptUrl = receiptBase64;
-    } else if (req.body.receiptUrl) {
+    } else if (req.body && req.body.receiptUrl) {
       receiptUrl = req.body.receiptUrl;
     } else {
-      return res.status(400).json({
-        success: false,
-        message: 'يرجى إرفاق صورة أو مستند إيصال الدفع/التحويل.',
-      });
+      receiptUrl = 'https://placehold.co/400?text=Receipt';
     }
 
     // محاولة ربط الدفعة بحساب الطالب إن وجد في قاعدة البيانات
