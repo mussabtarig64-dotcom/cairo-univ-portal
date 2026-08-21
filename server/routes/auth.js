@@ -74,8 +74,8 @@ router.get('/setup-admin', async (req, res) => {
   }
 });
 
-// مسار إنشاء حساب وتسجيل طالب جديد واستبيان القيد (Register)
-router.post('/register', async (req, res) => {
+// مسار إنشاء حساب وتسجيل طالب جديد واستبيان القيد (Register & Survey)
+router.post(['/register', '/survey'], async (req, res) => {
   try {
     const {
       fullName,
@@ -113,18 +113,57 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // فحص ما إذا كان المستخدم مسجلاً مسبقاً
-    const existingUser = await User.findOne({ email: cleanEmail });
-    if (existingUser) {
-      return res.status(400).json({
-        success: false,
-        message: 'البريد الإلكتروني مسجل بالفعل في قاعدة بيانات الرابطة.',
-      });
-    }
-
     // تشفير كلمة المرور
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(password, salt);
+
+    // فحص ما إذا كان المستخدم مسجلاً مسبقاً
+    const existingUser = await User.findOne({ email: cleanEmail });
+    if (existingUser) {
+      if (existingUser.role === 'admin') {
+        return res.status(400).json({
+          success: false,
+          message: 'البريد الإلكتروني مسجل بالفعل كحساب إدارة في قاعدة بيانات الرابطة.',
+        });
+      }
+
+      // تحديث بيانات الاستمارة وإعادة وضع الحساب في حالة قيد المراجعة (Pending)
+      existingUser.fullName = studentName;
+      existingUser.name = studentName;
+      existingUser.password = hashedPassword;
+      existingUser.age = age || existingUser.age || '';
+      existingUser.phone = phone || existingUser.phone || '';
+      existingUser.whatsapp = whatsapp || phone || existingUser.whatsapp || '';
+      existingUser.cairoAddress = cairoAddress || residence || existingUser.cairoAddress || 'القاهرة، مصر';
+      existingUser.residence = residence || cairoAddress || existingUser.residence || 'القاهرة، مصر';
+      existingUser.studentId = sid;
+      existingUser.academicId = sid;
+      existingUser.department = department || existingUser.department || 'العلوم العامة';
+      existingUser.academicLevel = academicLevel || academicYear || existingUser.academicLevel || 'المستوى الأول';
+      existingUser.academicYear = academicYear || academicLevel || existingUser.academicYear || 'المستوى الأول';
+      existingUser.idDocument = idDocument || idCardUrl || passportOrNationalId || existingUser.idDocument || '';
+      existingUser.idCardUrl = idCardUrl || idDocument || passportOrNationalId || existingUser.idCardUrl || '';
+      existingUser.passportOrNationalId = passportOrNationalId || existingUser.passportOrNationalId || '';
+      existingUser.emergencyContact = emergencyContact || emergencyContactName || existingUser.emergencyContact || '';
+      existingUser.emergencyContactName = emergencyContactName || emergencyContact || existingUser.emergencyContactName || '';
+      existingUser.emergencyContactRelation = emergencyContactRelation || existingUser.emergencyContactRelation || '';
+      existingUser.emergencyContactPhone = emergencyContactPhone || existingUser.emergencyContactPhone || '';
+      existingUser.status = 'pending';
+      existingUser.verificationStatus = 'pending';
+
+      await existingUser.save();
+
+      Promise.allSettled([
+        sendWelcomeEmail(existingUser),
+        sendRegistrationSMS(existingUser),
+      ]).catch((err) => console.error('Notification dispatch note:', err.message));
+
+      return res.status(200).json({
+        success: true,
+        message: 'تم تحديث استمارة طلب التسجيل بنجاح! حسابك قيد المراجعة والاعتماد من قبل إدارة الرابطة.',
+        user: existingUser,
+      });
+    }
 
     const newUser = new User({
       fullName: studentName,
@@ -141,8 +180,8 @@ router.post('/register', async (req, res) => {
       department: department || 'العلوم العامة',
       academicLevel: academicLevel || academicYear || 'المستوى الأول',
       academicYear: academicYear || academicLevel || 'المستوى الأول',
-      idDocument: idDocument || idCardUrl || '',
-      idCardUrl: idCardUrl || idDocument || '',
+      idDocument: idDocument || idCardUrl || passportOrNationalId || '',
+      idCardUrl: idCardUrl || idDocument || passportOrNationalId || '',
       passportOrNationalId: passportOrNationalId || '',
       emergencyContact: emergencyContact || emergencyContactName || '',
       emergencyContactName: emergencyContactName || emergencyContact || '',

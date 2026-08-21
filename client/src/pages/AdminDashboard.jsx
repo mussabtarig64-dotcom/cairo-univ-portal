@@ -39,9 +39,11 @@ export default function AdminDashboard() {
   const { user, updateUserRole } = useAuth();
 
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'themes' | 'announcements' | 'kb' | 'analytics'
+  const [allStudents, setAllStudents] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [approvedUsers, setApprovedUsers] = useState([]);
   const [rejectedUsers, setRejectedUsers] = useState([]);
+  const [registrationSubFilter, setRegistrationSubFilter] = useState('all'); // 'all' | 'pending' | 'approved'
   const [announcements, setAnnouncements] = useState([]);
   const [kbItems, setKbItems] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
@@ -76,46 +78,55 @@ export default function AdminDashboard() {
 
       if (studentsRes.status === 'fulfilled' && studentsRes.value.data?.students) {
         const all = studentsRes.value.data.students;
-        const p = all.filter((s) => s.verificationStatus === 'pending');
+        setAllStudents(all);
+
+        // الطلاب المعلقون (Pending Registration Forms)
+        const p = all.filter(
+          (s) =>
+            s.role !== 'admin' &&
+            (s.verificationStatus === 'pending' ||
+              s.status === 'pending' ||
+              (!s.verificationStatus && !s.status) ||
+              (s.verificationStatus !== 'verified' &&
+                s.verificationStatus !== 'approved' &&
+                s.status !== 'approved' &&
+                s.verificationStatus !== 'rejected' &&
+                s.status !== 'rejected'))
+        );
+
+        // الطلاب المعتمدون (Approved)
         const a = all.filter(
           (s) =>
             (s.verificationStatus === 'verified' || s.verificationStatus === 'approved' || s.status === 'approved') &&
             s.verificationStatus !== 'rejected' &&
             s.status !== 'rejected'
         );
+
+        // الحسابات المرفوضة (Rejected)
         const r = all.filter((s) => s.verificationStatus === 'rejected' || s.status === 'rejected');
 
         // مزامنة التخزين المحلي فوراً مع السيرفر لضمان تطابق البيانات
         try {
           const localPending = JSON.parse(localStorage.getItem('pending_users') || '[]');
-          const approvedEmails = new Set(a.map((s) => s.email?.toLowerCase()).filter(Boolean));
-          const rejectedEmails = new Set(r.map((s) => s.email?.toLowerCase()).filter(Boolean));
-
-          // إزالة أي طالب تم اعتماده أو رفضه من قائمة المعلقين محلياً
-          const cleanLocalPending = localPending.filter(
-            (lp) => !approvedEmails.has(lp.email?.toLowerCase()) && !rejectedEmails.has(lp.email?.toLowerCase())
-          );
-          localStorage.setItem('pending_users', JSON.stringify(cleanLocalPending));
+          const serverEmails = new Set(all.map((s) => s.email?.toLowerCase()).filter(Boolean));
+          const extraPending = localPending.filter((lp) => lp.email && !serverEmails.has(lp.email.toLowerCase()));
+          const mergedPending = [...p, ...extraPending];
 
           const localApproved = JSON.parse(localStorage.getItem('approved_users') || '[]');
-          const mergedApproved = [...a];
-          localApproved.forEach((la) => {
-            if (la.email && !approvedEmails.has(la.email.toLowerCase()) && !rejectedEmails.has(la.email.toLowerCase())) {
-              mergedApproved.push(la);
-            }
-          });
-          localStorage.setItem('approved_users', JSON.stringify(mergedApproved));
+          const approvedEmails = new Set(a.map((s) => s.email?.toLowerCase()).filter(Boolean));
+          const rejectedEmails = new Set(r.map((s) => s.email?.toLowerCase()).filter(Boolean));
+          const extraApproved = localApproved.filter(
+            (la) => la.email && !approvedEmails.has(la.email.toLowerCase()) && !rejectedEmails.has(la.email.toLowerCase())
+          );
+          const mergedApproved = [...a, ...extraApproved];
 
           const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
-          const mergedRejected = [...r];
-          localRejected.forEach((lr) => {
-            if (lr.email && !rejectedEmails.has(lr.email.toLowerCase()) && !approvedEmails.has(lr.email.toLowerCase())) {
-              mergedRejected.push(lr);
-            }
-          });
-          localStorage.setItem('rejected_users', JSON.stringify(mergedRejected));
+          const extraRejected = localRejected.filter(
+            (lr) => lr.email && !rejectedEmails.has(lr.email.toLowerCase()) && !approvedEmails.has(lr.email.toLowerCase())
+          );
+          const mergedRejected = [...r, ...extraRejected];
 
-          setPendingUsers(p);
+          setPendingUsers(mergedPending);
           setApprovedUsers(mergedApproved);
           setRejectedUsers(mergedRejected);
         } catch (syncErr) {
@@ -373,32 +384,48 @@ export default function AdminDashboard() {
     localStorage.setItem('ssa_announcements', JSON.stringify(updated));
   };
 
-  // تصفية نتائج البحث
-  const filteredPending = pendingUsers.filter(
+  // تصفية نتائج البحث واستمارات التسجيل
+  const allRegistrationsList = [
+    ...pendingUsers,
+    ...approvedUsers.filter((u) => u.role !== 'admin'),
+    ...rejectedUsers,
+  ];
+
+  const displayedRegistrations =
+    registrationSubFilter === 'pending'
+      ? pendingUsers
+      : registrationSubFilter === 'approved'
+      ? approvedUsers.filter((u) => u.role !== 'admin')
+      : allRegistrationsList;
+
+  const filteredPending = displayedRegistrations.filter(
     (u) =>
-      u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.studentId?.includes(searchTerm) ||
-      u.phone?.includes(searchTerm) ||
-      u.cairoAddress?.includes(searchTerm)
+      (u.fullName || u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.studentId || u.academicId || '').includes(searchTerm) ||
+      (u.phone || u.whatsapp || '').includes(searchTerm) ||
+      (u.cairoAddress || u.residence || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredApproved = approvedUsers.filter(
     (u) =>
-      u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.studentId?.includes(searchTerm) ||
-      u.phone?.includes(searchTerm) ||
-      u.cairoAddress?.includes(searchTerm)
+      (u.fullName || u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.studentId || u.academicId || '').includes(searchTerm) ||
+      (u.phone || u.whatsapp || '').includes(searchTerm) ||
+      (u.cairoAddress || u.residence || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const filteredRejected = rejectedUsers.filter(
     (u) =>
-      u.fullName?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      u.studentId?.includes(searchTerm) ||
-      u.phone?.includes(searchTerm) ||
-      u.cairoAddress?.includes(searchTerm)
+      (u.fullName || u.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.email || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.studentId || u.academicId || '').includes(searchTerm) ||
+      (u.phone || u.whatsapp || '').includes(searchTerm) ||
+      (u.cairoAddress || u.residence || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (u.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
 
   const handleSaveKb = async (e) => {
@@ -1098,154 +1125,274 @@ export default function AdminDashboard() {
       {/* 1. تبويب طلبات التسجيل المعلقة واستبيان الهوية */}
       {activeTab === 'pending' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
+          {/* فلتر العرض الفرعي للطلبات */}
+          <div
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'space-between',
+              flexWrap: 'wrap',
+              gap: '12px',
+              background: activeTheme.bgCard,
+              border: `1px solid ${activeTheme.border}`,
+              padding: '12px 18px',
+              borderRadius: '14px',
+            }}
+          >
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+              <button
+                onClick={() => setRegistrationSubFilter('all')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  border: `1px solid ${registrationSubFilter === 'all' ? activeTheme.accent : activeTheme.border}`,
+                  background: registrationSubFilter === 'all' ? activeTheme.primary : 'rgba(0,0,0,0.2)',
+                  color: registrationSubFilter === 'all' && !activeTheme.isDark ? '#0b1622' : '#ffffff',
+                }}
+              >
+                جميع استمارات واستبيانات التسجيل ({allRegistrationsList.length})
+              </button>
+
+              <button
+                onClick={() => setRegistrationSubFilter('pending')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  border: `1px solid ${registrationSubFilter === 'pending' ? '#eab308' : activeTheme.border}`,
+                  background: registrationSubFilter === 'pending' ? 'rgba(234, 179, 8, 0.25)' : 'rgba(0,0,0,0.2)',
+                  color: registrationSubFilter === 'pending' ? '#fde047' : activeTheme.textMuted,
+                }}
+              >
+                الطلبات قيد المراجعة والتدقيق ({pendingUsers.length})
+              </button>
+
+              <button
+                onClick={() => setRegistrationSubFilter('approved')}
+                style={{
+                  padding: '6px 14px',
+                  borderRadius: '8px',
+                  fontSize: '12px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                  border: `1px solid ${registrationSubFilter === 'approved' ? '#22c55e' : activeTheme.border}`,
+                  background: registrationSubFilter === 'approved' ? 'rgba(34, 197, 94, 0.25)' : 'rgba(0,0,0,0.2)',
+                  color: registrationSubFilter === 'approved' ? '#4ade80' : activeTheme.textMuted,
+                }}
+              >
+                الطلاب المعتمدون ({approvedUsers.filter((u) => u.role !== 'admin').length})
+              </button>
+            </div>
+
+            <div style={{ fontSize: '12px', color: activeTheme.textMuted }}>
+              إجمالي النتائج المعروضة: <strong>{filteredPending.length}</strong>
+            </div>
+          </div>
+
           {filteredPending.length === 0 ? (
             <div style={emptyCardStyle(activeTheme)}>
               <Clock size={40} color={activeTheme.accentLight} style={{ marginBottom: '12px' }} />
-              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>لا توجد طلبات تسجيل معلقة حالياً</div>
+              <div style={{ fontWeight: 'bold', fontSize: '16px' }}>لا توجد استمارات تسجيل مطابقة لخيارات العرض</div>
               <div style={{ fontSize: '13px', color: activeTheme.textMuted, marginTop: '4px' }}>
-                جميع استمارات الطلاب مسجلة ومعتمدة بالسجل المركزي
+                يمكنك التبديل إلى "جميع استمارات واستبيانات التسجيل" أو مراجعة معايير البحث.
               </div>
             </div>
           ) : (
-            filteredPending.map((student) => (
-              <div key={student._id || student.id} style={studentCardStyle(activeTheme)}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
-                  {/* رأس الكارت */}
-                  <div>
+            filteredPending.map((student) => {
+              const isApproved =
+                student.verificationStatus === 'verified' ||
+                student.verificationStatus === 'approved' ||
+                student.status === 'approved';
+              const isRejected = student.verificationStatus === 'rejected' || student.status === 'rejected';
+              const isPending = !isApproved && !isRejected;
+
+              return (
+                <div key={student._id || student.id} style={studentCardStyle(activeTheme)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '12px' }}>
+                    {/* رأس الكارت */}
+                    <div>
+                      <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                        <h3 style={{ color: activeTheme.textMain, fontSize: '17px', fontWeight: '900', margin: 0 }}>
+                          {student.fullName || student.name || 'طالب كلية العلوم'}
+                        </h3>
+                        {isPending && (
+                          <span
+                            style={{
+                              background: 'rgba(234, 179, 8, 0.15)',
+                              color: '#eab308',
+                              border: '1px solid rgba(234, 179, 8, 0.4)',
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            قيد المراجعة والتدقيق ⏳
+                          </span>
+                        )}
+                        {isApproved && (
+                          <span
+                            style={{
+                              background: 'rgba(34, 197, 94, 0.15)',
+                              color: '#22c55e',
+                              border: '1px solid rgba(34, 197, 94, 0.4)',
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            معتمد وموثق بالسجل المركزي ✅
+                          </span>
+                        )}
+                        {isRejected && (
+                          <span
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              color: '#ef4444',
+                              border: '1px solid rgba(239, 68, 68, 0.4)',
+                              fontSize: '11px',
+                              padding: '2px 8px',
+                              borderRadius: '6px',
+                              fontWeight: 'bold',
+                            }}
+                          >
+                            مرفوض ❌
+                          </span>
+                        )}
+                      </div>
+
+                      <div style={{ color: activeTheme.accentLight, fontSize: '13px', fontWeight: 'bold', marginTop: '4px' }}>
+                        🏛️ {student.department || 'العلوم العامة'} • {student.academicLevel || student.academicYear || 'المستوى الأول'}
+                      </div>
+                    </div>
+
+                    {/* أزرار القرار */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                      <h3 style={{ color: activeTheme.textMain, fontSize: '17px', fontWeight: '900', margin: 0 }}>
-                        {student.fullName || student.name}
-                      </h3>
-                      <span style={{
-                        background: 'rgba(234, 179, 8, 0.15)', color: '#eab308',
-                        border: '1px solid rgba(234, 179, 8, 0.4)', fontSize: '11px',
-                        padding: '2px 8px', borderRadius: '6px', fontWeight: 'bold'
-                      }}>
-                        قيد المراجعة والتدقيق
-                      </span>
-                    </div>
+                      {(student.idDocument || student.idCardUrl || student.passportOrNationalId) && (
+                        <button
+                          onClick={() => setPreviewDoc(student.idDocument || student.idCardUrl || student.passportOrNationalId)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'rgba(59, 130, 246, 0.15)',
+                            border: '1px solid #3b82f6',
+                            color: '#60a5fa',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Eye size={15} />
+                          <span>معاينة إثبات الهوية</span>
+                        </button>
+                      )}
 
-                    <div style={{ color: activeTheme.accentLight, fontSize: '13px', fontWeight: 'bold', marginTop: '4px' }}>
-                      🏛️ {student.department} • {student.academicLevel || student.academicYear}
+                      {!isApproved && (
+                        <button
+                          onClick={() => handleApprove(student)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: '#22c55e',
+                            color: '#ffffff',
+                            border: 'none',
+                            padding: '9px 18px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
+                          }}
+                        >
+                          <Check size={16} />
+                          <span>قبول واعتماد الطالب</span>
+                        </button>
+                      )}
+
+                      {!isRejected && (
+                        <button
+                          onClick={() => handleReject(student._id || student.id, student.email)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'rgba(239, 68, 68, 0.15)',
+                            border: '1px solid rgba(239, 68, 68, 0.3)',
+                            color: '#ef4444',
+                            padding: '9px 14px',
+                            borderRadius: '8px',
+                            fontSize: '13px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <X size={16} />
+                          <span>رفض</span>
+                        </button>
+                      )}
                     </div>
                   </div>
 
-                  {/* أزرار القرار */}
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    {student.idDocument && (
-                      <button
-                        onClick={() => setPreviewDoc(student.idDocument)}
-                        style={{
-                          display: 'flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'rgba(59, 130, 246, 0.15)',
-                          border: '1px solid #3b82f6',
-                          color: '#60a5fa',
-                          padding: '8px 14px',
-                          borderRadius: '8px',
-                          fontSize: '12px',
-                          fontWeight: 'bold',
-                          cursor: 'pointer',
-                        }}
-                      >
-                        <Eye size={15} />
-                        <span>معاينة إثبات الهوية</span>
-                      </button>
+                  {/* تفاصيل الاستبيان الكاملة */}
+                  <div
+                    style={{
+                      display: 'grid',
+                      gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
+                      gap: '12px',
+                      marginTop: '16px',
+                      padding: '14px',
+                      borderRadius: '12px',
+                      background: 'rgba(0,0,0,0.25)',
+                      border: `1px solid ${activeTheme.border}`,
+                      fontSize: '12px',
+                    }}
+                  >
+                    <div>
+                      <span style={{ color: activeTheme.textMuted }}>📧 البريد الإلكتروني: </span>
+                      <strong style={{ color: activeTheme.textMain }}>{student.email}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: activeTheme.textMuted }}>📱 هاتف التواصل: </span>
+                      <strong style={{ color: activeTheme.textMain }}>{student.phone || 'غير محدد'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: activeTheme.textMuted }}>💬 رقم الواتساب: </span>
+                      <strong style={{ color: activeTheme.textMain }}>{student.whatsapp || student.phone || 'غير محدد'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: activeTheme.textMuted }}>🎂 العمر: </span>
+                      <strong style={{ color: activeTheme.textMain }}>{student.age ? `${student.age} سنة` : 'غير محدد'}</strong>
+                    </div>
+                    <div>
+                      <span style={{ color: activeTheme.textMuted }}>🎓 الرقم الأكاديمي / القيد: </span>
+                      <strong style={{ color: activeTheme.textMain }}>{student.studentId || student.academicId || 'غير محدد'}</strong>
+                    </div>
+                    <div style={{ gridColumn: 'span 2' }}>
+                      <span style={{ color: activeTheme.textMuted }}>📍 عنوان السكن بمصر: </span>
+                      <strong style={{ color: activeTheme.textMain }}>{student.cairoAddress || student.residence || 'القاهرة، مصر'}</strong>
+                    </div>
+                    {(student.emergencyContactName || student.emergencyContact || student.emergencyContactPhone) && (
+                      <div style={{ gridColumn: 'span 2', paddingTop: '6px', borderTop: `1px dashed ${activeTheme.border}` }}>
+                        <span style={{ color: activeTheme.textMuted }}>🚨 جهة اتصال الطوارئ: </span>
+                        <strong style={{ color: '#f87171' }}>
+                          {student.emergencyContactName || student.emergencyContact || 'جهة اتصال'} ({student.emergencyContactRelation || 'صلة قرابة'}) - هاتف: {student.emergencyContactPhone || 'غير محدد'}
+                        </strong>
+                      </div>
                     )}
-
-                    <button
-                      onClick={() => handleApprove(student)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: '#22c55e',
-                        color: '#ffffff',
-                        border: 'none',
-                        padding: '9px 18px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(34, 197, 94, 0.3)',
-                      }}
-                    >
-                      <Check size={16} />
-                      <span>قبول واعتماد الطالب</span>
-                    </button>
-
-                    <button
-                      onClick={() => handleReject(student._id || student.id, student.email)}
-                      style={{
-                        display: 'flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: 'rgba(239, 68, 68, 0.15)',
-                        border: '1px solid rgba(239, 68, 68, 0.3)',
-                        color: '#ef4444',
-                        padding: '9px 14px',
-                        borderRadius: '8px',
-                        fontSize: '13px',
-                        fontWeight: 'bold',
-                        cursor: 'pointer',
-                      }}
-                    >
-                      <X size={16} />
-                      <span>رفض</span>
-                    </button>
                   </div>
                 </div>
-
-                {/* تفاصيل الاستبيان الكاملة */}
-                <div
-                  style={{
-                    display: 'grid',
-                    gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
-                    gap: '12px',
-                    marginTop: '16px',
-                    padding: '14px',
-                    borderRadius: '12px',
-                    background: 'rgba(0,0,0,0.25)',
-                    border: `1px solid ${activeTheme.border}`,
-                    fontSize: '12px',
-                  }}
-                >
-                  <div>
-                    <span style={{ color: activeTheme.textMuted }}>📧 البريد الإلكتروني: </span>
-                    <strong style={{ color: activeTheme.textMain }}>{student.email}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: activeTheme.textMuted }}>📱 هاتف التواصل: </span>
-                    <strong style={{ color: activeTheme.textMain }}>{student.phone}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: activeTheme.textMuted }}>💬 رقم الواتساب: </span>
-                    <strong style={{ color: activeTheme.textMain }}>{student.whatsapp || student.phone}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: activeTheme.textMuted }}>🎂 العمر: </span>
-                    <strong style={{ color: activeTheme.textMain }}>{student.age ? `${student.age} سنة` : 'غير محدد'}</strong>
-                  </div>
-                  <div>
-                    <span style={{ color: activeTheme.textMuted }}>🎓 الرقم الأكاديمي / القيد: </span>
-                    <strong style={{ color: activeTheme.textMain }}>{student.studentId}</strong>
-                  </div>
-                  <div style={{ gridColumn: 'span 2' }}>
-                    <span style={{ color: activeTheme.textMuted }}>📍 عنوان السكن بمصر: </span>
-                    <strong style={{ color: activeTheme.textMain }}>{student.cairoAddress}</strong>
-                  </div>
-                  {(student.emergencyContactName || student.emergencyContactPhone) && (
-                    <div style={{ gridColumn: 'span 2', paddingTop: '6px', borderTop: `1px dashed ${activeTheme.border}` }}>
-                      <span style={{ color: activeTheme.textMuted }}>🚨 جهة اتصال الطوارئ: </span>
-                      <strong style={{ color: '#f87171' }}>
-                        {student.emergencyContactName} ({student.emergencyContactRelation || 'صلة قرابة'}) - هاتف: {student.emergencyContactPhone}
-                      </strong>
-                    </div>
-                  )}
-                </div>
-              </div>
-            ))
+              );
+            })
           )}
         </div>
       )}
