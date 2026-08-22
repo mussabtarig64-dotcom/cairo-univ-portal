@@ -93,22 +93,53 @@ router.get('/setup-admin', async (req, res) => {
   }
 });
 
-// مسار إنشاء حساب وتسجيل طالب جديد (Simple Direct Registration)
+// مسار إنشاء حساب وتسجيل طالب جديد (Full Detailed Multi-Section Registration)
 router.post(['/register', '/survey'], async (req, res) => {
   try {
-    const { name, fullName, email, password, phone, department, academicYear } = req.body || {};
+    const {
+      name,
+      fullName,
+      email,
+      password,
+      age,
+      phone,
+      whatsapp,
+      residence,
+      cairoAddress,
+      department,
+      academicLevel,
+      academicYear,
+      studentId,
+      academicId,
+      nationalId,
+      passportOrNationalId,
+      emergencyContact,
+      emergencyContactName,
+      emergencyContactRelation,
+      emergencyContactPhone,
+      idCardUrl,
+      idDocument,
+      nationalIdPhoto,
+    } = req.body || {};
 
-    const cleanName = (name || fullName || '').trim();
+    const cleanName = (fullName || name || '').trim();
     const cleanEmail = (email || '').toLowerCase().trim();
     const cleanPassword = (password || '').trim();
     const cleanPhone = (phone || '').trim();
-    const cleanDepartment = (department || 'العلوم العامة').trim();
-    const cleanAcademicYear = (academicYear || 'المستوى الأول').trim();
+    const cleanWhatsapp = (whatsapp || phone || '').trim();
+    const cleanDepartment = (department || 'الكيمياء منفرد').trim();
+    const cleanAcademicLevel = (academicLevel || academicYear || 'المستوى الأول').trim();
+    const cleanAddress = (cairoAddress || residence || 'القاهرة، مصر').trim();
+    const cleanEmergencyName = (emergencyContactName || emergencyContact || '').trim();
+    const cleanEmergencyRelation = (emergencyContactRelation || 'الوالد / الوالدة').trim();
+    const cleanEmergencyPhone = (emergencyContactPhone || '').trim();
+    const cleanNationalId = (passportOrNationalId || nationalId || studentId || '').trim();
+    const cleanIdDoc = (idCardUrl || idDocument || nationalIdPhoto || '').trim();
 
     if (!cleanName || !cleanEmail || !cleanPassword) {
       return res.status(400).json({
         success: false,
-        message: 'يرجى إدخال الاسم والبريد الإلكتروني وكلمة المرور.',
+        message: 'يرجى إدخال الاسم الرباعي والبريد الإلكتروني وكلمة المرور.',
       });
     }
 
@@ -139,21 +170,33 @@ router.post(['/register', '/survey'], async (req, res) => {
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(cleanPassword, salt);
 
-    // إنشاء وحفظ المستخدم مباشرة
+    // إنشاء وحفظ المستخدم مع كافة بيانات الاستمارة الشاملة
     const newUser = new User({
       name: cleanName,
       fullName: cleanName,
       email: cleanEmail,
       password: hashedPassword,
+      age: age ? age.toString().trim() : '20',
       phone: cleanPhone || '01000000000',
-      whatsapp: cleanPhone || '01000000000',
+      whatsapp: cleanWhatsapp || '01000000000',
+      residence: cleanAddress,
+      cairoAddress: cleanAddress,
       department: cleanDepartment,
-      academicLevel: cleanAcademicYear,
-      academicYear: cleanAcademicYear,
+      academicLevel: cleanAcademicLevel,
+      academicYear: cleanAcademicLevel,
+      studentId: cleanNationalId || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
+      academicId: cleanNationalId || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
+      passportOrNationalId: cleanNationalId,
+      emergencyContact: cleanEmergencyName,
+      emergencyContactName: cleanEmergencyName,
+      emergencyContactRelation: cleanEmergencyRelation,
+      emergencyContactPhone: cleanEmergencyPhone,
+      idCardUrl: cleanIdDoc,
+      idDocument: cleanIdDoc,
       role: 'user',
-      status: 'approved',
-      verificationStatus: 'verified',
-      isApproved: true,
+      status: 'pending',
+      verificationStatus: 'pending',
+      isApproved: false,
       isAdmin: false,
     });
 
@@ -166,7 +209,7 @@ router.post(['/register', '/survey'], async (req, res) => {
 
     return res.status(201).json({
       success: true,
-      message: 'تم إنشاء الحساب بنجاح!',
+      message: 'تم إرسال استمارة التسجيل واعتماد العضوية بنجاح!',
       user: {
         _id: savedUser._id,
         name: savedUser.name,
@@ -175,6 +218,8 @@ router.post(['/register', '/survey'], async (req, res) => {
         role: savedUser.role,
         status: savedUser.status,
         verificationStatus: savedUser.verificationStatus,
+        department: savedUser.department,
+        academicLevel: savedUser.academicLevel,
         createdAt: savedUser.createdAt,
       },
     });

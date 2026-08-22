@@ -2,7 +2,26 @@ import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
-import { User, Mail, Lock, UserPlus, ArrowRight, AlertCircle, CheckCircle, GraduationCap, Phone } from 'lucide-react';
+import {
+  User,
+  Mail,
+  Lock,
+  UserPlus,
+  ArrowRight,
+  AlertCircle,
+  CheckCircle,
+  GraduationCap,
+  Phone,
+  MapPin,
+  HeartHandshake,
+  Shield,
+  Upload,
+  Calendar,
+  CreditCard,
+  FileText,
+  Eye,
+  EyeOff
+} from 'lucide-react';
 
 export const MAJOR_OPTIONS = [
   'الكيمياء منفرد',
@@ -18,20 +37,46 @@ export const MAJOR_OPTIONS = [
   'مزدوج الكيمياء الحيوية',
 ];
 
+export const ACADEMIC_LEVELS = [
+  'المستوى الأول (إعدادي علوم)',
+  'المستوى الثاني',
+  'المستوى الثالث',
+  'المستوى الرابع (تخرج)',
+  'الدراسات العليا / ماجستير ودكتوراه',
+];
+
 export default function Register() {
   const { activeTheme } = useTheme();
   const { register } = useAuth();
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
-    name: '',
+    // 1. البيانات الشخصية وبيانات السكن
+    fullName: '',
+    age: '20',
     email: '',
-    phone: '',
-    department: 'الكيمياء منفرد',
     password: '',
     confirmPassword: '',
+    phone: '',
+    whatsapp: '',
+    cairoAddress: '',
+
+    // 2. جهة الاتصال في حالات الطوارئ
+    emergencyContactName: '',
+    emergencyContactRelation: 'الوالد / الوالدة',
+    emergencyContactPhone: '',
+
+    // 3. البيانات الأكاديمية
+    department: 'الكيمياء منفرد',
+    academicLevel: 'المستوى الأول (إعدادي علوم)',
+    passportOrNationalId: '',
+
+    // 4. المرفقات
+    idCardUrl: '',
   });
 
+  const [showPassword, setShowPassword] = useState(false);
+  const [idPreview, setIdPreview] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
@@ -41,14 +86,43 @@ export default function Register() {
     if (error) setError('');
   };
 
+  const handleFileUpload = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      if (file.size > 5 * 1024 * 1024) {
+        setError('حجم الصورة يجب ألا يتجاوز 5 ميجابايت.');
+        return;
+      }
+      const reader = new FileReader();
+      reader.onloadend = () => {
+        setIdPreview(reader.result);
+        setFormData((prev) => ({ ...prev, idCardUrl: reader.result }));
+      };
+      reader.readAsDataURL(file);
+    }
+  };
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
 
-    const { name, email, phone, department, password, confirmPassword } = formData;
+    const {
+      fullName,
+      email,
+      password,
+      confirmPassword,
+      phone,
+      whatsapp,
+      cairoAddress,
+      emergencyContactName,
+      emergencyContactPhone,
+      department,
+      academicLevel,
+      passportOrNationalId,
+    } = formData;
 
-    if (!name.trim() || !email.trim() || !password || !department) {
-      setError('يرجى ملء جميع الحقول المطلوبة واختيار التخصص.');
+    if (!fullName.trim() || !email.trim() || !password) {
+      setError('يرجى استكمال البيانات الإلزامية (الاسم الرباعي، البريد الإلكتروني، وكلمة المرور).');
       return;
     }
 
@@ -65,29 +139,47 @@ export default function Register() {
     setLoading(true);
 
     try {
-      const res = await register({
-        name: name.trim(),
-        fullName: name.trim(),
+      const payload = {
+        name: fullName.trim(),
+        fullName: fullName.trim(),
         email: email.trim().toLowerCase(),
-        phone: phone.trim(),
-        department: department,
         password: password,
-      });
+        age: formData.age || '20',
+        phone: phone.trim() || '01000000000',
+        whatsapp: whatsapp.trim() || phone.trim() || '01000000000',
+        residence: cairoAddress.trim() || 'القاهرة، مصر',
+        cairoAddress: cairoAddress.trim() || 'القاهرة، مصر',
+        emergencyContact: emergencyContactName.trim(),
+        emergencyContactName: emergencyContactName.trim(),
+        emergencyContactRelation: formData.emergencyContactRelation,
+        emergencyContactPhone: emergencyContactPhone.trim(),
+        department: department,
+        academicLevel: academicLevel,
+        academicYear: academicLevel,
+        studentId: passportOrNationalId.trim(),
+        academicId: passportOrNationalId.trim(),
+        passportOrNationalId: passportOrNationalId.trim(),
+        nationalId: passportOrNationalId.trim(),
+        idCardUrl: formData.idCardUrl || '',
+        idDocument: formData.idCardUrl || '',
+      };
+
+      const res = await register(payload);
 
       if (res && res.success) {
         setIsSuccess(true);
         setTimeout(() => {
-          navigate('/login');
+          navigate('/pending-approval');
         }, 1500);
       } else {
-        setError(res?.message || 'حدث خطأ أثناء إنشاء الحساب.');
+        setError(res?.message || 'حدث خطأ أثناء إرسال الاستمارة.');
       }
     } catch (err) {
       setError(
         err?.response?.data?.message ||
         err?.response?.data?.error ||
         err?.message ||
-        'حدث خطأ في الاتصال بالخادم.'
+        'حدث خطأ في الاتصال بالخادم المركزي.'
       );
     } finally {
       setLoading(false);
@@ -95,259 +187,508 @@ export default function Register() {
   };
 
   return (
-    <div style={{ maxWidth: '520px', margin: '40px auto', padding: '0 20px', paddingBottom: '60px', direction: 'rtl' }}>
+    <div style={{ maxWidth: '820px', margin: '40px auto', padding: '0 20px 80px', direction: 'rtl' }}>
+      
+      {/* بطاقة الاستمارة الرئيسية */}
       <div
         style={{
-          background: activeTheme.bgCard,
-          border: `1px solid ${activeTheme.border}`,
+          backgroundColor: '#0f172a',
           borderRadius: '24px',
-          padding: '36px 28px',
-          boxShadow: '0 20px 40px rgba(0, 0, 0, 0.45)',
+          border: '1px solid rgba(255, 255, 255, 0.12)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+          overflow: 'hidden',
         }}
       >
-        <div style={{ textAlign: 'center', marginBottom: '28px' }}>
+        {/* رأس الاستمارة الترحيبي */}
+        <div
+          style={{
+            background: 'linear-gradient(135deg, #091a2f 0%, #0f2744 50%, #16365c 100%)',
+            padding: '36px 28px',
+            textAlign: 'center',
+            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+          }}
+        >
           <div
             style={{
-              width: '60px',
-              height: '60px',
-              borderRadius: '50%',
-              background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)`,
-              border: `2px solid ${activeTheme.accent}`,
-              display: 'flex',
+              display: 'inline-flex',
               alignItems: 'center',
-              justifyContent: 'center',
-              margin: '0 auto 16px',
-              color: '#ffffff',
-              boxShadow: `0 6px 18px ${activeTheme.primary}40`,
+              gap: '8px',
+              backgroundColor: 'rgba(245, 158, 11, 0.15)',
+              border: '1px solid #f59e0b',
+              padding: '6px 18px',
+              borderRadius: '30px',
+              color: '#fbbf24',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              marginBottom: '12px',
             }}
           >
-            <UserPlus size={26} />
+            <GraduationCap size={16} />
+            <span>كلية العلوم جامعة القاهرة - SSA</span>
           </div>
-          <h1 style={{ color: activeTheme.textMain, fontSize: '22px', fontWeight: 'bold', margin: '0 0 8px' }}>
-            إنشاء حساب طالب جديد
+
+          <h1 style={{ color: '#ffffff', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: '900', margin: '0 0 10px' }}>
+            استمارة التسجيل المركزي واستبيان الطلاب
           </h1>
-          <p style={{ color: activeTheme.textMuted, fontSize: '13px', margin: 0 }}>
-            رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة
+
+          <p style={{ color: '#cbd5e1', fontSize: '14px', maxWidth: '640px', margin: '0 auto', lineHeight: '1.7' }}>
+            يرجى استيفاء البيانات بدقة لاعتماد القيد وإصدار بطاقة العضوية الرقمية (Digital ID) وتمكين الوصول لكافة خدمات الرابطة والمكتبة الأكاديمية.
           </p>
         </div>
 
-        {isSuccess ? (
-          <div
-            style={{
-              background: 'rgba(34, 197, 94, 0.12)',
-              border: '1px solid rgba(34, 197, 94, 0.4)',
-              borderRadius: '16px',
-              padding: '24px 20px',
-              textAlign: 'center',
-              color: '#22c55e',
-              display: 'flex',
-              flexDirection: 'column',
-              alignItems: 'center',
-              gap: '12px',
-            }}
-          >
-            <CheckCircle size={44} />
-            <h2 style={{ fontSize: '18px', fontWeight: 'bold', margin: 0 }}>تم إنشاء الحساب بنجاح!</h2>
-            <p style={{ color: activeTheme.textMain, fontSize: '14px', margin: 0 }}>
-              جاري تحويلك إلى صفحة تسجيل الدخول...
-            </p>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
-            {error && (
-              <div
-                style={{
-                  background: 'rgba(239, 68, 68, 0.12)',
-                  border: '1px solid rgba(239, 68, 68, 0.35)',
-                  borderRadius: '12px',
-                  padding: '14px',
-                  color: '#ef4444',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '10px',
-                  fontSize: '13px',
-                }}
-              >
-                <AlertCircle size={18} style={{ flexShrink: 0 }} />
-                <span>{error}</span>
-              </div>
-            )}
-
-            <div>
-              <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-                الاسم بالكامل *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="text"
-                  name="name"
-                  required
-                  placeholder="مثال: مصطفى أحمد إبراهيم"
-                  value={formData.name}
-                  onChange={handleChange}
-                  style={inputStyle(activeTheme)}
-                />
-                <User size={16} color={activeTheme.textMuted} style={iconStyle} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-                البريد الإلكتروني *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="email"
-                  name="email"
-                  required
-                  placeholder="example@gmail.com"
-                  value={formData.email}
-                  onChange={handleChange}
-                  style={inputStyle(activeTheme)}
-                />
-                <Mail size={16} color={activeTheme.textMuted} style={iconStyle} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-                رقم الهاتف / الواتساب (اختياري)
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="tel"
-                  name="phone"
-                  placeholder="01xxxxxxxxx"
-                  value={formData.phone}
-                  onChange={handleChange}
-                  style={inputStyle(activeTheme)}
-                />
-                <Phone size={16} color={activeTheme.textMuted} style={iconStyle} />
-              </div>
-            </div>
-
-            {/* حقل التخصص والأقسام العلمية المحددة بدقة */}
-            <div>
-              <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-                القسم العلمي / التخصص الأكاديمي *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <select
-                  name="department"
-                  required
-                  value={formData.department}
-                  onChange={handleChange}
-                  style={{
-                    ...inputStyle(activeTheme),
-                    appearance: 'none',
-                    cursor: 'pointer',
-                    backgroundColor: activeTheme.isDark ? '#0f172a' : '#ffffff',
-                  }}
-                >
-                  {MAJOR_OPTIONS.map((major) => (
-                    <option key={major} value={major} style={{ background: activeTheme.isDark ? '#0f172a' : '#ffffff', color: activeTheme.isDark ? '#f1f5f9' : '#0f172a' }}>
-                      {major}
-                    </option>
-                  ))}
-                </select>
-                <GraduationCap size={16} color={activeTheme.accentLight} style={iconStyle} />
-              </div>
-              <div style={{ fontSize: '11px', color: activeTheme.textMuted, marginTop: '4px' }}>
-                اختر تخصصك العلمي المعتمد في كلية العلوم جامعة القاهرة.
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-                كلمة المرور *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="password"
-                  name="password"
-                  required
-                  placeholder="•••••••• (6 أحرف على الأقل)"
-                  value={formData.password}
-                  onChange={handleChange}
-                  style={inputStyle(activeTheme)}
-                />
-                <Lock size={16} color={activeTheme.textMuted} style={iconStyle} />
-              </div>
-            </div>
-
-            <div>
-              <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
-                تأكيد كلمة المرور *
-              </label>
-              <div style={{ position: 'relative' }}>
-                <input
-                  type="password"
-                  name="confirmPassword"
-                  required
-                  placeholder="••••••••"
-                  value={formData.confirmPassword}
-                  onChange={handleChange}
-                  style={inputStyle(activeTheme)}
-                />
-                <Lock size={16} color={activeTheme.textMuted} style={iconStyle} />
-              </div>
-            </div>
-
-            <button
-              type="submit"
-              disabled={loading}
+        <div style={{ padding: '32px 28px' }}>
+          {error && (
+            <div
               style={{
+                backgroundColor: 'rgba(239, 68, 68, 0.15)',
+                border: '1px solid #ef4444',
+                color: '#f87171',
+                padding: '14px 18px',
+                borderRadius: '12px',
+                marginBottom: '24px',
                 display: 'flex',
                 alignItems: 'center',
-                justifyContent: 'center',
-                gap: '8px',
-                background: `linear-gradient(135deg, ${activeTheme.accent} 0%, #d97706 100%)`,
-                color: '#0b1622',
-                border: 'none',
-                padding: '13px',
-                borderRadius: '12px',
-                fontWeight: 'bold',
+                gap: '10px',
                 fontSize: '14px',
-                cursor: loading ? 'not-allowed' : 'pointer',
-                boxShadow: `0 6px 18px rgba(245, 158, 11, 0.35)`,
-                marginTop: '6px',
+                fontWeight: 'bold',
               }}
             >
-              <span>{loading ? 'جاري إنشاء الحساب...' : 'إنشاء الحساب'}</span>
-              <ArrowRight size={16} />
-            </button>
+              <AlertCircle size={18} />
+              <span>{error}</span>
+            </div>
+          )}
 
-            <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '13px', color: activeTheme.textMuted }}>
-              لديك حساب بالفعل؟{' '}
-              <Link to="/login" style={{ color: activeTheme.accentLight, fontWeight: 'bold', textDecoration: 'none' }}>
-                تسجيل الدخول
-              </Link>
+          {isSuccess && (
+            <div
+              style={{
+                backgroundColor: 'rgba(34, 197, 94, 0.15)',
+                border: '1px solid #22c55e',
+                color: '#34d399',
+                padding: '16px 20px',
+                borderRadius: '12px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '10px',
+                fontSize: '15px',
+                fontWeight: 'bold',
+              }}
+            >
+              <CheckCircle size={20} />
+              <span>تم إرسال استمارة التسجيل المركزي بنجاح! جاري تحويلك لصفحة حالة القيد...</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+            
+            {/* =========================================================================
+                1. البيانات الشخصية وبيانات السكن بمصر
+            ========================================================================= */}
+            <div style={sectionBoxStyle}>
+              <div style={sectionHeaderStyle}>
+                <User size={18} color="#f59e0b" />
+                <h3 style={sectionTitleStyle}>القسم الأول: البيانات الشخصية وبيانات السكن بمصر</h3>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                {/* الاسم رباعي */}
+                <div>
+                  <label style={labelStyle}>الاسم رباعي كما في الجواز/الهوية: *</label>
+                  <input
+                    type="text"
+                    name="fullName"
+                    required
+                    placeholder="مثال: مصعب طارق محمد عثمان"
+                    value={formData.fullName}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* العمر */}
+                <div>
+                  <label style={labelStyle}>العمر / سنة الميلاد: *</label>
+                  <input
+                    type="number"
+                    name="age"
+                    min="16"
+                    max="60"
+                    required
+                    placeholder="20"
+                    value={formData.age}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* البريد الإلكتروني */}
+                <div>
+                  <label style={labelStyle}>البريد الإلكتروني الأساسي: *</label>
+                  <input
+                    type="email"
+                    name="email"
+                    required
+                    placeholder="student@example.com"
+                    value={formData.email}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* الهاتف المصري */}
+                <div>
+                  <label style={labelStyle}>رقم الهاتف المصري: *</label>
+                  <input
+                    type="tel"
+                    name="phone"
+                    required
+                    placeholder="010XXXXXXXX"
+                    value={formData.phone}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* رقم الواتساب */}
+                <div>
+                  <label style={labelStyle}>رقم الواتساب (للتواصل وإرسال الإشعارات): *</label>
+                  <input
+                    type="tel"
+                    name="whatsapp"
+                    required
+                    placeholder="010XXXXXXXX أو +249..."
+                    value={formData.whatsapp}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* عنوان السكن بالتفصيل بمصر */}
+                <div>
+                  <label style={labelStyle}>مكان وعنوان السكن بالتفصيل بمصر: *</label>
+                  <input
+                    type="text"
+                    name="cairoAddress"
+                    required
+                    placeholder="مثال: الجيزة - بين السرايات / الدقي / فيصل"
+                    value={formData.cairoAddress}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* كلمة المرور */}
+                <div>
+                  <label style={labelStyle}>كلمة المرور للحساب: *</label>
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type={showPassword ? 'text' : 'password'}
+                      name="password"
+                      required
+                      placeholder="••••••••"
+                      value={formData.password}
+                      onChange={handleChange}
+                      style={inputStyle}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => setShowPassword(!showPassword)}
+                      style={{
+                        position: 'absolute',
+                        left: '12px',
+                        top: '12px',
+                        background: 'transparent',
+                        border: 'none',
+                        color: '#94a3b8',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                    </button>
+                  </div>
+                </div>
+
+                {/* تأكيد كلمة المرور */}
+                <div>
+                  <label style={labelStyle}>تأكيد كلمة المرور: *</label>
+                  <input
+                    type={showPassword ? 'text' : 'password'}
+                    name="confirmPassword"
+                    required
+                    placeholder="••••••••"
+                    value={formData.confirmPassword}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* =========================================================================
+                2. بيانات جهة الاتصال في حالات الطوارئ
+            ========================================================================= */}
+            <div style={sectionBoxStyle}>
+              <div style={sectionHeaderStyle}>
+                <HeartHandshake size={18} color="#f59e0b" />
+                <h3 style={sectionTitleStyle}>القسم الثاني: بيانات جهة الاتصال في حالات الطوارئ</h3>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+                {/* اسم الشخص للطوارئ */}
+                <div>
+                  <label style={labelStyle}>اسم جهة الاتصال / ولي الأمر للطوارئ: *</label>
+                  <input
+                    type="text"
+                    name="emergencyContactName"
+                    required
+                    placeholder="اسم القريب أو الصديق بمصر أو السودان"
+                    value={formData.emergencyContactName}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+
+                {/* صلة القرابة */}
+                <div>
+                  <label style={labelStyle}>صلة القرابة: *</label>
+                  <select
+                    name="emergencyContactRelation"
+                    value={formData.emergencyContactRelation}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  >
+                    <option value="الوالد / الوالدة" style={{ background: '#0f172a' }}>الوالد / الوالدة</option>
+                    <option value="أخ / أخت" style={{ background: '#0f172a' }}>أخ / أخت</option>
+                    <option value="عم / خال / قريب" style={{ background: '#0f172a' }}>عم / خال / قريب</option>
+                    <option value="صديق / زميل سكن" style={{ background: '#0f172a' }}>صديق / زميل سكن</option>
+                  </select>
+                </div>
+
+                {/* رقم هاتف الطوارئ */}
+                <div>
+                  <label style={labelStyle}>رقم هاتف الطوارئ: *</label>
+                  <input
+                    type="tel"
+                    name="emergencyContactPhone"
+                    required
+                    placeholder="رقم الهاتف مع رمز الدولة"
+                    value={formData.emergencyContactPhone}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* =========================================================================
+                3. البيانات الأكاديمية - كلية العلوم جامعة القاهرة
+            ========================================================================= */}
+            <div style={sectionBoxStyle}>
+              <div style={sectionHeaderStyle}>
+                <GraduationCap size={18} color="#f59e0b" />
+                <h3 style={sectionTitleStyle}>القسم الثالث: البيانات الأكاديمية بكلية العلوم</h3>
+              </div>
+
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+                {/* القسم العلمي / التخصص الأكاديمي (The 11 Strict Options) */}
+                <div>
+                  <label style={labelStyle}>القسم العلمي / التخصص الأكاديمي: *</label>
+                  <select
+                    name="department"
+                    value={formData.department}
+                    onChange={handleChange}
+                    style={{ ...inputStyle, border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24', fontWeight: 'bold' }}
+                  >
+                    {MAJOR_OPTIONS.map((major) => (
+                      <option key={major} value={major} style={{ background: '#0f172a', color: '#ffffff' }}>
+                        {major}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* الفرقة / المستوى الدراسي */}
+                <div>
+                  <label style={labelStyle}>الفرقة / المستوى الدراسي: *</label>
+                  <select
+                    name="academicLevel"
+                    value={formData.academicLevel}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  >
+                    {ACADEMIC_LEVELS.map((lvl) => (
+                      <option key={lvl} value={lvl} style={{ background: '#0f172a', color: '#ffffff' }}>
+                        {lvl}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* رقم الهوية / جواز السفر / الرقم الوطني */}
+                <div>
+                  <label style={labelStyle}>رقم الهوية / جواز السفر / الرقم الوطني: *</label>
+                  <input
+                    type="text"
+                    name="passportOrNationalId"
+                    required
+                    placeholder="مثال: P01234567 أو الرقم الوطني"
+                    value={formData.passportOrNationalId}
+                    onChange={handleChange}
+                    style={inputStyle}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* =========================================================================
+                4. رفع المرفقات والوثائق
+            ========================================================================= */}
+            <div style={sectionBoxStyle}>
+              <div style={sectionHeaderStyle}>
+                <CreditCard size={18} color="#f59e0b" />
+                <h3 style={sectionTitleStyle}>القسم الرابع: رفع إثبات الشخصية / الهوية الجامعية</h3>
+              </div>
+
+              <div>
+                <label style={labelStyle}>صورة إثبات الهوية (جواز السفر / البطاقة الوطنية / بطاقة الكلية):</label>
+                <div
+                  style={{
+                    border: '2px dashed rgba(255, 255, 255, 0.2)',
+                    borderRadius: '14px',
+                    padding: '24px',
+                    textAlign: 'center',
+                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <input
+                    type="file"
+                    id="idUpload"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    style={{ display: 'none' }}
+                  />
+                  <label htmlFor="idUpload" style={{ cursor: 'pointer', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '8px' }}>
+                    <Upload size={28} color="#f59e0b" />
+                    <span style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff' }}>
+                      انقر هنا لرفع صورة الوثيقة أو اسحب الملف
+                    </span>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                      الصيغ المقبولة: JPG, PNG (الحد الأقصى: 5MB)
+                    </span>
+                  </label>
+
+                  {idPreview && (
+                    <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '6px' }}>
+                      <img
+                        src={idPreview}
+                        alt="ID Preview"
+                        style={{ maxWidth: '200px', maxHeight: '120px', objectFit: 'contain', borderRadius: '8px', border: '1px solid #10b981' }}
+                      />
+                      <span style={{ fontSize: '12px', color: '#34d399', fontWeight: 'bold' }}>
+                        ✓ تم تجهيز صورة الهوية للاعتماد
+                      </span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* إقرار صحة البيانات وزر الإرسال */}
+            <div style={{ textAlign: 'center', marginTop: '10px' }}>
+              <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px', lineHeight: '1.6' }}>
+                بالنقر على "إرسال استمارة التسجيل المركزي"، أقر بأن جميع البيانات المدخلة صحيحة ومطابقة لوثائقي الرسمية بكلية العلوم جامعة القاهرة.
+              </p>
+
+              <button
+                type="submit"
+                disabled={loading || isSuccess}
+                style={{
+                  width: '100%',
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#0b1622',
+                  border: 'none',
+                  padding: '14px 28px',
+                  borderRadius: '12px',
+                  fontSize: '16px',
+                  fontWeight: '900',
+                  cursor: loading || isSuccess ? 'not-allowed' : 'pointer',
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  gap: '10px',
+                  boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
+                  transition: 'transform 0.15s ease',
+                }}
+              >
+                <UserPlus size={20} />
+                <span>{loading ? 'جاري إرسال الاستمارة والاعتماد...' : 'إرسال استمارة التسجيل المركزي (Submit Registration)'}</span>
+              </button>
             </div>
           </form>
-        )}
+
+          {/* تذييل رابط الدخول */}
+          <div style={{ textAlign: 'center', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+            <span style={{ color: '#cbd5e1', fontSize: '14px' }}>لديك حساب مسجل بالفعل؟ </span>
+            <Link
+              to="/login"
+              style={{
+                color: '#fbbf24',
+                fontWeight: 'bold',
+                textDecoration: 'none',
+                fontSize: '14px',
+                marginRight: '6px',
+              }}
+            >
+              تسجيل دخول الأعضاء
+            </Link>
+          </div>
+        </div>
       </div>
     </div>
   );
 }
 
-const inputStyle = (theme) => ({
-  width: '100%',
-  padding: '11px 40px 11px 14px',
-  borderRadius: '10px',
-  background: 'rgba(0, 0, 0, 0.3)',
-  border: `1px solid ${theme.border}`,
-  color: theme.textMain,
-  outline: 'none',
-  fontSize: '13px',
-  boxSizing: 'border-box',
-  direction: 'rtl',
-  transition: 'all 0.2s ease',
-});
+const sectionBoxStyle = {
+  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+  borderRadius: '16px',
+  border: '1px solid rgba(255, 255, 255, 0.08)',
+  padding: '20px',
+};
 
-const iconStyle = {
-  position: 'absolute',
-  top: '50%',
-  right: '12px',
-  transform: 'translateY(-50%)',
-  pointerEvents: 'none',
+const sectionHeaderStyle = {
+  display: 'flex',
+  alignItems: 'center',
+  gap: '10px',
+  marginBottom: '16px',
+  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  paddingBottom: '10px',
+};
+
+const sectionTitleStyle = {
+  fontSize: '16px',
+  fontWeight: 'bold',
+  color: '#ffffff',
+  margin: 0,
+};
+
+const labelStyle = {
+  display: 'block',
+  fontSize: '13px',
+  fontWeight: '600',
+  color: '#cbd5e1',
+  marginBottom: '8px',
+};
+
+const inputStyle = {
+  width: '100%',
+  padding: '11px 14px',
+  borderRadius: '10px',
+  backgroundColor: 'rgba(255, 255, 255, 0.06)',
+  border: '1px solid rgba(255, 255, 255, 0.15)',
+  color: '#ffffff',
+  fontSize: '14px',
+  outline: 'none',
+  direction: 'rtl',
+  boxSizing: 'border-box',
 };
