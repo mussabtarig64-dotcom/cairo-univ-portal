@@ -20,7 +20,6 @@ async function connectToDatabase() {
   return cachedConn;
 }
 
-// تحميل أو إنشاء نموذج المستخدم User
 let User;
 try {
   User = mongoose.model('User');
@@ -61,10 +60,9 @@ try {
 }
 
 module.exports = async function handler(req, res) {
-  // تفعيل CORS
   res.setHeader('Access-Control-Allow-Credentials', 'true');
   res.setHeader('Access-Control-Allow-Origin', '*');
-  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,PATCH,DELETE,POST,PUT');
+  res.setHeader('Access-Control-Allow-Methods', 'GET,OPTIONS,POST');
   res.setHeader(
     'Access-Control-Allow-Headers',
     'X-CSRF-Token, X-Requested-With, Accept, Accept-Version, Content-Length, Content-MD5, Content-Type, Date, X-Api-Version, Authorization'
@@ -77,12 +75,10 @@ module.exports = async function handler(req, res) {
   if (req.method === 'GET') {
     return res.status(200).json({
       success: true,
-      message: 'نقطة نهاية تسجيل الطلاب والمنتسبين نشطة وجاهزة لاستقبال طلبات POST.',
-      endpoint: '/api/auth/register',
+      message: 'نقطة نهاية تسجيل الطلاب نشطة وجاهزة.',
     });
   }
 
-  // التحقق الصريح من نوع الطلب POST
   if (req.method !== 'POST') {
     return res.status(405).json({
       success: false,
@@ -103,6 +99,7 @@ module.exports = async function handler(req, res) {
     } else if (!body) {
       body = {};
     }
+
     const {
       name,
       fullName,
@@ -132,16 +129,6 @@ module.exports = async function handler(req, res) {
     const cleanName = (fullName || name || '').trim();
     const cleanEmail = (email || '').toLowerCase().trim();
     const cleanPassword = (password || '').trim();
-    const cleanPhone = (phone || '').trim();
-    const cleanWhatsapp = (whatsapp || phone || '').trim();
-    const cleanDepartment = (department || 'الكيمياء منفرد').trim();
-    const cleanAcademicLevel = (academicLevel || academicYear || 'المستوى الأول (إعدادي علوم)').trim();
-    const cleanAddress = (cairoAddress || residence || 'القاهرة، مصر').trim();
-    const cleanEmergencyName = (emergencyContactName || emergencyContact || '').trim();
-    const cleanEmergencyRelation = (emergencyContactRelation || 'الوالد / الوالدة').trim();
-    const cleanEmergencyPhone = (emergencyContactPhone || '').trim();
-    const cleanNationalId = (passportOrNationalId || nationalId || studentId || '').trim();
-    const cleanIdDoc = (idCardUrl || idDocument || nationalIdPhoto || '').trim();
 
     if (!cleanName || !cleanEmail || !cleanPassword) {
       return res.status(400).json({
@@ -157,7 +144,6 @@ module.exports = async function handler(req, res) {
       });
     }
 
-    // التحقق من وجود المستخدم
     const existing = await User.findOne({ email: cleanEmail });
     if (existing) {
       return res.status(400).json({
@@ -175,22 +161,22 @@ module.exports = async function handler(req, res) {
       email: cleanEmail,
       password: hashedPassword,
       age: age ? age.toString().trim() : '20',
-      phone: cleanPhone || '01000000000',
-      whatsapp: cleanWhatsapp || '01000000000',
-      residence: cleanAddress,
-      cairoAddress: cleanAddress,
-      department: cleanDepartment,
-      academicLevel: cleanAcademicLevel,
-      academicYear: cleanAcademicLevel,
-      studentId: cleanNationalId || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
-      academicId: cleanNationalId || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
-      passportOrNationalId: cleanNationalId,
-      emergencyContact: cleanEmergencyName,
-      emergencyContactName: cleanEmergencyName,
-      emergencyContactRelation: cleanEmergencyRelation,
-      emergencyContactPhone: cleanEmergencyPhone,
-      idCardUrl: cleanIdDoc,
-      idDocument: cleanIdDoc,
+      phone: (phone || '').trim() || '01000000000',
+      whatsapp: (whatsapp || phone || '').trim() || '01000000000',
+      residence: (cairoAddress || residence || 'القاهرة، مصر').trim(),
+      cairoAddress: (cairoAddress || residence || 'القاهرة، مصر').trim(),
+      department: (department || 'الكيمياء منفرد').trim(),
+      academicLevel: (academicLevel || academicYear || 'المستوى الأول (إعدادي علوم)').trim(),
+      academicYear: (academicLevel || academicYear || 'المستوى الأول (إعدادي علوم)').trim(),
+      studentId: (passportOrNationalId || nationalId || studentId || '').trim() || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
+      academicId: (passportOrNationalId || nationalId || academicId || '').trim() || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
+      passportOrNationalId: (passportOrNationalId || nationalId || '').trim(),
+      emergencyContact: (emergencyContactName || emergencyContact || '').trim(),
+      emergencyContactName: (emergencyContactName || emergencyContact || '').trim(),
+      emergencyContactRelation: (emergencyContactRelation || 'الوالد / الوالدة').trim(),
+      emergencyContactPhone: (emergencyContactPhone || '').trim(),
+      idCardUrl: (idCardUrl || idDocument || nationalIdPhoto || '').trim(),
+      idDocument: (idCardUrl || idDocument || nationalIdPhoto || '').trim(),
       role: 'user',
       status: 'pending',
       verificationStatus: 'pending',
