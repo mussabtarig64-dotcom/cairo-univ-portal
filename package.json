@@ -6,7 +6,8 @@
     "start": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
     "dev": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
     "server": "node server/server.js",
-    "client": "npm run dev --prefix client"
+    "client": "npm run dev --prefix client",
+    "build": "npm run build --prefix client"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3"

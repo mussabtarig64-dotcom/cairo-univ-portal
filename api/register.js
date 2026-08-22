@@ -82,11 +82,11 @@ module.exports = async function handler(req, res) {
     });
   }
 
-  // التحقق من نوع الطلب POST
+  // التحقق الصريح من نوع الطلب POST
   if (req.method !== 'POST') {
-    return res.status(200).json({
+    return res.status(405).json({
       success: false,
-      message: `يرجى إرسال طلب POST لتسجيل البيانات (Received method: ${req.method}).`,
+      message: `Method ${req.method} Not Allowed`,
     });
   }
 
