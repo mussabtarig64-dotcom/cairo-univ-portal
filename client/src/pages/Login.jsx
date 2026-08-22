@@ -248,7 +248,7 @@ export default function Login() {
           <div style={{ textAlign: 'center', marginTop: '12px', fontSize: '13px', color: activeTheme.textMuted }}>
             طالب جديد ولم تسجل بعد؟{' '}
             <Link to="/register" style={{ color: activeTheme.accentLight, fontWeight: 'bold', textDecoration: 'none' }}>
-              تعبئة استمارة التسجيل والاستبيان
+              إنشاء حساب جديد
             </Link>
           </div>
         </form>

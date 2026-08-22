@@ -118,82 +118,32 @@ export function AuthProvider({ children }) {
     };
   }, [user?.email]);
 
-  // 1. تسجيل طالب جديد وحفظه مباشرة في قاعدة بيانات MongoDB Atlas
-  const register = async (surveyData) => {
-    const studentUser = {
-      ...surveyData,
-      id: surveyData.id || `local_${Date.now()}`,
-      role: 'user',
-      verificationStatus: 'pending',
-      status: 'pending',
-      createdAt: new Date().toISOString(),
-    };
-
-    // محاولة الإرسال للـ API أولاً لحفظ السجل مباشرة في MongoDB
+  // 1. تسجيل مستخدم جديد
+  const register = async (userData) => {
     try {
-      // إرسال POST مباشر إلى نقطة التسجيل المركزية
-      let res;
-      try {
-        res = await axios.post(`${API_BASE}/register`, surveyData, {
-          headers: { 'Content-Type': 'application/json' },
-        });
-      } catch (postErr) {
-        try {
-          res = await axios.post(`${API_BASE}/auth/register`, surveyData, {
-            headers: { 'Content-Type': 'application/json' },
-          });
-        } catch (authErr) {
-          res = await axios.post('/api/register', surveyData, {
-            headers: { 'Content-Type': 'application/json' },
-          });
-        }
-      }
-
+      const res = await axios.post(`${API_BASE}/auth/register`, userData);
       if (res.data && res.data.success) {
-        const savedUser = res.data.user || studentUser;
-
-        // تحديث طابور الانتظار المحلي مع السجل الموثق من MongoDB
-        try {
-          const pendingUsers = JSON.parse(localStorage.getItem('pending_users') || '[]');
-          const filtered = pendingUsers.filter((u) => u.email?.toLowerCase() !== surveyData.email?.toLowerCase());
-          localStorage.setItem('pending_users', JSON.stringify([...filtered, savedUser]));
-        } catch (e) {
-          console.error('LocalStorage write error:', e);
-        }
-
         return {
           success: true,
-          user: savedUser,
-          message: res.data.message || 'تم استلام استمارة التسجيل بنجاح وهي قيد المراجعة والاعتماد.',
+          user: res.data.user,
+          message: res.data.message || 'تم إنشاء الحساب بنجاح!',
         };
       } else {
         return {
           success: false,
-          message: res.data?.message || 'فشل تسجيل البيانات في قاعدة البيانات.',
+          message: res.data?.message || 'فشل تسجيل الحساب.',
         };
       }
     } catch (err) {
-      console.error('Registration API Error:', err.response?.data || err.message);
-      const serverMessage = err.response?.data?.error || err.response?.data?.message || err.message;
-
-      // إذا كانت المشكلة هي أن البريد مسجل مسبقاً، لا نزيف النجاح
-      if (err.response?.status === 400 && serverMessage.includes('مسجل بالفعل')) {
-        return {
-          success: false,
-          message: serverMessage,
-        };
-      }
-
-      // إذا كان هناك خطأ اتصال حرج، نحفظ محلياً مؤقتاً ولكن نبلغ المستخدم
-      try {
-        const pendingUsers = JSON.parse(localStorage.getItem('pending_users') || '[]');
-        const filtered = pendingUsers.filter((u) => u.email?.toLowerCase() !== surveyData.email?.toLowerCase());
-        localStorage.setItem('pending_users', JSON.stringify([...filtered, studentUser]));
-      } catch (e) {}
-
+      console.error('Registration error:', err.response?.data || err.message);
+      const serverMessage =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'حدث خطأ في الاتصال بالخادم أثناء التسجيل.';
       return {
         success: false,
-        message: serverMessage || 'تعذر الاتصال بخادم قاعدة البيانات. يرجى التأكد من تشغيل السيرفر أو الاتصال بالإنترنت.',
+        message: serverMessage,
       };
     }
   };

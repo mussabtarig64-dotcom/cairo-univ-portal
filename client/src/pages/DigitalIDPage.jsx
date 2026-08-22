@@ -96,7 +96,7 @@ export default function DigitalIDPage() {
                 fontSize: '13px',
               }}
             >
-              استمارة التسجيل
+              إنشاء حساب
             </Link>
           </div>
         </div>

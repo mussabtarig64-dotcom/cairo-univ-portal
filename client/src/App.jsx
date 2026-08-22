@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
 import { AuthProvider, useAuth } from './context/AuthContext';
@@ -20,6 +20,14 @@ import Chat from './pages/Chat';
 import AIChat from './pages/AIChat';
 import AdminDashboard from './pages/AdminDashboard';
 import AcademicLibrary from './pages/AcademicLibrary';
+import SportsHub from './pages/SportsHub';
+import SudanPortal from './pages/SudanPortal';
+import SocialHub from './pages/SocialHub';
+import EventsHub from './pages/EventsHub';
+import MediaHub from './pages/MediaHub';
+import AchievementsHub from './pages/AchievementsHub';
+import AdministrationHub from './pages/AdministrationHub';
+import ConstitutionHub from './pages/ConstitutionHub';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
 import DigitalIDPage from './pages/DigitalIDPage';
@@ -46,15 +54,37 @@ import {
   BookOpen,
   HelpCircle,
   PhoneCall,
-  QrCode
+  QrCode,
+  Trophy,
+  HeartHandshake,
+  Calendar,
+  Newspaper,
+  Award,
+  Shield,
+  Scale,
+  Sparkles,
+  ChevronDown,
+  Globe
 } from 'lucide-react';
 
 function NavigationBar() {
   const { currentThemeKey, activeTheme, switchTheme } = useTheme();
   const { user, isAuthenticated, isPending, isAdmin, logout } = useAuth();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [sectorsDropdownOpen, setSectorsDropdownOpen] = useState(false);
+  const dropdownRef = useRef(null);
   const location = useLocation();
   const navigate = useNavigate();
+
+  useEffect(() => {
+    function handleClickOutside(event) {
+      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+        setSectorsDropdownOpen(false);
+      }
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => document.removeEventListener('mousedown', handleClickOutside);
+  }, []);
 
   const handleLogoutClick = () => {
     logout();
@@ -66,50 +96,23 @@ function NavigationBar() {
     switchTheme(nextTheme);
   };
 
-  let navLinks = [];
-
-  if (!isAuthenticated) {
-    navLinks = [
-      { path: '/', label: 'الرئيسية', icon: HomeIcon },
-      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
-      { path: '/faq', label: 'الأسئلة الشائعة', icon: HelpCircle },
-      { path: '/contact', label: 'اتصل بنا', icon: PhoneCall },
-      { path: '/register', label: 'استمارة التسجيل والاستبيان', icon: UserPlus, highlight: true },
-      { path: '/login', label: 'دخول الأعضاء', icon: LogIn },
-    ];
-  } else if (isPending) {
-    navLinks = [
-      { path: '/', label: 'الرئيسية', icon: HomeIcon },
-      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
-      { path: '/faq', label: 'الأسئلة الشائعة', icon: HelpCircle },
-      { path: '/contact', label: 'اتصل بنا', icon: PhoneCall },
-      { path: '/pending-approval', label: 'حالة القيد والاعتماد', icon: Clock, badge: 'قيد المراجعة' },
-    ];
-  } else if (isAdmin) {
-    navLinks = [
-      { path: '/', label: 'الرئيسية', icon: HomeIcon },
-      { path: '/posts', label: 'الملتقى الأكاديمي', icon: MessageSquare },
-      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
-      { path: '/digital-id', label: 'بطاقتي الرقمية', icon: QrCode },
-      { path: '/chat', label: 'غرف المذاكرة', icon: Users },
-      { path: '/ai', label: 'المستشار الذكي', icon: Bot },
-      { path: '/admin', label: 'لوحة الإدارة', icon: ShieldCheck, highlight: true },
-    ];
-  } else {
-    navLinks = [
-      { path: '/', label: 'الرئيسية', icon: HomeIcon },
-      { path: '/posts', label: 'الملتقى الأكاديمي', icon: MessageSquare },
-      { path: '/library', label: 'المكتبة الرقمية', icon: BookOpen },
-      { path: '/digital-id', label: 'بطاقتي الرقمية', icon: QrCode },
-      { path: '/chat', label: 'غرف المذاكرة', icon: Users },
-      { path: '/ai', label: 'المستشار الذكي', icon: Bot, isNew: true },
-      { path: '/faq', label: 'الأسئلة الشائعة', icon: HelpCircle },
-    ];
-  }
+  // 10 Primary Student Sectors
+  const primarySectors = [
+    { path: '/', label: 'الرئيسية', icon: HomeIcon, desc: 'الأخبار والفعاليات القادمة' },
+    { path: '/academic', label: 'الأكاديمية', icon: BookOpen, desc: 'مذكرات، امتحانات، ومجموعات دراسة' },
+    { path: '/sports', label: 'الرياضة', icon: Trophy, desc: 'البطولات، الفرق، النتائج والترتيب', badge: 'دوري 2026' },
+    { path: '/social', label: 'الاجتماعي', icon: HeartHandshake, desc: 'المبادرات، التطوع، ونظام الأسر' },
+    { path: '/events', label: 'الفعاليات', icon: Calendar, desc: 'التسجيل، التقويم، والتغطيات' },
+    { path: '/media', label: 'الإعلام', icon: Newspaper, desc: 'البيانات والأخبار الرسمية' },
+    { path: '/achievements', label: 'التكريم والإنجازات', icon: Award, desc: 'المتفوقون، المبتكرون، والرياضيون' },
+    { path: '/administration', label: 'الإدارة', icon: Shield, desc: 'المكتب التنفيذي واللجان والخطط' },
+    { path: '/constitution', label: 'الدستور واللوائح', icon: Scale, desc: 'الدستور والمراسيم والتقارير' },
+    { path: '/sudan', label: 'سوداننا', icon: Sparkles, desc: 'التراث، الولايات، المواهب والأدب', badge: '🇸🇩 بوابة الوطن' },
+  ];
 
   return (
     <>
-      {/* 1. شريط الإعلانات العاجلة المتحرك (Live Announcement Ticker) */}
+      {/* 1. شريط الإعلانات العاجلة المتحرك */}
       <AnnouncementTicker />
 
       {/* 2. شريط التنقل الرئيسي */}
@@ -126,32 +129,31 @@ function NavigationBar() {
       >
         <div
           style={{
-            maxWidth: '1300px',
+            maxWidth: '1360px',
             margin: '0 auto',
-            padding: '12px 20px',
+            padding: '10px 18px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '16px',
+            gap: '12px',
           }}
         >
-          {/* شعار الرابطة والاسم الكامل */}
-          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '12px', textDecoration: 'none' }}>
+          {/* شعار الرابطة والاسم */}
+          <Link to="/" style={{ display: 'flex', alignItems: 'center', gap: '10px', textDecoration: 'none', flexShrink: 0 }}>
             <div
               className="logo-wrapper rounded-full overflow-hidden"
               style={{
-                width: '46px',
-                height: '46px',
+                width: '44px',
+                height: '44px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 backgroundColor: '#ffffff',
-                padding: '3px',
+                padding: '2px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: `2px solid ${activeTheme.accent}`,
                 boxShadow: '0 3px 10px rgba(0, 0, 0, 0.35)',
-                flexShrink: 0,
               }}
             >
               <img
@@ -171,111 +173,314 @@ function NavigationBar() {
               <div style={{ color: activeTheme.textMain, fontWeight: '900', fontSize: '15px', lineHeight: '1.2' }}>
                 رابطة الطلاب السودانيين
               </div>
-              <div style={{ color: activeTheme.accentLight, fontSize: '12px', fontWeight: '700' }}>
+              <div style={{ color: activeTheme.accentLight, fontSize: '11px', fontWeight: '700' }}>
                 كلية العلوم جامعة القاهرة
               </div>
             </div>
           </Link>
 
-          {/* روابط التنقل الرئيسية لسطح المكتب */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} className="desktop-menu">
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = location.pathname === link.path;
-              return (
+          {/* روابط القطاعات الرئيسية على سطح المكتب */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} className="desktop-menu">
+            <Link
+              to="/"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '7px 10px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: location.pathname === '/' ? '700' : '500',
+                color: location.pathname === '/' ? activeTheme.accentLight : activeTheme.textMain,
+                background: location.pathname === '/' ? 'rgba(255,255,255,0.08)' : 'transparent',
+              }}
+            >
+              <HomeIcon size={15} />
+              <span>الرئيسية</span>
+            </Link>
+
+            <Link
+              to="/academic"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '7px 10px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: (location.pathname === '/academic' || location.pathname === '/library') ? '700' : '500',
+                color: (location.pathname === '/academic' || location.pathname === '/library') ? activeTheme.accentLight : activeTheme.textMain,
+                background: (location.pathname === '/academic' || location.pathname === '/library') ? 'rgba(255,255,255,0.08)' : 'transparent',
+              }}
+            >
+              <BookOpen size={15} />
+              <span>الأكاديمية</span>
+            </Link>
+
+            <Link
+              to="/sports"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '7px 10px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: location.pathname === '/sports' ? '700' : '500',
+                color: location.pathname === '/sports' ? '#38bdf8' : activeTheme.textMain,
+                background: location.pathname === '/sports' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
+              }}
+            >
+              <Trophy size={15} color="#38bdf8" />
+              <span>الرياضة</span>
+            </Link>
+
+            <Link
+              to="/social"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '4px',
+                padding: '7px 10px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: location.pathname === '/social' ? '700' : '500',
+                color: location.pathname === '/social' ? '#34d399' : activeTheme.textMain,
+                background: location.pathname === '/social' ? 'rgba(52, 211, 153, 0.15)' : 'transparent',
+              }}
+            >
+              <HeartHandshake size={15} color="#34d399" />
+              <span>الاجتماعي</span>
+            </Link>
+
+            <Link
+              to="/sudan"
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '5px',
+                padding: '7px 11px',
+                borderRadius: '8px',
+                textDecoration: 'none',
+                fontSize: '13px',
+                fontWeight: 'bold',
+                color: '#fbbf24',
+                background: 'rgba(245, 158, 11, 0.15)',
+                border: '1px solid rgba(245, 158, 11, 0.4)',
+              }}
+            >
+              <span>🇸🇩</span>
+              <span>سوداننا</span>
+            </Link>
+
+            {/* قطاعات إضافية (Mega Dropdown) */}
+            <div style={{ position: 'relative' }} ref={dropdownRef}>
+              <button
+                onClick={() => setSectorsDropdownOpen(!sectorsDropdownOpen)}
+                style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '4px',
+                  padding: '7px 10px',
+                  borderRadius: '8px',
+                  fontSize: '13px',
+                  fontWeight: '600',
+                  color: activeTheme.textMain,
+                  background: sectorsDropdownOpen ? 'rgba(255,255,255,0.08)' : 'transparent',
+                  border: 'none',
+                  cursor: 'pointer',
+                }}
+              >
+                <span>قطاعات الرابطة</span>
+                <ChevronDown size={14} style={{ transform: sectorsDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+              </button>
+
+              {sectorsDropdownOpen && (
+                <div
+                  style={{
+                    position: 'absolute',
+                    top: '100%',
+                    right: 0,
+                    marginTop: '8px',
+                    width: '320px',
+                    backgroundColor: activeTheme.bgDark,
+                    border: `1px solid ${activeTheme.border}`,
+                    borderRadius: '14px',
+                    boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
+                    padding: '8px',
+                    zIndex: 60,
+                  }}
+                >
+                  {primarySectors.map((sector) => {
+                    const Icon = sector.icon;
+                    return (
+                      <Link
+                        key={sector.path}
+                        to={sector.path}
+                        onClick={() => setSectorsDropdownOpen(false)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '10px',
+                          padding: '10px 12px',
+                          borderRadius: '8px',
+                          textDecoration: 'none',
+                          color: activeTheme.textMain,
+                          transition: 'background-color 0.2s',
+                        }}
+                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
+                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                      >
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '6px', borderRadius: '8px' }}>
+                          <Icon size={16} color={activeTheme.accent} />
+                        </div>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                            <span>{sector.label}</span>
+                            {sector.badge && (
+                              <span style={{ fontSize: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', padding: '1px 6px', borderRadius: '6px' }}>
+                                {sector.badge}
+                              </span>
+                            )}
+                          </div>
+                          <div style={{ fontSize: '11px', color: activeTheme.textMuted }}>{sector.desc}</div>
+                        </div>
+                      </Link>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* أدوات الأعضاء المعتمدين */}
+            {isAuthenticated && !isPending && (
+              <>
                 <Link
-                  key={link.path}
-                  to={link.path}
+                  to="/posts"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    padding: '8px 14px',
-                    borderRadius: '10px',
+                    gap: '4px',
+                    padding: '7px 9px',
+                    borderRadius: '8px',
                     textDecoration: 'none',
-                    fontSize: '13px',
-                    fontWeight: isActive ? '700' : '500',
-                    color: isActive ? activeTheme.accentLight : activeTheme.textMain,
-                    background: isActive
-                      ? 'rgba(255,255,255,0.08)'
-                      : link.highlight
-                      ? `${activeTheme.primary}30`
-                      : 'transparent',
-                    border: link.highlight ? `1px solid ${activeTheme.accent}` : '1px solid transparent',
-                    transition: 'all 0.2s',
+                    fontSize: '12px',
+                    fontWeight: location.pathname === '/posts' ? '700' : '500',
+                    color: location.pathname === '/posts' ? activeTheme.accentLight : activeTheme.textMain,
                   }}
                 >
-                  <Icon size={16} />
-                  <span>{link.label}</span>
-                  {link.isNew && (
-                    <span
-                      style={{
-                        background: activeTheme.accent,
-                        color: '#000000',
-                        fontSize: '10px',
-                        padding: '1px 6px',
-                        borderRadius: '10px',
-                        fontWeight: 'bold',
-                      }}
-                    >
-                      جديد
-                    </span>
-                  )}
-                  {link.badge && (
-                    <span
-                      style={{
-                        background: 'rgba(245, 158, 11, 0.2)',
-                        color: '#fbbf24',
-                        fontSize: '10px',
-                        padding: '1px 6px',
-                        borderRadius: '10px',
-                        fontWeight: 'bold',
-                        border: '1px solid #f59e0b',
-                      }}
-                    >
-                      {link.badge}
-                    </span>
-                  )}
+                  <MessageSquare size={14} />
+                  <span>الملتقى</span>
                 </Link>
-              );
-            })}
+
+                <Link
+                  to="/digital-id"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '7px 9px',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: location.pathname === '/digital-id' ? '700' : '500',
+                    color: location.pathname === '/digital-id' ? activeTheme.accentLight : activeTheme.textMain,
+                  }}
+                >
+                  <QrCode size={14} />
+                  <span>بطاقتي</span>
+                </Link>
+
+                <Link
+                  to="/chat"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '7px 9px',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: location.pathname === '/chat' ? '700' : '500',
+                    color: location.pathname === '/chat' ? activeTheme.accentLight : activeTheme.textMain,
+                  }}
+                >
+                  <Users size={14} />
+                  <span>المذاكرة</span>
+                </Link>
+
+                <Link
+                  to="/ai"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    padding: '7px 9px',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: location.pathname === '/ai' ? '700' : '500',
+                    color: location.pathname === '/ai' ? activeTheme.accentLight : activeTheme.textMain,
+                  }}
+                >
+                  <Bot size={14} />
+                  <span>المستشار الذكي</span>
+                </Link>
+
+                {isAdmin && (
+                  <Link
+                    to="/admin"
+                    style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '4px',
+                      padding: '7px 10px',
+                      borderRadius: '8px',
+                      textDecoration: 'none',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      color: '#fbbf24',
+                      background: 'rgba(245, 158, 11, 0.2)',
+                      border: '1px solid #f59e0b',
+                    }}
+                  >
+                    <ShieldCheck size={14} />
+                    <span>لوحة الإدارة</span>
+                  </Link>
+                )}
+              </>
+            )}
           </div>
 
-          {/* الروابط الاجتماعية السريعة في الهيدر ومعلومات الحساب */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
-            {/* أيقونات التواصل الاجتماعي */}
-            <div className="header-social-links">
-              <SocialLinks variant="compact" />
-            </div>
-
-            {/* حالة تسجيل الدخول */}
+          {/* معلومات تسجيل الدخول وتغيير الثيم */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             {isAuthenticated ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ textAlign: 'right' }} className="user-info-text">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                    <span style={{ color: activeTheme.textMain, fontSize: '13px', fontWeight: 'bold' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <span style={{ color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold' }}>
                       {user?.fullName || user?.name}
                     </span>
                     <span
                       style={{
-                        fontSize: '10px',
+                        fontSize: '9px',
                         fontWeight: 'bold',
-                        padding: '2px 8px',
-                        borderRadius: '10px',
+                        padding: '1px 6px',
+                        borderRadius: '6px',
                         backgroundColor: isAdmin
                           ? 'rgba(245, 158, 11, 0.2)'
                           : isPending
                           ? 'rgba(245, 158, 11, 0.15)'
                           : 'rgba(34, 197, 94, 0.2)',
                         color: isAdmin ? '#fbbf24' : isPending ? '#eab308' : '#22c55e',
-                        border: `1px solid ${isAdmin ? '#f59e0b' : isPending ? '#eab308' : '#22c55e'}`,
                       }}
                     >
-                      {isAdmin ? 'أدمن / إدارة' : isPending ? 'قيد المراجعة' : 'عضو معتمد'}
+                      {isAdmin ? 'أدمن' : isPending ? 'مراجعة' : 'معتمد'}
                     </span>
-                  </div>
-                  <div style={{ color: activeTheme.textMuted, fontSize: '11px' }}>
-                    {user?.department || 'كلية العلوم'}
                   </div>
                 </div>
 
@@ -286,65 +491,83 @@ function NavigationBar() {
                     background: 'rgba(239, 68, 68, 0.15)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
                     color: '#f87171',
-                    padding: '8px 12px',
+                    padding: '6px 10px',
                     borderRadius: '8px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
-                    fontSize: '12px',
+                    gap: '4px',
+                    fontSize: '11px',
                     fontWeight: 'bold',
                   }}
                 >
-                  <LogOut size={15} />
+                  <LogOut size={13} />
                   <span>خروج</span>
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <Link
+                  to="/register"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '4px',
+                    background: 'rgba(255,255,255,0.08)',
+                    border: `1px solid ${activeTheme.border}`,
+                    color: activeTheme.textMain,
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    textDecoration: 'none',
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                  }}
+                >
+                  <UserPlus size={13} />
+                  <span>تسجيل</span>
+                </Link>
+
                 <Link
                   to="/login"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '6px',
+                    gap: '4px',
                     background: `linear-gradient(135deg, ${activeTheme.accent} 0%, #d97706 100%)`,
                     color: '#0b1622',
-                    padding: '8px 16px',
-                    borderRadius: '10px',
+                    padding: '6px 12px',
+                    borderRadius: '8px',
                     textDecoration: 'none',
-                    fontSize: '13px',
+                    fontSize: '12px',
                     fontWeight: 'bold',
-                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
                   }}
                 >
-                  <LogIn size={15} />
-                  <span>دخول الأعضاء</span>
+                  <LogIn size={13} />
+                  <span>دخول</span>
                 </Link>
               </div>
             )}
 
-            {/* زر تبديل الوضع النهاري / الداكن Dark/Light Theme Toggle */}
+            {/* Dark / Light Toggle */}
             <button
               onClick={toggleThemeMode}
-              title={activeTheme.isDark ? 'التحويل للوضع النهاري (Light Mode)' : 'التحويل للوضع الداكن (Dark Mode)'}
+              title={activeTheme.isDark ? 'الوضع النهاري' : 'الوضع الداكن'}
               style={{
                 background: 'rgba(255,255,255,0.08)',
                 border: `1px solid ${activeTheme.border}`,
                 color: activeTheme.accentLight,
-                padding: '8px',
+                padding: '6px',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                transition: 'all 0.2s ease',
               }}
             >
-              {activeTheme.isDark ? <Sun size={18} /> : <Moon size={18} />}
+              {activeTheme.isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            {/* زر القائمة للشاشات الصغيرة */}
+            {/* Mobile Menu Button */}
             <button
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="mobile-menu-btn"
@@ -352,18 +575,18 @@ function NavigationBar() {
                 background: 'rgba(255,255,255,0.08)',
                 border: `1px solid ${activeTheme.border}`,
                 color: activeTheme.textMain,
-                padding: '8px',
+                padding: '6px',
                 borderRadius: '8px',
                 cursor: 'pointer',
                 display: 'none',
               }}
             >
-              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
+              {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
             </button>
           </div>
         </div>
 
-        {/* قائمة الموبايل المنسدلة */}
+        {/* Mobile Dropdown Menu */}
         {isMobileMenuOpen && (
           <div
             style={{
@@ -372,56 +595,86 @@ function NavigationBar() {
               padding: '16px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '8px',
+              gap: '6px',
+              maxHeight: '80vh',
+              overflowY: 'auto',
             }}
           >
-            {navLinks.map((link) => {
-              const Icon = link.icon;
-              const isActive = location.pathname === link.path;
+            <div style={{ fontSize: '12px', fontWeight: 'bold', color: activeTheme.accent, marginBottom: '4px' }}>
+              قطاعات ومراكز الرابطة الطلابية:
+            </div>
+            {primarySectors.map((s) => {
+              const Icon = s.icon;
               return (
                 <Link
-                  key={link.path}
-                  to={link.path}
+                  key={s.path}
+                  to={s.path}
                   onClick={() => setIsMobileMenuOpen(false)}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '10px',
-                    padding: '12px 14px',
-                    borderRadius: '10px',
+                    justifyContent: 'space-between',
+                    padding: '10px 12px',
+                    borderRadius: '8px',
                     textDecoration: 'none',
-                    color: isActive ? activeTheme.accentLight : activeTheme.textMain,
-                    background: isActive ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    fontSize: '14px',
-                    fontWeight: isActive ? '700' : '500',
+                    color: activeTheme.textMain,
+                    backgroundColor: location.pathname === s.path ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    fontSize: '13px',
+                    fontWeight: location.pathname === s.path ? 'bold' : 'normal',
                   }}
                 >
-                  <Icon size={18} />
-                  <span>{link.label}</span>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <Icon size={16} color={activeTheme.accent} />
+                    <span>{s.label}</span>
+                  </div>
+                  {s.badge && (
+                    <span style={{ fontSize: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', padding: '1px 6px', borderRadius: '6px' }}>
+                      {s.badge}
+                    </span>
+                  )}
                 </Link>
               );
             })}
 
-            <div style={{ marginTop: '10px', paddingTop: '10px', borderTop: `1px solid ${activeTheme.border}` }}>
-              <div style={{ color: activeTheme.textMuted, fontSize: '12px', marginBottom: '8px' }}>صفحات الرابطة الرسمية:</div>
-              <SocialLinks variant="compact" />
-            </div>
+            {isAuthenticated && !isPending && (
+              <>
+                <div style={{ height: '1px', backgroundColor: activeTheme.border, margin: '8px 0' }} />
+                <div style={{ fontSize: '12px', fontWeight: 'bold', color: activeTheme.accentLight, marginBottom: '4px' }}>
+                  خدمات الأعضاء:
+                </div>
+                <Link to="/posts" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                  <MessageSquare size={16} /> <span>الملتقى الأكاديمي</span>
+                </Link>
+                <Link to="/digital-id" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                  <QrCode size={16} /> <span>بطاقة العضوية الرقمية</span>
+                </Link>
+                <Link to="/chat" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                  <Users size={16} /> <span>غرف المذاكرة التفاعلية</span>
+                </Link>
+                <Link to="/ai" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                  <Bot size={16} /> <span>المستشار الذكي (AI)</span>
+                </Link>
+                {isAdmin && (
+                  <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: '#fbbf24', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>
+                    <ShieldCheck size={16} /> <span>لوحة الإدارة</span>
+                  </Link>
+                )}
+              </>
+            )}
           </div>
         )}
       </nav>
 
       <style>{`
-        @media (min-width: 860px) {
+        @media (min-width: 980px) {
           .desktop-menu { display: flex !important; }
           .mobile-menu-btn { display: none !important; }
           .user-info-text { display: block !important; }
-          .header-social-links { display: block !important; }
         }
-        @media (max-width: 859px) {
+        @media (max-width: 979px) {
           .desktop-menu { display: none !important; }
           .mobile-menu-btn { display: block !important; }
           .user-info-text { display: none !important; }
-          .header-social-links { display: none !important; }
         }
       `}</style>
     </>
@@ -444,10 +697,10 @@ function Footer() {
     >
       <div
         style={{
-          maxWidth: '1200px',
+          maxWidth: '1300px',
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
           gap: '30px',
           marginBottom: '30px',
         }}
@@ -468,8 +721,6 @@ function Footer() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: `2px solid ${activeTheme.accent}`,
-                boxShadow: '0 2px 8px rgba(0, 0, 0, 0.3)',
-                flexShrink: 0,
               }}
             >
               <img
@@ -494,38 +745,30 @@ function Footer() {
             </div>
           </div>
           <p style={{ lineHeight: '1.8', margin: 0 }}>
-            الهيئة الطلابية الأكاديمية والاجتماعية الرسمية الممثلة لطلاب جمهورية السودان بكلية العلوم - جامعة القاهرة.
+            الهيئة الطلابية الأكاديمية والاجتماعية والثقافية الممثلة لطلاب جمهورية السودان بكلية العلوم جامعة القاهرة.
           </p>
         </div>
 
-        {/* روابط سريعة */}
+        {/* قطاعات المنصة */}
         <div>
           <h4 style={{ color: activeTheme.textMain, marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
-            روابط المنصة السريعة
+            قطاعات ومراكز الرابطة
           </h4>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
-            <Link to="/library" style={{ color: activeTheme.accentLight, textDecoration: 'none', fontWeight: 'bold' }}>
-              📚 المكتبة الأكاديمية وأرشيف الامتحانات
-            </Link>
-            <Link to="/digital-id" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              💳 بطاقة العضوية الرقمية (Digital ID)
-            </Link>
-            <Link to="/faq" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              ❓ الأسئلة الشائعة وتدقيق القيد
-            </Link>
-            <Link to="/contact" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              📍 اتصل بنا ومقر الرابطة
-            </Link>
-            <Link to="/register" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              استمارة التسجيل المركزي والاستبيان
-            </Link>
-            <Link to="/posts" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>
-              غرفة المنشورات والملتقى الأكاديمي
-            </Link>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
+            <Link to="/academic" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>📚 الأكاديمية</Link>
+            <Link to="/sports" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>⚽ الرياضة</Link>
+            <Link to="/social" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>🤝 الاجتماعي</Link>
+            <Link to="/events" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>📅 الفعاليات</Link>
+            <Link to="/media" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>📢 الإعلام</Link>
+            <Link to="/achievements" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>🏆 الإنجازات</Link>
+            <Link to="/administration" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>🛡️ الإدارة</Link>
+            <Link to="/constitution" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>⚖️ الدستور</Link>
+            <Link to="/sudan" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>🇸🇩 سوداننا</Link>
+            <Link to="/digital-id" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>💳 بطاقتي</Link>
           </div>
         </div>
 
-        {/* صفحات التواصل الاجتماعي الرسمية */}
+        {/* صفحات التواصل الاجتماعي */}
         <div>
           <h4 style={{ color: activeTheme.textMain, marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
             صفحات الرابطة الرسمية
@@ -566,7 +809,16 @@ function MainAppLayout() {
       <main style={{ flex: 1 }}>
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/academic" element={<AcademicLibrary />} />
           <Route path="/library" element={<AcademicLibrary />} />
+          <Route path="/sports" element={<SportsHub />} />
+          <Route path="/sudan" element={<SudanPortal />} />
+          <Route path="/social" element={<SocialHub />} />
+          <Route path="/events" element={<EventsHub />} />
+          <Route path="/media" element={<MediaHub />} />
+          <Route path="/achievements" element={<AchievementsHub />} />
+          <Route path="/administration" element={<AdministrationHub />} />
+          <Route path="/constitution" element={<ConstitutionHub />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/digital-id" element={<DigitalIDPage />} />
