@@ -28,6 +28,7 @@ import MediaHub from './pages/MediaHub';
 import AchievementsHub from './pages/AchievementsHub';
 import AdministrationHub from './pages/AdministrationHub';
 import ConstitutionHub from './pages/ConstitutionHub';
+import ArchivePortal from './pages/ArchivePortal';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
 import DigitalIDPage from './pages/DigitalIDPage';
@@ -64,7 +65,9 @@ import {
   Scale,
   Sparkles,
   ChevronDown,
-  Globe
+  Globe,
+  FolderArchive,
+  Grid
 } from 'lucide-react';
 
 function NavigationBar() {
@@ -96,9 +99,9 @@ function NavigationBar() {
     switchTheme(nextTheme);
   };
 
-  // 10 Primary Student Sectors
+  // Primary Student Sectors displayed in the clean "قطاعات الرابطة" dropdown
   const primarySectors = [
-    { path: '/', label: 'الرئيسية', icon: HomeIcon, desc: 'الأخبار والفعاليات القادمة' },
+    { path: '/', label: 'الرئيسية', icon: HomeIcon, desc: 'الأخبار، الإعلانات، والفعاليات' },
     { path: '/academic', label: 'الأكاديمية', icon: BookOpen, desc: 'مذكرات، امتحانات، ومجموعات دراسة' },
     { path: '/sports', label: 'الرياضة', icon: Trophy, desc: 'البطولات، الفرق، النتائج والترتيب', badge: 'دوري 2026' },
     { path: '/social', label: 'الاجتماعي', icon: HeartHandshake, desc: 'المبادرات، التطوع، ونظام الأسر' },
@@ -108,6 +111,7 @@ function NavigationBar() {
     { path: '/administration', label: 'الإدارة', icon: Shield, desc: 'المكتب التنفيذي واللجان والخطط' },
     { path: '/constitution', label: 'الدستور واللوائح', icon: Scale, desc: 'الدستور والمراسيم والتقارير' },
     { path: '/sudan', label: 'سوداننا', icon: Sparkles, desc: 'التراث، الولايات، المواهب والأدب', badge: '🇸🇩 بوابة الوطن' },
+    { path: '/archive', label: 'أرشيف الرابطة', icon: FolderArchive, desc: 'الوثائق التاريخية والمطبوعات والألبومات', badge: 'جديد' },
   ];
 
   return (
@@ -115,15 +119,15 @@ function NavigationBar() {
       {/* 1. شريط الإعلانات العاجلة المتحرك */}
       <AnnouncementTicker />
 
-      {/* 2. شريط التنقل الرئيسي */}
+      {/* 2. شريط التنقل الرئيسي النظيف والموحد */}
       <nav
         style={{
-          background: activeTheme.bgCard,
-          borderBottom: `1px solid ${activeTheme.border}`,
+          background: 'rgba(15, 23, 42, 0.95)',
+          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
           position: 'sticky',
           top: 0,
           zIndex: 50,
-          backdropFilter: 'blur(12px)',
+          backdropFilter: 'blur(16px)',
           direction: 'rtl',
         }}
       >
@@ -131,11 +135,11 @@ function NavigationBar() {
           style={{
             maxWidth: '1360px',
             margin: '0 auto',
-            padding: '10px 18px',
+            padding: '10px 20px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '12px',
+            gap: '14px',
           }}
         >
           {/* شعار الرابطة والاسم */}
@@ -152,7 +156,7 @@ function NavigationBar() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: `2px solid ${activeTheme.accent}`,
+                border: '2px solid #f59e0b',
                 boxShadow: '0 3px 10px rgba(0, 0, 0, 0.35)',
               }}
             >
@@ -170,153 +174,72 @@ function NavigationBar() {
             </div>
 
             <div>
-              <div style={{ color: activeTheme.textMain, fontWeight: '900', fontSize: '15px', lineHeight: '1.2' }}>
+              <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '15px', lineHeight: '1.2' }}>
                 رابطة الطلاب السودانيين
               </div>
-              <div style={{ color: activeTheme.accentLight, fontSize: '11px', fontWeight: '700' }}>
+              <div style={{ color: '#fbbf24', fontSize: '11px', fontWeight: '700' }}>
                 كلية العلوم جامعة القاهرة
               </div>
             </div>
           </Link>
 
-          {/* روابط القطاعات الرئيسية على سطح المكتب */}
-          <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }} className="desktop-menu">
-            <Link
-              to="/"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '7px 10px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '13px',
-                fontWeight: location.pathname === '/' ? '700' : '500',
-                color: location.pathname === '/' ? activeTheme.accentLight : activeTheme.textMain,
-                background: location.pathname === '/' ? 'rgba(255,255,255,0.08)' : 'transparent',
-              }}
-            >
-              <HomeIcon size={15} />
-              <span>الرئيسية</span>
-            </Link>
-
-            <Link
-              to="/academic"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '7px 10px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '13px',
-                fontWeight: (location.pathname === '/academic' || location.pathname === '/library') ? '700' : '500',
-                color: (location.pathname === '/academic' || location.pathname === '/library') ? activeTheme.accentLight : activeTheme.textMain,
-                background: (location.pathname === '/academic' || location.pathname === '/library') ? 'rgba(255,255,255,0.08)' : 'transparent',
-              }}
-            >
-              <BookOpen size={15} />
-              <span>الأكاديمية</span>
-            </Link>
-
-            <Link
-              to="/sports"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '7px 10px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '13px',
-                fontWeight: location.pathname === '/sports' ? '700' : '500',
-                color: location.pathname === '/sports' ? '#38bdf8' : activeTheme.textMain,
-                background: location.pathname === '/sports' ? 'rgba(56, 189, 248, 0.15)' : 'transparent',
-              }}
-            >
-              <Trophy size={15} color="#38bdf8" />
-              <span>الرياضة</span>
-            </Link>
-
-            <Link
-              to="/social"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '7px 10px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '13px',
-                fontWeight: location.pathname === '/social' ? '700' : '500',
-                color: location.pathname === '/social' ? '#34d399' : activeTheme.textMain,
-                background: location.pathname === '/social' ? 'rgba(52, 211, 153, 0.15)' : 'transparent',
-              }}
-            >
-              <HeartHandshake size={15} color="#34d399" />
-              <span>الاجتماعي</span>
-            </Link>
-
-            <Link
-              to="/sudan"
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '5px',
-                padding: '7px 11px',
-                borderRadius: '8px',
-                textDecoration: 'none',
-                fontSize: '13px',
-                fontWeight: 'bold',
-                color: '#fbbf24',
-                background: 'rgba(245, 158, 11, 0.15)',
-                border: '1px solid rgba(245, 158, 11, 0.4)',
-              }}
-            >
-              <span>🇸🇩</span>
-              <span>سوداننا</span>
-            </Link>
-
-            {/* قطاعات إضافية (Mega Dropdown) */}
+          {/* روابط التنقل الرئيسية النظيفة (بدون تكرار القطاعات) */}
+          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }} className="desktop-menu">
+            
+            {/* زر قطاعات الرابطة الموحد والنظيف مع Mega Dropdown */}
             <div style={{ position: 'relative' }} ref={dropdownRef}>
               <button
                 onClick={() => setSectorsDropdownOpen(!sectorsDropdownOpen)}
                 style={{
                   display: 'flex',
                   alignItems: 'center',
-                  gap: '4px',
-                  padding: '7px 10px',
-                  borderRadius: '8px',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  color: activeTheme.textMain,
-                  background: sectorsDropdownOpen ? 'rgba(255,255,255,0.08)' : 'transparent',
-                  border: 'none',
+                  gap: '8px',
+                  padding: '9px 16px',
+                  borderRadius: '10px',
+                  fontSize: '14px',
+                  fontWeight: 'bold',
+                  color: sectorsDropdownOpen ? '#fbbf24' : '#ffffff',
+                  background: sectorsDropdownOpen ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.08)',
+                  border: sectorsDropdownOpen ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.15)',
                   cursor: 'pointer',
+                  transition: 'all 0.2s ease',
+                  boxShadow: sectorsDropdownOpen ? '0 4px 14px rgba(245, 158, 11, 0.25)' : 'none',
                 }}
               >
+                <Grid size={16} color="#fbbf24" />
                 <span>قطاعات الرابطة</span>
-                <ChevronDown size={14} style={{ transform: sectorsDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
+                <ChevronDown size={15} style={{ transform: sectorsDropdownOpen ? 'rotate(180deg)' : 'none', transition: 'transform 0.2s' }} />
               </button>
 
+              {/* القائمة المنسدلة المصقولة والشفافة بتأثير Blur ناعم */}
               {sectorsDropdownOpen && (
                 <div
                   style={{
                     position: 'absolute',
                     top: '100%',
                     right: 0,
-                    marginTop: '8px',
-                    width: '320px',
-                    backgroundColor: activeTheme.bgDark,
-                    border: `1px solid ${activeTheme.border}`,
-                    borderRadius: '14px',
-                    boxShadow: '0 12px 30px rgba(0,0,0,0.5)',
-                    padding: '8px',
+                    marginTop: '10px',
+                    width: '360px',
+                    backgroundColor: 'rgba(15, 23, 42, 0.96)',
+                    backdropFilter: 'blur(20px)',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    borderRadius: '16px',
+                    boxShadow: '0 20px 45px -10px rgba(0, 0, 0, 0.7)',
+                    padding: '10px',
                     zIndex: 60,
+                    display: 'grid',
+                    gap: '4px',
+                    maxHeight: '80vh',
+                    overflowY: 'auto',
                   }}
                 >
+                  <div style={{ padding: '6px 12px', fontSize: '11px', color: '#94a3b8', fontWeight: 'bold', borderBottom: '1px solid rgba(255, 255, 255, 0.08)', marginBottom: '4px' }}>
+                    اختر القطاع أو البوابة المطلوبة:
+                  </div>
+
                   {primarySectors.map((sector) => {
                     const Icon = sector.icon;
+                    const isCurrent = location.pathname === sector.path;
                     return (
                       <Link
                         key={sector.path}
@@ -325,29 +248,35 @@ function NavigationBar() {
                         style={{
                           display: 'flex',
                           alignItems: 'center',
-                          gap: '10px',
+                          gap: '12px',
                           padding: '10px 12px',
-                          borderRadius: '8px',
+                          borderRadius: '10px',
                           textDecoration: 'none',
-                          color: activeTheme.textMain,
-                          transition: 'background-color 0.2s',
+                          color: isCurrent ? '#fbbf24' : '#ffffff',
+                          backgroundColor: isCurrent ? 'rgba(245, 158, 11, 0.12)' : 'transparent',
+                          border: isCurrent ? '1px solid rgba(245, 158, 11, 0.3)' : '1px solid transparent',
+                          transition: 'background-color 0.15s ease',
                         }}
-                        onMouseEnter={(e) => (e.currentTarget.style.backgroundColor = 'rgba(255,255,255,0.06)')}
-                        onMouseLeave={(e) => (e.currentTarget.style.backgroundColor = 'transparent')}
+                        onMouseEnter={(e) => {
+                          if (!isCurrent) e.currentTarget.style.backgroundColor = 'rgba(255, 255, 255, 0.08)';
+                        }}
+                        onMouseLeave={(e) => {
+                          if (!isCurrent) e.currentTarget.style.backgroundColor = 'transparent';
+                        }}
                       >
-                        <div style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '6px', borderRadius: '8px' }}>
-                          <Icon size={16} color={activeTheme.accent} />
+                        <div style={{ backgroundColor: 'rgba(255,255,255,0.08)', padding: '7px', borderRadius: '8px', flexShrink: 0 }}>
+                          <Icon size={16} color={isCurrent ? '#f59e0b' : '#38bdf8'} />
                         </div>
                         <div style={{ flex: 1 }}>
-                          <div style={{ fontSize: '13px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                          <div style={{ fontSize: '14px', fontWeight: 'bold', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                             <span>{sector.label}</span>
                             {sector.badge && (
-                              <span style={{ fontSize: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', padding: '1px 6px', borderRadius: '6px' }}>
+                              <span style={{ fontSize: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', padding: '1px 6px', borderRadius: '6px', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
                                 {sector.badge}
                               </span>
                             )}
                           </div>
-                          <div style={{ fontSize: '11px', color: activeTheme.textMuted }}>{sector.desc}</div>
+                          <div style={{ fontSize: '12px', color: '#cbd5e1', marginTop: '2px' }}>{sector.desc}</div>
                         </div>
                       </Link>
                     );
@@ -356,7 +285,7 @@ function NavigationBar() {
               )}
             </div>
 
-            {/* أدوات الأعضاء المعتمدين */}
+            {/* روابط الأعضاء المعتمدين */}
             {isAuthenticated && !isPending && (
               <>
                 <Link
@@ -364,17 +293,18 @@ function NavigationBar() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    padding: '7px 9px',
-                    borderRadius: '8px',
+                    gap: '5px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
                     textDecoration: 'none',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: location.pathname === '/posts' ? '700' : '500',
-                    color: location.pathname === '/posts' ? activeTheme.accentLight : activeTheme.textMain,
+                    color: location.pathname === '/posts' ? '#fbbf24' : '#ffffff',
+                    background: location.pathname === '/posts' ? 'rgba(255,255,255,0.08)' : 'transparent',
                   }}
                 >
-                  <MessageSquare size={14} />
-                  <span>الملتقى</span>
+                  <MessageSquare size={15} />
+                  <span>الملتقى الأكاديمي</span>
                 </Link>
 
                 <Link
@@ -382,17 +312,18 @@ function NavigationBar() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    padding: '7px 9px',
-                    borderRadius: '8px',
+                    gap: '5px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
                     textDecoration: 'none',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: location.pathname === '/digital-id' ? '700' : '500',
-                    color: location.pathname === '/digital-id' ? activeTheme.accentLight : activeTheme.textMain,
+                    color: location.pathname === '/digital-id' ? '#fbbf24' : '#ffffff',
+                    background: location.pathname === '/digital-id' ? 'rgba(255,255,255,0.08)' : 'transparent',
                   }}
                 >
-                  <QrCode size={14} />
-                  <span>بطاقتي</span>
+                  <QrCode size={15} />
+                  <span>بطاقتي الرقمية</span>
                 </Link>
 
                 <Link
@@ -400,17 +331,18 @@ function NavigationBar() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    padding: '7px 9px',
-                    borderRadius: '8px',
+                    gap: '5px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
                     textDecoration: 'none',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: location.pathname === '/chat' ? '700' : '500',
-                    color: location.pathname === '/chat' ? activeTheme.accentLight : activeTheme.textMain,
+                    color: location.pathname === '/chat' ? '#fbbf24' : '#ffffff',
+                    background: location.pathname === '/chat' ? 'rgba(255,255,255,0.08)' : 'transparent',
                   }}
                 >
-                  <Users size={14} />
-                  <span>المذاكرة</span>
+                  <Users size={15} />
+                  <span>غرف المذاكرة</span>
                 </Link>
 
                 <Link
@@ -418,16 +350,17 @@ function NavigationBar() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    padding: '7px 9px',
-                    borderRadius: '8px',
+                    gap: '5px',
+                    padding: '8px 12px',
+                    borderRadius: '10px',
                     textDecoration: 'none',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: location.pathname === '/ai' ? '700' : '500',
-                    color: location.pathname === '/ai' ? activeTheme.accentLight : activeTheme.textMain,
+                    color: location.pathname === '/ai' ? '#fbbf24' : '#ffffff',
+                    background: location.pathname === '/ai' ? 'rgba(255,255,255,0.08)' : 'transparent',
                   }}
                 >
-                  <Bot size={14} />
+                  <Bot size={15} />
                   <span>المستشار الذكي</span>
                 </Link>
 
@@ -437,18 +370,18 @@ function NavigationBar() {
                     style={{
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '4px',
-                      padding: '7px 10px',
-                      borderRadius: '8px',
+                      gap: '5px',
+                      padding: '8px 14px',
+                      borderRadius: '10px',
                       textDecoration: 'none',
-                      fontSize: '12px',
+                      fontSize: '13px',
                       fontWeight: 'bold',
                       color: '#fbbf24',
                       background: 'rgba(245, 158, 11, 0.2)',
                       border: '1px solid #f59e0b',
                     }}
                   >
-                    <ShieldCheck size={14} />
+                    <ShieldCheck size={15} />
                     <span>لوحة الإدارة</span>
                   </Link>
                 )}
@@ -461,22 +394,22 @@ function NavigationBar() {
             {isAuthenticated ? (
               <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <div style={{ textAlign: 'right' }} className="user-info-text">
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <span style={{ color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <span style={{ color: '#ffffff', fontSize: '13px', fontWeight: 'bold' }}>
                       {user?.fullName || user?.name}
                     </span>
                     <span
                       style={{
-                        fontSize: '9px',
+                        fontSize: '10px',
                         fontWeight: 'bold',
-                        padding: '1px 6px',
-                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        borderRadius: '8px',
                         backgroundColor: isAdmin
                           ? 'rgba(245, 158, 11, 0.2)'
                           : isPending
                           ? 'rgba(245, 158, 11, 0.15)'
                           : 'rgba(34, 197, 94, 0.2)',
-                        color: isAdmin ? '#fbbf24' : isPending ? '#eab308' : '#22c55e',
+                        color: isAdmin ? '#fbbf24' : isPending ? '#eab308' : '#34d399',
                       }}
                     >
                       {isAdmin ? 'أدمن' : isPending ? 'مراجعة' : 'معتمد'}
@@ -491,39 +424,39 @@ function NavigationBar() {
                     background: 'rgba(239, 68, 68, 0.15)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
                     color: '#f87171',
-                    padding: '6px 10px',
+                    padding: '7px 12px',
                     borderRadius: '8px',
                     cursor: 'pointer',
                     display: 'flex',
                     alignItems: 'center',
                     gap: '4px',
-                    fontSize: '11px',
+                    fontSize: '12px',
                     fontWeight: 'bold',
                   }}
                 >
-                  <LogOut size={13} />
+                  <LogOut size={14} />
                   <span>خروج</span>
                 </button>
               </div>
             ) : (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
                 <Link
                   to="/register"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
+                    gap: '5px',
                     background: 'rgba(255,255,255,0.08)',
-                    border: `1px solid ${activeTheme.border}`,
-                    color: activeTheme.textMain,
-                    padding: '6px 12px',
-                    borderRadius: '8px',
+                    border: '1px solid rgba(255, 255, 255, 0.15)',
+                    color: '#ffffff',
+                    padding: '8px 14px',
+                    borderRadius: '10px',
                     textDecoration: 'none',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: 'bold',
                   }}
                 >
-                  <UserPlus size={13} />
+                  <UserPlus size={14} />
                   <span>تسجيل</span>
                 </Link>
 
@@ -532,18 +465,19 @@ function NavigationBar() {
                   style={{
                     display: 'flex',
                     alignItems: 'center',
-                    gap: '4px',
-                    background: `linear-gradient(135deg, ${activeTheme.accent} 0%, #d97706 100%)`,
+                    gap: '5px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                     color: '#0b1622',
-                    padding: '6px 12px',
-                    borderRadius: '8px',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
                     textDecoration: 'none',
-                    fontSize: '12px',
+                    fontSize: '13px',
                     fontWeight: 'bold',
+                    boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
                   }}
                 >
-                  <LogIn size={13} />
-                  <span>دخول</span>
+                  <LogIn size={14} />
+                  <span>دخول الأعضاء</span>
                 </Link>
               </div>
             )}
@@ -554,17 +488,17 @@ function NavigationBar() {
               title={activeTheme.isDark ? 'الوضع النهاري' : 'الوضع الداكن'}
               style={{
                 background: 'rgba(255,255,255,0.08)',
-                border: `1px solid ${activeTheme.border}`,
-                color: activeTheme.accentLight,
-                padding: '6px',
-                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#fbbf24',
+                padding: '8px',
+                borderRadius: '10px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
               }}
             >
-              {activeTheme.isDark ? <Sun size={16} /> : <Moon size={16} />}
+              {activeTheme.isDark ? <Sun size={17} /> : <Moon size={17} />}
             </button>
 
             {/* Mobile Menu Button */}
@@ -573,15 +507,15 @@ function NavigationBar() {
               className="mobile-menu-btn"
               style={{
                 background: 'rgba(255,255,255,0.08)',
-                border: `1px solid ${activeTheme.border}`,
-                color: activeTheme.textMain,
-                padding: '6px',
-                borderRadius: '8px',
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
+                padding: '8px',
+                borderRadius: '10px',
                 cursor: 'pointer',
                 display: 'none',
               }}
             >
-              {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+              {isMobileMenuOpen ? <X size={20} /> : <Menu size={20} />}
             </button>
           </div>
         </div>
@@ -590,17 +524,17 @@ function NavigationBar() {
         {isMobileMenuOpen && (
           <div
             style={{
-              background: activeTheme.bgDark,
-              borderTop: `1px solid ${activeTheme.border}`,
-              padding: '16px 20px',
+              background: 'rgba(15, 23, 42, 0.98)',
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              padding: '18px 20px',
               display: 'flex',
               flexDirection: 'column',
-              gap: '6px',
+              gap: '8px',
               maxHeight: '80vh',
               overflowY: 'auto',
             }}
           >
-            <div style={{ fontSize: '12px', fontWeight: 'bold', color: activeTheme.accent, marginBottom: '4px' }}>
+            <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#fbbf24', marginBottom: '6px' }}>
               قطاعات ومراكز الرابطة الطلابية:
             </div>
             {primarySectors.map((s) => {
@@ -614,21 +548,21 @@ function NavigationBar() {
                     display: 'flex',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '10px 12px',
-                    borderRadius: '8px',
+                    padding: '10px 14px',
+                    borderRadius: '10px',
                     textDecoration: 'none',
-                    color: activeTheme.textMain,
-                    backgroundColor: location.pathname === s.path ? 'rgba(255,255,255,0.08)' : 'transparent',
-                    fontSize: '13px',
+                    color: '#ffffff',
+                    backgroundColor: location.pathname === s.path ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                    fontSize: '14px',
                     fontWeight: location.pathname === s.path ? 'bold' : 'normal',
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <Icon size={16} color={activeTheme.accent} />
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    <Icon size={17} color="#fbbf24" />
                     <span>{s.label}</span>
                   </div>
                   {s.badge && (
-                    <span style={{ fontSize: '10px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', padding: '1px 6px', borderRadius: '6px' }}>
+                    <span style={{ fontSize: '11px', backgroundColor: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24', padding: '2px 8px', borderRadius: '6px' }}>
                       {s.badge}
                     </span>
                   )}
@@ -638,24 +572,24 @@ function NavigationBar() {
 
             {isAuthenticated && !isPending && (
               <>
-                <div style={{ height: '1px', backgroundColor: activeTheme.border, margin: '8px 0' }} />
-                <div style={{ fontSize: '12px', fontWeight: 'bold', color: activeTheme.accentLight, marginBottom: '4px' }}>
+                <div style={{ height: '1px', backgroundColor: 'rgba(255, 255, 255, 0.1)', margin: '10px 0' }} />
+                <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#38bdf8', marginBottom: '6px' }}>
                   خدمات الأعضاء:
                 </div>
-                <Link to="/posts" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                <Link to="/posts" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: '#ffffff', textDecoration: 'none', fontSize: '14px' }}>
                   <MessageSquare size={16} /> <span>الملتقى الأكاديمي</span>
                 </Link>
-                <Link to="/digital-id" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                <Link to="/digital-id" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: '#ffffff', textDecoration: 'none', fontSize: '14px' }}>
                   <QrCode size={16} /> <span>بطاقة العضوية الرقمية</span>
                 </Link>
-                <Link to="/chat" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                <Link to="/chat" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: '#ffffff', textDecoration: 'none', fontSize: '14px' }}>
                   <Users size={16} /> <span>غرف المذاكرة التفاعلية</span>
                 </Link>
-                <Link to="/ai" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: activeTheme.textMain, textDecoration: 'none', fontSize: '13px' }}>
+                <Link to="/ai" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: '#ffffff', textDecoration: 'none', fontSize: '14px' }}>
                   <Bot size={16} /> <span>المستشار الذكي (AI)</span>
                 </Link>
                 {isAdmin && (
-                  <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '8px', padding: '8px 12px', color: '#fbbf24', textDecoration: 'none', fontSize: '13px', fontWeight: 'bold' }}>
+                  <Link to="/admin" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '10px', padding: '10px 14px', color: '#fbbf24', textDecoration: 'none', fontSize: '14px', fontWeight: 'bold' }}>
                     <ShieldCheck size={16} /> <span>لوحة الإدارة</span>
                   </Link>
                 )}
@@ -686,12 +620,12 @@ function Footer() {
   return (
     <footer
       style={{
-        background: activeTheme.bgCard,
-        borderTop: `1px solid ${activeTheme.border}`,
-        padding: '40px 20px 24px',
+        background: '#09131f',
+        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+        padding: '45px 20px 24px',
         marginTop: 'auto',
-        color: activeTheme.textMuted,
-        fontSize: '13px',
+        color: '#cbd5e1',
+        fontSize: '14px',
         direction: 'rtl',
       }}
     >
@@ -700,7 +634,7 @@ function Footer() {
           maxWidth: '1300px',
           margin: '0 auto',
           display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
           gap: '30px',
           marginBottom: '30px',
         }}
@@ -720,7 +654,7 @@ function Footer() {
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: `2px solid ${activeTheme.accent}`,
+                border: '2px solid #f59e0b',
               }}
             >
               <img
@@ -736,41 +670,41 @@ function Footer() {
               />
             </div>
             <div>
-              <div style={{ color: activeTheme.textMain, fontWeight: '900', fontSize: '15px' }}>
+              <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '15px' }}>
                 رابطة الطلاب السودانيين
               </div>
-              <div style={{ color: activeTheme.accentLight, fontSize: '12px' }}>
+              <div style={{ color: '#fbbf24', fontSize: '12px' }}>
                 كلية العلوم - جامعة القاهرة
               </div>
             </div>
           </div>
-          <p style={{ lineHeight: '1.8', margin: 0 }}>
+          <p style={{ lineHeight: '1.8', margin: 0, color: '#cbd5e1' }}>
             الهيئة الطلابية الأكاديمية والاجتماعية والثقافية الممثلة لطلاب جمهورية السودان بكلية العلوم جامعة القاهرة.
           </p>
         </div>
 
         {/* قطاعات المنصة */}
         <div>
-          <h4 style={{ color: activeTheme.textMain, marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
+          <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
             قطاعات ومراكز الرابطة
           </h4>
           <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <Link to="/academic" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>📚 الأكاديمية</Link>
-            <Link to="/sports" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>⚽ الرياضة</Link>
-            <Link to="/social" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>🤝 الاجتماعي</Link>
-            <Link to="/events" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>📅 الفعاليات</Link>
-            <Link to="/media" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>📢 الإعلام</Link>
-            <Link to="/achievements" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>🏆 الإنجازات</Link>
-            <Link to="/administration" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>🛡️ الإدارة</Link>
-            <Link to="/constitution" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>⚖️ الدستور</Link>
+            <Link to="/academic" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📚 الأكاديمية</Link>
+            <Link to="/sports" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚽ الرياضة</Link>
+            <Link to="/social" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🤝 الاجتماعي</Link>
+            <Link to="/events" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📅 الفعاليات</Link>
+            <Link to="/media" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📢 الإعلام</Link>
+            <Link to="/achievements" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🏆 الإنجازات</Link>
+            <Link to="/administration" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🛡️ الإدارة</Link>
+            <Link to="/constitution" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚖️ الدستور</Link>
             <Link to="/sudan" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>🇸🇩 سوداننا</Link>
-            <Link to="/digital-id" style={{ color: activeTheme.textMuted, textDecoration: 'none' }}>💳 بطاقتي</Link>
+            <Link to="/archive" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold' }}>🏛️ أرشيف الرابطة</Link>
           </div>
         </div>
 
         {/* صفحات التواصل الاجتماعي */}
         <div>
-          <h4 style={{ color: activeTheme.textMain, marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
+          <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
             صفحات الرابطة الرسمية
           </h4>
           <SocialLinks variant="detailed" />
@@ -779,11 +713,11 @@ function Footer() {
 
       <div
         style={{
-          borderTop: `1px solid ${activeTheme.border}`,
+          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
           paddingTop: '20px',
           textAlign: 'center',
-          fontSize: '12px',
-          color: activeTheme.textMuted,
+          fontSize: '13px',
+          color: '#cbd5e1',
         }}
       >
         جميع الحقوق محفوظة © {new Date().getFullYear()} رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة (SSA-FS-CU)
@@ -800,8 +734,8 @@ function MainAppLayout() {
         display: 'flex',
         flexDirection: 'column',
         minHeight: '100vh',
-        backgroundColor: activeTheme.bgDark,
-        color: activeTheme.textMain,
+        backgroundColor: '#0a101d',
+        color: '#ffffff',
         transition: 'background-color 0.3s ease, color 0.3s ease',
       }}
     >
@@ -819,6 +753,7 @@ function MainAppLayout() {
           <Route path="/achievements" element={<AchievementsHub />} />
           <Route path="/administration" element={<AdministrationHub />} />
           <Route path="/constitution" element={<ConstitutionHub />} />
+          <Route path="/archive" element={<ArchivePortal />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<Contact />} />
           <Route path="/digital-id" element={<DigitalIDPage />} />

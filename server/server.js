@@ -12,6 +12,7 @@ const postsRoutes = require('./routes/posts');
 const roomsRoutes = require('./routes/rooms');
 const aiRoutes = require('./routes/ai');
 const paymentsRoutes = require('./routes/payments');
+const cmsRoutes = require('./routes/cms');
 
 const app = express();
 const server = http.createServer(app);
@@ -106,10 +107,12 @@ app.use('/api/posts', postsRoutes);
 app.use('/api/rooms', roomsRoutes);
 app.use('/api/ai', aiRoutes);
 app.use('/api/payments', paymentsRoutes);
+app.use('/api/cms', cmsRoutes);
 
 // ربط المسارات المباشرة على /api لدعم المسارات النسبية في بيئات الإنتاج (Direct API Mounts)
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
+app.use('/api', cmsRoutes);
 
 
 // مسار تنظيف قاعدة البيانات وتهيئة حساب الأدمن الوحيد (Reset Database Endpoint)
