@@ -362,13 +362,13 @@ export default function FloatingAIChatWidget() {
           }
         }
 
-        /* Mobile Positioning: bottom-3 left-3 (12px), scale-90, z-index 30 */
+        /* Mobile Positioning: bottom-2 left-2 (8px), scale-75, z-index 20 */
         @media (max-width: 640px) {
           .floating-ai-container {
-            bottom: 12px;
-            left: 12px;
-            z-index: 30 !important;
-            transform: scale(0.9);
+            bottom: 8px !important; /* bottom-2 */
+            left: 8px !important;   /* left-2 */
+            z-index: 20 !important; /* z-20 */
+            transform: scale(0.75); /* scale-75 */
             transform-origin: bottom left;
           }
           .floating-ai-btn {
@@ -382,10 +382,10 @@ export default function FloatingAIChatWidget() {
           .floating-ai-window {
             bottom: 50px;
             left: 0;
-            width: calc(100vw - 28px);
-            height: 460px;
-            max-height: calc(100vh - 90px);
-            z-index: 45 !important;
+            width: calc(100vw - 20px);
+            height: 440px;
+            max-height: calc(100vh - 80px);
+            z-index: 35 !important;
           }
         }
       `}</style>

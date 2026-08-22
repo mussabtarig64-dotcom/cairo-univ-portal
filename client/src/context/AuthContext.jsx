@@ -118,60 +118,59 @@ export function AuthProvider({ children }) {
     };
   }, [user?.email]);
 
-  // 1. تسجيل مستخدم جديد مع دعم مسارات متعددة لتفادي أخطاء 405
+  // 1. تسجيل مستخدم جديد عبر المسار المعتمد المتوافق مع البيئة
   const register = async (userData) => {
-    const endpoints = [
-      `${API_BASE}/auth/register`,
-      `${API_BASE}/register`,
-      '/api/auth/register',
-      '/api/register',
-    ];
+    const registerUrl = `${API_BASE}/auth/register`;
 
-    let lastError = null;
+    try {
+      const res = await axios.post(registerUrl, userData, {
+        headers: {
+          'Content-Type': 'application/json',
+          Accept: 'application/json',
+        },
+      });
 
-    for (const url of endpoints) {
-      try {
-        const res = await axios.post(url, userData, {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-        });
-        if (res.data && (res.data.success || res.status === 200 || res.status === 201)) {
-          return {
-            success: true,
-            user: res.data.user,
-            message: res.data.message || 'تم إرسال استمارة التسجيل واعتماد العضوية بنجاح!',
-          };
-        }
-      } catch (err) {
-        lastError = err;
-        const statusCode = err.response?.status;
-        // إذا كان الخطأ 405 أو 404 نجرب المسار التالي
-        if (statusCode === 405 || statusCode === 404) {
-          console.warn(`[Registration] Endpoint ${url} returned ${statusCode}, trying fallback...`);
-          continue;
-        } else {
-          // إذا كان خطأ تحقق (مثل 400 بريد مكرر أو بيانات ناقصة) نرجعه مباشرة
-          const msg =
-            err.response?.data?.message ||
-            err.response?.data?.error ||
-            err.message ||
-            'حدث خطأ في استمارة التسجيل.';
-          return { success: false, message: msg };
+      if (res.data && (res.data.success || res.status === 200 || res.status === 201)) {
+        return {
+          success: true,
+          user: res.data.user,
+          message: res.data.message || 'تم إرسال استمارة التسجيل واعتماد العضوية بنجاح!',
+        };
+      } else {
+        return {
+          success: false,
+          message: res.data?.message || 'تعذر إتمام عملية التسجيل.',
+        };
+      }
+    } catch (err) {
+      // محاولة احتياطية على /api/register في حال تعذر المسار الرئيسي
+      if (err.response?.status === 404 || err.response?.status === 405) {
+        try {
+          const fallbackRes = await axios.post('/api/register', userData, {
+            headers: {
+              'Content-Type': 'application/json',
+              Accept: 'application/json',
+            },
+          });
+          if (fallbackRes.data && (fallbackRes.data.success || fallbackRes.status === 200 || fallbackRes.status === 201)) {
+            return {
+              success: true,
+              user: fallbackRes.data.user,
+              message: fallbackRes.data.message || 'تم إرسال استمارة التسجيل واعتماد العضوية بنجاح!',
+            };
+          }
+        } catch (fallbackErr) {
+          // تجاهل الخطأ والاعتماد على رسالة الخطأ الأصلية
         }
       }
-    }
 
-    const finalMsg =
-      lastError?.response?.data?.message ||
-      lastError?.response?.data?.error ||
-      lastError?.message ||
-      'حدث خطأ في الاتصال بالخادم أثناء التسجيل.';
-    return {
-      success: false,
-      message: finalMsg,
-    };
+      const msg =
+        err.response?.data?.message ||
+        err.response?.data?.error ||
+        err.message ||
+        'حدث خطأ في استمارة التسجيل.';
+      return { success: false, message: msg };
+    }
   };
 
   // 2. تسجيل الدخول والتحقق الديناميكي المباشر من قاعدة البيانات المركزية

@@ -6,6 +6,10 @@
       "use": "@vercel/node"
     },
     {
+      "src": "api/**/*.js",
+      "use": "@vercel/node"
+    },
+    {
       "src": "client/package.json",
       "use": "@vercel/static-build",
       "config": {
@@ -14,6 +18,16 @@
     }
   ],
   "routes": [
+    {
+      "src": "/api/auth/register",
+      "methods": ["POST", "GET", "OPTIONS"],
+      "dest": "/api/auth/register.js"
+    },
+    {
+      "src": "/api/register",
+      "methods": ["POST", "GET", "OPTIONS"],
+      "dest": "/api/register.js"
+    },
     {
       "src": "/api/(.*)",
       "dest": "/server/index.js"

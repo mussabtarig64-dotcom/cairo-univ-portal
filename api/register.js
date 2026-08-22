@@ -74,18 +74,35 @@ module.exports = async function handler(req, res) {
     return res.status(200).end();
   }
 
+  if (req.method === 'GET') {
+    return res.status(200).json({
+      success: true,
+      message: 'نقطة نهاية تسجيل الطلاب والمنتسبين نشطة وجاهزة لاستقبال طلبات POST.',
+      endpoint: '/api/auth/register',
+    });
+  }
+
   // التحقق من نوع الطلب POST
   if (req.method !== 'POST') {
-    return res.status(405).json({
+    return res.status(200).json({
       success: false,
-      message: `الطريقة ${req.method} غير مسموحة. يرجى إرسال طلب POST.`,
+      message: `يرجى إرسال طلب POST لتسجيل البيانات (Received method: ${req.method}).`,
     });
   }
 
   try {
     await connectToDatabase();
 
-    const body = typeof req.body === 'string' ? JSON.parse(req.body) : req.body || {};
+    let body = req.body;
+    if (typeof body === 'string') {
+      try {
+        body = JSON.parse(body);
+      } catch (e) {
+        body = {};
+      }
+    } else if (!body) {
+      body = {};
+    }
     const {
       name,
       fullName,

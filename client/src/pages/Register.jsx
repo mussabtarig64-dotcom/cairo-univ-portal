@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../config/api';
 import {
   User,
   Mail,
@@ -165,15 +167,35 @@ export default function Register() {
         nationalIdPhoto: formData.idCardUrl || '',
       };
 
-      const res = await register(payload);
+      // استخدام نقطة نهاية معتمدة وموحدة مع مراعاة بيئة التشغيل
+      const targetEndpoint = `${API_BASE}/auth/register`;
+      let resData = null;
 
-      if (res && res.success) {
+      try {
+        const response = await axios.post(targetEndpoint, payload, {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        });
+        resData = response.data;
+      } catch (postErr) {
+        // إذا حدث خطأ في المسار الرئيسي، يتم تجربة دالة AuthContext الاحتياطية
+        const authRes = await register(payload);
+        if (authRes && authRes.success) {
+          resData = authRes;
+        } else {
+          throw postErr;
+        }
+      }
+
+      if (resData && (resData.success || resData.user)) {
         setIsSuccess(true);
         setTimeout(() => {
           navigate('/pending-approval');
         }, 1500);
       } else {
-        setError(res?.message || 'حدث خطأ أثناء إرسال الاستمارة.');
+        setError(resData?.message || 'حدث خطأ أثناء إرسال الاستمارة.');
       }
     } catch (err) {
       setError(
@@ -189,14 +211,16 @@ export default function Register() {
 
   return (
     <div
-      className="register-page-container px-4 pb-32"
+      className="register-page-container px-3 sm:px-4 pb-36"
       style={{
-        maxWidth: '820px',
-        margin: '30px auto',
-        paddingLeft: '16px',
-        paddingRight: '16px',
-        paddingBottom: '128px', // pb-32: extra comfortable scrolling space preventing overlap with bottom floating elements
+        maxWidth: '840px',
+        margin: '20px auto 40px',
+        paddingLeft: '14px',
+        paddingRight: '14px',
+        paddingBottom: '144px', // pb-36: مساحة سفلية مريحة جداً للتصفح ومنع تداخل الويدجت
         direction: 'rtl',
+        boxSizing: 'border-box',
+        overflowX: 'hidden',
       }}
     >
       {/* بطاقة الاستمارة الرئيسية */}
@@ -204,16 +228,18 @@ export default function Register() {
         style={{
           backgroundColor: '#0f172a',
           borderRadius: '24px',
-          border: '1px solid #334155', // Clean border-slate-700
+          border: '1px solid #334155',
           boxShadow: '0 20px 50px rgba(0, 0, 0, 0.55)',
           overflow: 'hidden',
+          width: '100%',
+          boxSizing: 'border-box',
         }}
       >
         {/* رأس الاستمارة الترحيبي */}
         <div
           style={{
             background: 'linear-gradient(135deg, #091a2f 0%, #0f2744 50%, #16365c 100%)',
-            padding: '36px 28px',
+            padding: '32px 20px',
             textAlign: 'center',
             borderBottom: '1px solid #334155',
           }}
@@ -237,16 +263,16 @@ export default function Register() {
             <span>كلية العلوم جامعة القاهرة - SSA</span>
           </div>
 
-          <h1 style={{ color: '#ffffff', fontSize: 'clamp(22px, 4vw, 30px)', fontWeight: '900', margin: '0 0 10px' }}>
+          <h1 style={{ color: '#ffffff', fontSize: 'clamp(20px, 4vw, 28px)', fontWeight: '900', margin: '0 0 10px' }}>
             استمارة التسجيل المركزي واستبيان الطلاب
           </h1>
 
-          <p style={{ color: '#cbd5e1', fontSize: '14px', maxWidth: '640px', margin: '0 auto', lineHeight: '1.7' }}>
+          <p style={{ color: '#cbd5e1', fontSize: '13.5px', maxWidth: '640px', margin: '0 auto', lineHeight: '1.7' }}>
             يرجى استيفاء البيانات بدقة لاعتماد القيد وإصدار بطاقة العضوية الرقمية (Digital ID) وتمكين الوصول لكافة خدمات الرابطة والمكتبة الأكاديمية.
           </p>
         </div>
 
-        <div style={{ padding: '32px 28px' }}>
+        <div style={{ padding: '24px 18px' }} className="form-content-padding">
           {error && (
             <div
               style={{
@@ -289,7 +315,7 @@ export default function Register() {
             </div>
           )}
 
-          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '28px' }}>
+          <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
             
             {/* =========================================================================
                 1. البيانات الشخصية وبيانات السكن بمصر
@@ -300,7 +326,8 @@ export default function Register() {
                 <h3 style={sectionTitleStyle}>القسم الأول: البيانات الشخصية وبيانات السكن بمصر</h3>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
+              {/* Grid: 1 column on xs/sm, 2 columns on md+ */}
+              <div className="register-form-grid">
                 {/* الاسم رباعي */}
                 <div>
                   <label style={labelStyle}>الاسم رباعي كما في الجواز/الهوية: *</label>
@@ -361,7 +388,7 @@ export default function Register() {
 
                 {/* رقم الواتساب */}
                 <div>
-                  <label style={labelStyle}>رقم الواتساب (للتواصل وإرسال الإشعارات): *</label>
+                  <label style={labelStyle}>رقم الواتساب (للتواصل والإشعارات): *</label>
                   <input
                     type="tel"
                     name="whatsapp"
@@ -443,7 +470,8 @@ export default function Register() {
                 <h3 style={sectionTitleStyle}>القسم الثاني: بيانات جهة الاتصال في حالات الطوارئ</h3>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '16px' }}>
+              {/* Grid: 1 column on xs/sm, 2 columns on md+ */}
+              <div className="register-form-grid">
                 {/* اسم الشخص للطوارئ */}
                 <div>
                   <label style={labelStyle}>اسم جهة الاتصال / ولي الأمر للطوارئ: *</label>
@@ -475,13 +503,13 @@ export default function Register() {
                 </div>
 
                 {/* رقم هاتف الطوارئ */}
-                <div>
+                <div className="md:col-span-2">
                   <label style={labelStyle}>رقم هاتف الطوارئ: *</label>
                   <input
                     type="tel"
                     name="emergencyContactPhone"
                     required
-                    placeholder="رقم الهاتف مع رمز الدولة"
+                    placeholder="رقم الهاتف مع رمز الدولة (مثال: +20... أو +249...)"
                     value={formData.emergencyContactPhone}
                     onChange={handleChange}
                     style={inputStyle}
@@ -499,8 +527,9 @@ export default function Register() {
                 <h3 style={sectionTitleStyle}>القسم الثالث: البيانات الأكاديمية بكلية العلوم</h3>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(260px, 1fr))', gap: '16px' }}>
-                {/* القسم العلمي / التخصص الأكاديمي (The 11 Strict Options) */}
+              {/* Grid: 1 column on xs/sm, 2 columns on md+ */}
+              <div className="register-form-grid">
+                {/* القسم العلمي / التخصص الأكاديمي */}
                 <div>
                   <label style={labelStyle}>القسم العلمي / التخصص الأكاديمي: *</label>
                   <select
@@ -535,7 +564,7 @@ export default function Register() {
                 </div>
 
                 {/* رقم الهوية / جواز السفر / الرقم الوطني */}
-                <div>
+                <div className="md:col-span-2">
                   <label style={labelStyle}>رقم الهوية / جواز السفر / الرقم الوطني: *</label>
                   <input
                     type="text"
@@ -565,7 +594,7 @@ export default function Register() {
                   style={{
                     border: '2px dashed #334155',
                     borderRadius: '14px',
-                    padding: '24px',
+                    padding: '20px 14px',
                     textAlign: 'center',
                     backgroundColor: '#1e293b',
                     cursor: 'pointer',
@@ -618,9 +647,9 @@ export default function Register() {
                   background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                   color: '#0b1622',
                   border: 'none',
-                  padding: '14px 28px',
+                  padding: '14px 20px',
                   borderRadius: '12px',
-                  fontSize: '16px',
+                  fontSize: '15.5px',
                   fontWeight: '900',
                   cursor: loading || isSuccess ? 'not-allowed' : 'pointer',
                   display: 'inline-flex',
@@ -655,6 +684,29 @@ export default function Register() {
           </div>
         </div>
       </div>
+
+      <style>{`
+        .register-form-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          gap: 16px;
+        }
+
+        @media (min-width: 768px) {
+          .register-form-grid {
+            grid-template-columns: repeat(2, 1fr);
+          }
+          .md\\:col-span-2 {
+            grid-column: span 2 / span 2;
+          }
+        }
+
+        @media (max-width: 640px) {
+          .form-content-padding {
+            padding: 18px 12px !important;
+          }
+        }
+      `}</style>
     </div>
   );
 }
@@ -663,7 +715,7 @@ const sectionBoxStyle = {
   backgroundColor: '#1e293b',
   borderRadius: '16px',
   border: '1px solid #334155',
-  padding: '20px',
+  padding: '18px 16px',
 };
 
 const sectionHeaderStyle = {
@@ -676,7 +728,7 @@ const sectionHeaderStyle = {
 };
 
 const sectionTitleStyle = {
-  fontSize: '16px',
+  fontSize: '15px',
   fontWeight: 'bold',
   color: '#ffffff',
   margin: 0,
@@ -695,7 +747,7 @@ const inputStyle = {
   padding: '11px 14px',
   borderRadius: '10px',
   backgroundColor: '#0f172a',
-  border: '1px solid #334155', // Clean border-slate-700
+  border: '1px solid #334155',
   color: '#ffffff',
   fontSize: '14px',
   outline: 'none',
