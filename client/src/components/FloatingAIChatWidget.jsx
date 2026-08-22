@@ -105,7 +105,7 @@ export default function FloatingAIChatWidget() {
   };
 
   return (
-    <div className="floating-ai-container" style={{ position: 'fixed', zIndex: 40, direction: 'rtl' }}>
+    <div className="floating-ai-container" style={{ position: 'fixed', zIndex: 30, direction: 'rtl' }}>
       
       {/* 1. نافذة الشات العائمة Floating Chat Window */}
       {isOpen && (
@@ -121,7 +121,7 @@ export default function FloatingAIChatWidget() {
             flexDirection: 'column',
             overflow: 'hidden',
             animation: 'fadeInUp 0.3s ease-out',
-            zIndex: 50,
+            zIndex: 45,
           }}
         >
           {/* رأس الشات Header */}
@@ -362,12 +362,14 @@ export default function FloatingAIChatWidget() {
           }
         }
 
-        /* Mobile Positioning: bottom-4 left-4 (16px) with lower z-index so it never overlaps forms */
+        /* Mobile Positioning: bottom-3 left-3 (12px), scale-90, z-index 30 */
         @media (max-width: 640px) {
           .floating-ai-container {
-            bottom: 16px;
-            left: 16px;
-            z-index: 40;
+            bottom: 12px;
+            left: 12px;
+            z-index: 30 !important;
+            transform: scale(0.9);
+            transform-origin: bottom left;
           }
           .floating-ai-btn {
             padding: 8px 12px;
@@ -380,9 +382,10 @@ export default function FloatingAIChatWidget() {
           .floating-ai-window {
             bottom: 50px;
             left: 0;
-            width: calc(100vw - 32px);
-            height: 480px;
+            width: calc(100vw - 28px);
+            height: 460px;
             max-height: calc(100vh - 90px);
+            z-index: 45 !important;
           }
         }
       `}</style>

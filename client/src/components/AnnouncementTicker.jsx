@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { Megaphone, Bell, Sparkles } from 'lucide-react';
+import { Megaphone } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext';
 import { API_BASE } from '../config/api';
 
@@ -48,10 +48,12 @@ export default function AnnouncementTicker() {
         display: 'flex',
         alignItems: 'center',
         overflow: 'hidden',
+        overflowX: 'hidden',
         position: 'relative',
         zIndex: 40,
         direction: 'rtl',
         width: '100%',
+        maxWidth: '100vw',
         boxSizing: 'border-box',
       }}
     >
@@ -85,6 +87,7 @@ export default function AnnouncementTicker() {
           flex: 1,
           minWidth: 0,
           overflow: 'hidden',
+          overflowX: 'hidden',
           whiteSpace: 'nowrap',
           position: 'relative',
           display: 'flex',
@@ -142,11 +145,22 @@ export default function AnnouncementTicker() {
           100% { transform: translateX(50%); }
         }
         @media (max-width: 640px) {
+          .announcement-ticker-container {
+            padding: 4px 8px;
+            font-size: 11px;
+            overflow-x: hidden !important;
+          }
+          .ticker-badge {
+            padding: 3px 6px;
+            font-size: 10px;
+            margin-left: 6px;
+          }
           .ticker-badge span {
             font-size: 10px;
           }
           .ticker-track span {
             font-size: 11px;
+            padding-left: 20px;
           }
         }
       `}</style>

@@ -189,12 +189,13 @@ export default function Register() {
 
   return (
     <div
-      className="register-page-container"
+      className="register-page-container px-4 pb-32"
       style={{
         maxWidth: '820px',
         margin: '30px auto',
-        padding: '0 20px',
-        paddingBottom: '112px', // pb-28: Gives comfortable scrolling space at the bottom on mobile & desktop
+        paddingLeft: '16px',
+        paddingRight: '16px',
+        paddingBottom: '128px', // pb-32: extra comfortable scrolling space preventing overlap with bottom floating elements
         direction: 'rtl',
       }}
     >
