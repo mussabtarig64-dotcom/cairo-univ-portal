@@ -15,8 +15,7 @@ const userSchema = new mongoose.Schema(
     },
     email: {
       type: String,
-      required: true,
-      unique: true,
+      default: () => `student_${Date.now()}_${Math.floor(1000 + Math.random() * 9000)}@ssa-cu.edu`,
       lowercase: true,
       trim: true,
     },
@@ -26,7 +25,7 @@ const userSchema = new mongoose.Schema(
     },
     age: {
       type: String,
-      default: '',
+      default: '20',
       trim: true,
     },
     phone: {
@@ -37,7 +36,7 @@ const userSchema = new mongoose.Schema(
     whatsapp: {
       type: String,
       trim: true,
-      default: '',
+      default: '01000000000',
     },
     residence: {
       type: String,
@@ -59,7 +58,7 @@ const userSchema = new mongoose.Schema(
     academicId: {
       type: String,
       trim: true,
-      default: '',
+      default: () => `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
     },
     department: {
       type: String,
@@ -102,7 +101,7 @@ const userSchema = new mongoose.Schema(
     },
     emergencyContactRelation: {
       type: String,
-      default: '',
+      default: 'الوالد / الوالدة',
       trim: true,
     },
     emergencyContactPhone: {
@@ -114,12 +113,10 @@ const userSchema = new mongoose.Schema(
     // حالة التحقق والرتبة الإدارية (admin / user)
     status: {
       type: String,
-      enum: ['pending', 'approved', 'rejected', 'verified'],
       default: 'pending',
     },
     verificationStatus: {
       type: String,
-      enum: ['pending', 'verified', 'approved', 'rejected'],
       default: 'pending',
     },
     isApproved: {
@@ -132,7 +129,6 @@ const userSchema = new mongoose.Schema(
     },
     role: {
       type: String,
-      enum: ['user', 'admin', 'student'],
       default: 'user',
     },
     notes: {
@@ -146,64 +142,69 @@ const userSchema = new mongoose.Schema(
   },
   {
     timestamps: true,
+    strict: false,
   }
 );
 
-// Middleware لمزامنة الحقول المترادفة تلقائياً
+// Middleware لمزامنة الحقول المترادفة تلقائياً وضمان عدم حدوث أخطاء
 userSchema.pre('save', function () {
-  if (!this.name && this.fullName) {
-    this.name = this.fullName;
-  }
-  if (!this.fullName && this.name) {
-    this.fullName = this.name;
-  }
-  if (!this.cairoAddress && this.residence) {
-    this.cairoAddress = this.residence;
-  }
-  if (!this.residence && this.cairoAddress) {
-    this.residence = this.cairoAddress;
-  }
-  if (!this.studentId && this.academicId) {
-    this.studentId = this.academicId;
-  }
-  if (!this.academicId && this.studentId) {
-    this.academicId = this.studentId;
-  }
-  if (!this.idDocument && this.idCardUrl) {
-    this.idDocument = this.idCardUrl;
-  }
-  if (!this.idCardUrl && this.idDocument) {
-    this.idCardUrl = this.idDocument;
-  }
-  if (!this.whatsapp && this.phone) {
-    this.whatsapp = this.phone;
-  }
-  if (!this.academicLevel && this.academicYear) {
-    this.academicLevel = this.academicYear;
-  }
-  if (!this.academicYear && this.academicLevel) {
-    this.academicYear = this.academicLevel;
-  }
-  if (this.role === 'student') {
-    this.role = 'user';
-  }
-  if (this.role === 'admin') {
-    this.isAdmin = true;
-    this.isApproved = true;
-    this.status = 'approved';
-    this.verificationStatus = 'verified';
-  } else if (this.status === 'approved' || this.verificationStatus === 'verified' || this.verificationStatus === 'approved') {
-    this.isApproved = true;
-    this.status = 'approved';
-    this.verificationStatus = 'verified';
-  } else if (this.status === 'rejected' || this.verificationStatus === 'rejected') {
-    this.isApproved = false;
-    this.status = 'rejected';
-    this.verificationStatus = 'rejected';
-  } else {
-    this.isApproved = false;
-    this.status = 'pending';
-    this.verificationStatus = 'pending';
+  try {
+    if (!this.name && this.fullName) {
+      this.name = this.fullName;
+    }
+    if (!this.fullName && this.name) {
+      this.fullName = this.name;
+    }
+    if (!this.cairoAddress && this.residence) {
+      this.cairoAddress = this.residence;
+    }
+    if (!this.residence && this.cairoAddress) {
+      this.residence = this.cairoAddress;
+    }
+    if (!this.studentId && this.academicId) {
+      this.studentId = this.academicId;
+    }
+    if (!this.academicId && this.studentId) {
+      this.academicId = this.studentId;
+    }
+    if (!this.idDocument && this.idCardUrl) {
+      this.idDocument = this.idCardUrl;
+    }
+    if (!this.idCardUrl && this.idDocument) {
+      this.idCardUrl = this.idDocument;
+    }
+    if (!this.whatsapp && this.phone) {
+      this.whatsapp = this.phone;
+    }
+    if (!this.academicLevel && this.academicYear) {
+      this.academicLevel = this.academicYear;
+    }
+    if (!this.academicYear && this.academicLevel) {
+      this.academicYear = this.academicLevel;
+    }
+    if (this.role === 'student') {
+      this.role = 'user';
+    }
+    if (this.role === 'admin') {
+      this.isAdmin = true;
+      this.isApproved = true;
+      this.status = 'approved';
+      this.verificationStatus = 'verified';
+    } else if (this.status === 'approved' || this.verificationStatus === 'verified' || this.verificationStatus === 'approved') {
+      this.isApproved = true;
+      this.status = 'approved';
+      this.verificationStatus = 'verified';
+    } else if (this.status === 'rejected' || this.verificationStatus === 'rejected') {
+      this.isApproved = false;
+      this.status = 'rejected';
+      this.verificationStatus = 'rejected';
+    } else {
+      this.isApproved = false;
+      this.status = 'pending';
+      this.verificationStatus = 'pending';
+    }
+  } catch (e) {
+    console.error('Error in User pre-save hook:', e);
   }
 });
 

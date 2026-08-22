@@ -137,19 +137,49 @@ export default function Posts() {
     setFileName(file.name);
     if (file.type === 'application/pdf') {
       setMediaType('pdf');
+      const reader = new FileReader();
+      reader.onloadend = () => setMediaUrl(reader.result);
+      reader.readAsDataURL(file);
     } else if (file.type.startsWith('image/')) {
       setMediaType('image');
+      // ضغط وتصغير الصورة باستخدام Canvas لتفادي تجاوز حجم الطلب
+      const reader = new FileReader();
+      reader.onload = (ev) => {
+        const img = new Image();
+        img.onload = () => {
+          const maxDim = 1200;
+          let w = img.width;
+          let h = img.height;
+          if (w > h && w > maxDim) {
+            h = Math.round((h * maxDim) / w);
+            w = maxDim;
+          } else if (h > maxDim) {
+            w = Math.round((w * maxDim) / h);
+            h = maxDim;
+          }
+          const canvas = document.createElement('canvas');
+          canvas.width = w;
+          canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          const compressed = canvas.toDataURL('image/jpeg', 0.75);
+          setMediaUrl(compressed);
+        };
+        img.onerror = () => setMediaUrl(ev.target.result);
+        img.src = ev.target.result;
+      };
+      reader.readAsDataURL(file);
     } else if (file.type.startsWith('video/')) {
       setMediaType('video');
+      const reader = new FileReader();
+      reader.onloadend = () => setMediaUrl(reader.result);
+      reader.readAsDataURL(file);
     } else {
       setMediaType('pdf');
+      const reader = new FileReader();
+      reader.onloadend = () => setMediaUrl(reader.result);
+      reader.readAsDataURL(file);
     }
-
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setMediaUrl(reader.result);
-    };
-    reader.readAsDataURL(file);
   };
 
   const handleCreatePost = async (e) => {
