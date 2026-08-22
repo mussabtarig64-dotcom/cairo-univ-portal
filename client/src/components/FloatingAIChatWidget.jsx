@@ -105,7 +105,7 @@ export default function FloatingAIChatWidget() {
   };
 
   return (
-    <div className="floating-ai-container" style={{ position: 'fixed', zIndex: 1000, direction: 'rtl' }}>
+    <div className="floating-ai-container" style={{ position: 'fixed', zIndex: 40, direction: 'rtl' }}>
       
       {/* 1. نافذة الشات العائمة Floating Chat Window */}
       {isOpen && (
@@ -121,7 +121,7 @@ export default function FloatingAIChatWidget() {
             flexDirection: 'column',
             overflow: 'hidden',
             animation: 'fadeInUp 0.3s ease-out',
-            zIndex: 1001,
+            zIndex: 50,
           }}
         >
           {/* رأس الشات Header */}
@@ -203,7 +203,7 @@ export default function FloatingAIChatWidget() {
                   padding: '12px 14px',
                   borderRadius: msg.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
                   backgroundColor: msg.sender === 'user' ? '#1e293b' : '#0f172a',
-                  border: `1px solid ${msg.sender === 'user' ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
+                  border: `1px solid ${msg.sender === 'user' ? '#f59e0b' : '#334155'}`,
                   color: '#ffffff',
                   fontSize: '13px',
                   lineHeight: '1.7',
@@ -232,8 +232,8 @@ export default function FloatingAIChatWidget() {
                       style={{
                         padding: '8px 12px',
                         borderRadius: '8px',
-                        background: 'rgba(255, 255, 255, 0.05)',
-                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        background: '#1e293b',
+                        border: '1px solid #334155',
                         color: '#cbd5e1',
                         fontSize: '12px',
                         textAlign: 'right',
@@ -259,7 +259,7 @@ export default function FloatingAIChatWidget() {
             }}
             style={{
               padding: '12px',
-              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              borderTop: '1px solid #334155',
               backgroundColor: '#0f172a',
               display: 'flex',
               gap: '8px',
@@ -276,8 +276,8 @@ export default function FloatingAIChatWidget() {
                 flex: 1,
                 padding: '10px 14px',
                 borderRadius: '10px',
-                background: 'rgba(0, 0, 0, 0.3)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
+                background: '#1e293b',
+                border: '1px solid #334155',
                 color: '#ffffff',
                 fontSize: '13px',
                 outline: 'none',
@@ -362,11 +362,12 @@ export default function FloatingAIChatWidget() {
           }
         }
 
-        /* Mobile Positioning - Bottom-2 Left-2 compact to avoid blocking forms */
+        /* Mobile Positioning: bottom-4 left-4 (16px) with lower z-index so it never overlaps forms */
         @media (max-width: 640px) {
           .floating-ai-container {
-            bottom: 12px;
-            left: 12px;
+            bottom: 16px;
+            left: 16px;
+            z-index: 40;
           }
           .floating-ai-btn {
             padding: 8px 12px;
@@ -379,9 +380,9 @@ export default function FloatingAIChatWidget() {
           .floating-ai-window {
             bottom: 50px;
             left: 0;
-            width: calc(100vw - 24px);
+            width: calc(100vw - 32px);
             height: 480px;
-            max-height: calc(100vh - 80px);
+            max-height: calc(100vh - 90px);
           }
         }
       `}</style>

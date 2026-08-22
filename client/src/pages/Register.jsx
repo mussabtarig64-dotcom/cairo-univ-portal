@@ -189,11 +189,12 @@ export default function Register() {
 
   return (
     <div
+      className="register-page-container"
       style={{
         maxWidth: '820px',
         margin: '30px auto',
         padding: '0 20px',
-        paddingBottom: '140px', // Extra bottom padding to avoid any overlap with floating widgets
+        paddingBottom: '112px', // pb-28: Gives comfortable scrolling space at the bottom on mobile & desktop
         direction: 'rtl',
       }}
     >
@@ -202,7 +203,7 @@ export default function Register() {
         style={{
           backgroundColor: '#0f172a',
           borderRadius: '24px',
-          border: '1px solid rgba(255, 255, 255, 0.12)',
+          border: '1px solid #334155', // Clean border-slate-700
           boxShadow: '0 20px 50px rgba(0, 0, 0, 0.55)',
           overflow: 'hidden',
         }}
@@ -213,7 +214,7 @@ export default function Register() {
             background: 'linear-gradient(135deg, #091a2f 0%, #0f2744 50%, #16365c 100%)',
             padding: '36px 28px',
             textAlign: 'center',
-            borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+            borderBottom: '1px solid #334155',
           }}
         >
           <div
@@ -561,11 +562,11 @@ export default function Register() {
                 <label style={labelStyle}>صورة إثبات الهوية (جواز السفر / البطاقة الوطنية / بطاقة الكلية):</label>
                 <div
                   style={{
-                    border: '2px dashed rgba(255, 255, 255, 0.2)',
+                    border: '2px dashed #334155',
                     borderRadius: '14px',
                     padding: '24px',
                     textAlign: 'center',
-                    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+                    backgroundColor: '#1e293b',
                     cursor: 'pointer',
                   }}
                 >
@@ -636,7 +637,7 @@ export default function Register() {
           </form>
 
           {/* تذييل رابط الدخول */}
-          <div style={{ textAlign: 'center', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
+          <div style={{ textAlign: 'center', marginTop: '28px', paddingTop: '20px', borderTop: '1px solid #334155' }}>
             <span style={{ color: '#cbd5e1', fontSize: '14px' }}>لديك حساب مسجل بالفعل؟ </span>
             <Link
               to="/login"
@@ -658,9 +659,9 @@ export default function Register() {
 }
 
 const sectionBoxStyle = {
-  backgroundColor: 'rgba(255, 255, 255, 0.03)',
+  backgroundColor: '#1e293b',
   borderRadius: '16px',
-  border: '1px solid rgba(255, 255, 255, 0.08)',
+  border: '1px solid #334155',
   padding: '20px',
 };
 
@@ -669,7 +670,7 @@ const sectionHeaderStyle = {
   alignItems: 'center',
   gap: '10px',
   marginBottom: '16px',
-  borderBottom: '1px solid rgba(255, 255, 255, 0.08)',
+  borderBottom: '1px solid #334155',
   paddingBottom: '10px',
 };
 
@@ -692,8 +693,8 @@ const inputStyle = {
   width: '100%',
   padding: '11px 14px',
   borderRadius: '10px',
-  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  border: '1px solid rgba(255, 255, 255, 0.15)',
+  backgroundColor: '#0f172a',
+  border: '1px solid #334155', // Clean border-slate-700
   color: '#ffffff',
   fontSize: '14px',
   outline: 'none',

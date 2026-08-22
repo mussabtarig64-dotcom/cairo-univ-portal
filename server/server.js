@@ -107,7 +107,7 @@ app.use(async (req, res, next) => {
 // محاولة الاتصال المبدئي
 connectDB().catch(() => {});
 
-// تسجيل المسارات والـ API Endpoints لجميع الأنماط
+// تسجيل المسارات والـ API Endpoints
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/posts', postsRoutes);
@@ -116,12 +116,16 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/cms', cmsRoutes);
 
-// ربط المسارات المباشرة على /api و /auth و / لدعم المسارات النسبية وبيئات Vercel
+// ربط المسارات المباشرة على /api و /auth لدعم المسارات النسبية والبيئات المختلفة
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', cmsRoutes);
 app.use('/auth', authRoutes);
-app.use('/', authRoutes);
+
+// مسار فحص صحة الخادم (Health Check)
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', time: new Date().toISOString() });
+});
 
 
 // مسار تنظيف قاعدة البيانات وتهيئة حساب الأدمن الوحيد (Reset Database Endpoint)
