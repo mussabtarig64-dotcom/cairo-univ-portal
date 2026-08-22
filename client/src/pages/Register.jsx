@@ -162,6 +162,7 @@ export default function Register() {
         nationalId: passportOrNationalId.trim(),
         idCardUrl: formData.idCardUrl || '',
         idDocument: formData.idCardUrl || '',
+        nationalIdPhoto: formData.idCardUrl || '',
       };
 
       const res = await register(payload);
@@ -187,15 +188,22 @@ export default function Register() {
   };
 
   return (
-    <div style={{ maxWidth: '820px', margin: '40px auto', padding: '0 20px 80px', direction: 'rtl' }}>
-      
+    <div
+      style={{
+        maxWidth: '820px',
+        margin: '30px auto',
+        padding: '0 20px',
+        paddingBottom: '140px', // Extra bottom padding to avoid any overlap with floating widgets
+        direction: 'rtl',
+      }}
+    >
       {/* بطاقة الاستمارة الرئيسية */}
       <div
         style={{
           backgroundColor: '#0f172a',
           borderRadius: '24px',
           border: '1px solid rgba(255, 255, 255, 0.12)',
-          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.5)',
+          boxShadow: '0 20px 50px rgba(0, 0, 0, 0.55)',
           overflow: 'hidden',
         }}
       >
@@ -596,7 +604,7 @@ export default function Register() {
 
             {/* إقرار صحة البيانات وزر الإرسال */}
             <div style={{ textAlign: 'center', marginTop: '10px' }}>
-              <p style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '18px', lineHeight: '1.6' }}>
+              <p style={{ fontSize: '12px', color: '#cbd5e1', marginBottom: '18px', lineHeight: '1.6' }}>
                 بالنقر على "إرسال استمارة التسجيل المركزي"، أقر بأن جميع البيانات المدخلة صحيحة ومطابقة لوثائقي الرسمية بكلية العلوم جامعة القاهرة.
               </p>
 
@@ -690,5 +698,6 @@ const inputStyle = {
   fontSize: '14px',
   outline: 'none',
   direction: 'rtl',
+  textAlign: 'right',
   boxSizing: 'border-box',
 };

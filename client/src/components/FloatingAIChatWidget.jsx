@@ -105,39 +105,35 @@ export default function FloatingAIChatWidget() {
   };
 
   return (
-    <div style={{ position: 'fixed', bottom: '24px', left: '24px', zIndex: 1000, direction: 'rtl' }}>
+    <div className="floating-ai-container" style={{ position: 'fixed', zIndex: 1000, direction: 'rtl' }}>
       
       {/* 1. نافذة الشات العائمة Floating Chat Window */}
       {isOpen && (
         <div
+          className="floating-ai-window"
           style={{
             position: 'absolute',
-            bottom: '70px',
-            left: 0,
-            width: '380px',
-            maxWidth: 'calc(100vw - 32px)',
-            height: '520px',
-            maxHeight: 'calc(100vh - 100px)',
-            backgroundColor: activeTheme.bgCard,
-            border: `2px solid ${activeTheme.accent}`,
+            backgroundColor: '#0f172a',
+            border: '2px solid #f59e0b',
             borderRadius: '20px',
-            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.55)',
+            boxShadow: '0 25px 60px rgba(0, 0, 0, 0.65)',
             display: 'flex',
             flexDirection: 'column',
             overflow: 'hidden',
             animation: 'fadeInUp 0.3s ease-out',
+            zIndex: 1001,
           }}
         >
           {/* رأس الشات Header */}
           <div
             style={{
               padding: '14px 18px',
-              background: `linear-gradient(135deg, ${activeTheme.primary} 0%, ${activeTheme.secondary} 100%)`,
+              background: 'linear-gradient(135deg, #091a2f 0%, #0f2744 100%)',
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'space-between',
               color: '#ffffff',
-              borderBottom: `1px solid ${activeTheme.border}`,
+              borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
             }}
           >
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
@@ -146,8 +142,8 @@ export default function FloatingAIChatWidget() {
                   width: '36px',
                   height: '36px',
                   borderRadius: '50%',
-                  backgroundColor: 'rgba(255, 255, 255, 0.15)',
-                  border: '1px solid #fbbf24',
+                  backgroundColor: 'rgba(245, 158, 11, 0.2)',
+                  border: '1px solid #f59e0b',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'center',
@@ -158,11 +154,11 @@ export default function FloatingAIChatWidget() {
               </div>
 
               <div>
-                <div style={{ fontSize: '14px', fontWeight: 'bold', lineHeight: '1.2' }}>
+                <div style={{ fontSize: '14px', fontWeight: 'bold', lineHeight: '1.2', color: '#ffffff' }}>
                   المستشار الأكاديمي الذكي 🤖
                 </div>
-                <div style={{ fontSize: '11px', color: activeTheme.accentLight }}>
-                  قاعدة معرفة الرابطة - كلية العلوم
+                <div style={{ fontSize: '11px', color: '#fbbf24' }}>
+                  كلية العلوم جامعة القاهرة
                 </div>
               </div>
             </div>
@@ -170,7 +166,7 @@ export default function FloatingAIChatWidget() {
             <button
               onClick={() => setIsOpen(false)}
               style={{
-                background: 'rgba(0,0,0,0.2)',
+                background: 'rgba(255,255,255,0.1)',
                 border: 'none',
                 color: '#ffffff',
                 borderRadius: '50%',
@@ -195,7 +191,7 @@ export default function FloatingAIChatWidget() {
               display: 'flex',
               flexDirection: 'column',
               gap: '12px',
-              background: activeTheme.bgDark,
+              background: '#0a101d',
             }}
           >
             {messages.map((msg, idx) => (
@@ -206,17 +202,17 @@ export default function FloatingAIChatWidget() {
                   maxWidth: '85%',
                   padding: '12px 14px',
                   borderRadius: msg.sender === 'user' ? '14px 14px 2px 14px' : '14px 14px 14px 2px',
-                  backgroundColor: msg.sender === 'user' ? activeTheme.primary : activeTheme.bgCard,
-                  border: `1px solid ${msg.sender === 'user' ? activeTheme.accent : activeTheme.border}`,
-                  color: activeTheme.textMain,
+                  backgroundColor: msg.sender === 'user' ? '#1e293b' : '#0f172a',
+                  border: `1px solid ${msg.sender === 'user' ? '#f59e0b' : 'rgba(255,255,255,0.1)'}`,
+                  color: '#ffffff',
                   fontSize: '13px',
                   lineHeight: '1.7',
-                  boxShadow: '0 4px 12px rgba(0,0,0,0.2)',
+                  boxShadow: '0 4px 12px rgba(0,0,0,0.3)',
                   whiteSpace: 'pre-line',
                 }}
               >
                 {msg.text}
-                <div style={{ fontSize: '9px', color: activeTheme.textMuted, marginTop: '4px', textAlign: 'left' }}>
+                <div style={{ fontSize: '10px', color: '#94a3b8', marginTop: '4px', textAlign: 'left' }}>
                   {msg.time}
                 </div>
               </div>
@@ -225,7 +221,7 @@ export default function FloatingAIChatWidget() {
             {/* اقتراحات الأسئلة الشائعة السريعة */}
             {messages.length < 3 && kbQuestions.length > 0 && (
               <div style={{ marginTop: '8px' }}>
-                <div style={{ fontSize: '11px', color: activeTheme.accentLight, fontWeight: 'bold', marginBottom: '6px' }}>
+                <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 'bold', marginBottom: '6px' }}>
                   💡 أسئلة يمكنك الاستفسار عنها فوراً:
                 </div>
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
@@ -237,9 +233,9 @@ export default function FloatingAIChatWidget() {
                         padding: '8px 12px',
                         borderRadius: '8px',
                         background: 'rgba(255, 255, 255, 0.05)',
-                        border: `1px solid ${activeTheme.border}`,
-                        color: activeTheme.textMain,
-                        fontSize: '11px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        color: '#cbd5e1',
+                        fontSize: '12px',
                         textAlign: 'right',
                         cursor: 'pointer',
                         transition: 'all 0.2s',
@@ -263,8 +259,8 @@ export default function FloatingAIChatWidget() {
             }}
             style={{
               padding: '12px',
-              borderTop: `1px solid ${activeTheme.border}`,
-              backgroundColor: activeTheme.bgCard,
+              borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              backgroundColor: '#0f172a',
               display: 'flex',
               gap: '8px',
               alignItems: 'center',
@@ -281,12 +277,13 @@ export default function FloatingAIChatWidget() {
                 padding: '10px 14px',
                 borderRadius: '10px',
                 background: 'rgba(0, 0, 0, 0.3)',
-                border: `1px solid ${activeTheme.border}`,
-                color: activeTheme.textMain,
+                border: '1px solid rgba(255, 255, 255, 0.15)',
+                color: '#ffffff',
                 fontSize: '13px',
                 outline: 'none',
                 boxSizing: 'border-box',
                 direction: 'rtl',
+                textAlign: 'right',
               }}
             />
 
@@ -297,7 +294,7 @@ export default function FloatingAIChatWidget() {
                 width: '40px',
                 height: '40px',
                 borderRadius: '10px',
-                background: `linear-gradient(135deg, ${activeTheme.accent} 0%, #d97706 100%)`,
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                 color: '#0b1622',
                 border: 'none',
                 display: 'flex',
@@ -316,24 +313,23 @@ export default function FloatingAIChatWidget() {
       {/* 2. زر التفعيل العائم Floating Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
+        className="floating-ai-btn"
         style={{
           display: 'flex',
           alignItems: 'center',
           gap: '8px',
-          background: `linear-gradient(135deg, ${activeTheme.accent} 0%, #d97706 100%)`,
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
           color: '#0b1622',
           border: 'none',
-          padding: '12px 18px',
           borderRadius: '30px',
           fontWeight: '900',
-          fontSize: '13px',
           cursor: 'pointer',
           boxShadow: '0 8px 25px rgba(245, 158, 11, 0.45)',
           transition: 'transform 0.2s ease',
         }}
       >
-        <Bot size={20} />
-        <span>المستشار الذكي 🤖</span>
+        <Bot size={18} />
+        <span className="floating-ai-label">المستشار الذكي 🤖</span>
       </button>
 
       <style>{`
@@ -345,6 +341,47 @@ export default function FloatingAIChatWidget() {
           to {
             opacity: 1;
             transform: translateY(0);
+          }
+        }
+
+        /* Desktop Positioning */
+        @media (min-width: 641px) {
+          .floating-ai-container {
+            bottom: 24px;
+            left: 24px;
+          }
+          .floating-ai-btn {
+            padding: 12px 18px;
+            font-size: 13px;
+          }
+          .floating-ai-window {
+            bottom: 65px;
+            left: 0;
+            width: 380px;
+            height: 520px;
+          }
+        }
+
+        /* Mobile Positioning - Bottom-2 Left-2 compact to avoid blocking forms */
+        @media (max-width: 640px) {
+          .floating-ai-container {
+            bottom: 12px;
+            left: 12px;
+          }
+          .floating-ai-btn {
+            padding: 8px 12px;
+            font-size: 11px;
+            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+          }
+          .floating-ai-label {
+            font-size: 11px;
+          }
+          .floating-ai-window {
+            bottom: 50px;
+            left: 0;
+            width: calc(100vw - 24px);
+            height: 480px;
+            max-height: calc(100vh - 80px);
           }
         }
       `}</style>

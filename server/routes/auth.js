@@ -94,7 +94,10 @@ router.get('/setup-admin', async (req, res) => {
 });
 
 // مسار إنشاء حساب وتسجيل طالب جديد (Full Detailed Multi-Section Registration)
-router.post(['/register', '/survey'], async (req, res) => {
+router.post(
+  ['/register', '/survey', '/auth/register', '/api/register', '/api/auth/register'],
+  handleMemoryUpload,
+  async (req, res) => {
   try {
     const {
       name,

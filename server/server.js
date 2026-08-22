@@ -26,12 +26,19 @@ const io = new Server(server, {
 });
 
 // الوسائط والـ Middlewares
-app.use(cors({ origin: '*' }));
+app.use(cors({
+  origin: '*',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+}));
+app.options('*', cors());
+
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
 const uploadsPath = path.join(__dirname, 'uploads');
 try {
+  const fs = require('fs');
   if (fs.existsSync(uploadsPath)) {
     app.use('/uploads', express.static(uploadsPath));
   }
@@ -100,7 +107,7 @@ app.use(async (req, res, next) => {
 // محاولة الاتصال المبدئي
 connectDB().catch(() => {});
 
-// تسجيل المسارات والـ API Endpoints
+// تسجيل المسارات والـ API Endpoints لجميع الأنماط
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/posts', postsRoutes);
@@ -109,10 +116,12 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/cms', cmsRoutes);
 
-// ربط المسارات المباشرة على /api لدعم المسارات النسبية في بيئات الإنتاج (Direct API Mounts)
+// ربط المسارات المباشرة على /api و /auth و / لدعم المسارات النسبية وبيئات Vercel
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
 app.use('/api', cmsRoutes);
+app.use('/auth', authRoutes);
+app.use('/', authRoutes);
 
 
 // مسار تنظيف قاعدة البيانات وتهيئة حساب الأدمن الوحيد (Reset Database Endpoint)
