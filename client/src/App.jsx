@@ -194,11 +194,14 @@ function MainAppLayout() {
         minHeight: '100vh',
         backgroundColor: '#0a101d',
         color: '#ffffff',
+        width: '100%',
+        maxWidth: '100%',
+        overflowX: 'hidden',
         transition: 'background-color 0.3s ease, color 0.3s ease',
       }}
     >
       <Navbar />
-      <main style={{ flex: 1 }}>
+      <main style={{ flex: 1, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/academic" element={<AcademicLibrary />} />

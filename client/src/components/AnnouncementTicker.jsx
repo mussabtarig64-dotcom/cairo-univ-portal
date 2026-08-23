@@ -53,8 +53,9 @@ export default function AnnouncementTicker() {
         zIndex: 40,
         direction: 'rtl',
         width: '100%',
-        maxWidth: '100vw',
+        maxWidth: '100%',
         boxSizing: 'border-box',
+        contain: 'paint',
       }}
     >
       {/* شارة الشريط */}
@@ -91,6 +92,7 @@ export default function AnnouncementTicker() {
           whiteSpace: 'nowrap',
           position: 'relative',
           display: 'flex',
+          contain: 'paint',
         }}
       >
         <div className="ticker-track">
