@@ -10,6 +10,7 @@ import {
   Lock,
   UserPlus,
   ArrowRight,
+  ArrowLeft,
   AlertCircle,
   CheckCircle,
   GraduationCap,
@@ -25,20 +26,32 @@ import {
   EyeOff,
   Loader2,
   Sparkles,
+  Check,
+  Building2,
+  BookOpen,
+  Info
 } from 'lucide-react';
 
-export const MAJOR_OPTIONS = [
-  'الكيمياء منفرد',
-  'الفيزياء منفرد',
-  'الفيزياء الحيوية',
-  'مزدوج كيمياء / نبات',
-  'مزدوج كيمياء / حشرات',
-  'مزدوج كيمياء / جيولوجيا',
-  'مزدوج كيمياء / فيزياء',
-  'مزدوج كيمياء / ميكرو',
-  'مزدوج كيمياء / حيوان',
-  'التكنولوجيا الحيوية',
-  'مزدوج الكيمياء الحيوية',
+export const CAIRO_UNIV_DEPARTMENTS = [
+  'الكيمياء (Chemistry)',
+  'الكيمياء / الفيزياء (Chemistry / Physics)',
+  'الكيمياء / الحيوية (Biochemistry)',
+  'الكيمياء / النبات (Chemistry / Botany)',
+  'الكيمياء / الحيوان (Chemistry / Zoology)',
+  'الكيمياء / الميكروبيولوجي (Chemistry / Microbiology)',
+  'الفيزياء (Physics)',
+  'الفيزياء / الفلك (Physics / Astronomy)',
+  'الفيزياء / الجيوفيزياء (Physics / Geophysics)',
+  'الرياضيات (Mathematics)',
+  'الرياضيات / علوم الحاسب (Mathematics / Computer Science)',
+  'الاحصاء (Statistics)',
+  'النبات (Botany)',
+  'الحيوان (Zoology)',
+  'الحشرات (Entomology)',
+  'الجيولوجيا (Geology)',
+  'الجيوفيزياء (Geophysics)',
+  'علوم البترول الجيولوجية (Petroleum Geology)',
+  'الميكروبيولوجي (Microbiology)',
 ];
 
 export const ACADEMIC_LEVELS = [
@@ -46,13 +59,16 @@ export const ACADEMIC_LEVELS = [
   'المستوى الثاني',
   'المستوى الثالث',
   'المستوى الرابع (تخرج)',
-  'الدراسات العليا / ماجستير ودكتوراه',
+  'دراسات عليا / ماجستير / دكتوراه',
 ];
 
 export default function Register() {
   const { activeTheme } = useTheme();
   const { register } = useAuth();
   const navigate = useNavigate();
+
+  // نظام المراحل الخطوية (Step-by-Step Navigation)
+  const [currentStep, setCurrentStep] = useState(1);
 
   const [formData, setFormData] = useState({
     // 1. البيانات الشخصية وبيانات السكن
@@ -65,15 +81,15 @@ export default function Register() {
     whatsapp: '',
     cairoAddress: '',
 
-    // 2. جهة الاتصال في حالات الطوارئ
+    // 2. البيانات الأكاديمية
+    department: 'الكيمياء (Chemistry)',
+    academicLevel: 'المستوى الأول (إعدادي علوم)',
+    passportOrNationalId: '',
+
+    // 3. جهة الاتصال في حالات الطوارئ
     emergencyContactName: '',
     emergencyContactRelation: 'الوالد / الوالدة',
     emergencyContactPhone: '',
-
-    // 3. البيانات الأكاديمية
-    department: 'الكيمياء منفرد',
-    academicLevel: 'المستوى الأول (إعدادي علوم)',
-    passportOrNationalId: '',
 
     // 4. المرفقات
     idCardUrl: '',
@@ -84,6 +100,13 @@ export default function Register() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const [isSuccess, setIsSuccess] = useState(false);
+
+  const steps = [
+    { id: 1, title: 'البيانات الشخصية', icon: User },
+    { id: 2, title: 'البيانات الأكاديمية', icon: GraduationCap },
+    { id: 3, title: 'جهة الطوارئ', icon: HeartHandshake },
+    { id: 4, title: 'إثبات الهوية', icon: CreditCard },
+  ];
 
   const handleChange = (e) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
@@ -106,64 +129,101 @@ export default function Register() {
     }
   };
 
+  // التحقق من صحة المرحلة الحالية قبل الانتقال للمرحلة التالية
+  const validateStep = (step) => {
+    setError('');
+    if (step === 1) {
+      if (!formData.fullName.trim()) {
+        setError('يرجى إدخال الاسم الرباعي كاملاً.');
+        return false;
+      }
+      if (!formData.email.trim() || !formData.email.includes('@')) {
+        setError('يرجى إدخال بريد إلكتروني صحيح.');
+        return false;
+      }
+      if (!formData.phone.trim()) {
+        setError('يرجى إدخال رقم الهاتف المصري.');
+        return false;
+      }
+      if (!formData.cairoAddress.trim()) {
+        setError('يرجى إدخال عنوان السكن بالتفصيل بمصر.');
+        return false;
+      }
+      if (!formData.password || formData.password.length < 6) {
+        setError('كلمة المرور يجب ألا تقل عن 6 أحرف.');
+        return false;
+      }
+      if (formData.password !== formData.confirmPassword) {
+        setError('كلمات المرور غير متطابقة.');
+        return false;
+      }
+    } else if (step === 2) {
+      if (!formData.passportOrNationalId.trim()) {
+        setError('يرجى إدخال رقم الهوية / جواز السفر / الرقم الوطني.');
+        return false;
+      }
+    } else if (step === 3) {
+      if (!formData.emergencyContactName.trim()) {
+        setError('يرجى إدخال اسم جهة الاتصال للطوارئ.');
+        return false;
+      }
+      if (!formData.emergencyContactPhone.trim()) {
+        setError('يرجى إدخال رقم هاتف الطوارئ.');
+        return false;
+      }
+    }
+    return true;
+  };
+
+  const nextStep = () => {
+    if (validateStep(currentStep)) {
+      setCurrentStep((prev) => Math.min(prev + 1, 4));
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const prevStep = () => {
+    setError('');
+    setCurrentStep((prev) => Math.max(prev - 1, 1));
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  };
+
   const handleSubmit = async (e) => {
-    e.preventDefault();
+    if (e) e.preventDefault();
     setError('');
 
-    const {
-      fullName,
-      email,
-      password,
-      confirmPassword,
-      phone,
-      whatsapp,
-      cairoAddress,
-      emergencyContactName,
-      emergencyContactPhone,
-      department,
-      academicLevel,
-      passportOrNationalId,
-    } = formData;
-
-    if (!fullName.trim() || !email.trim() || !password) {
-      setError('يرجى استكمال البيانات الإلزامية (الاسم الرباعي، البريد الإلكتروني، وكلمة المرور).');
-      return;
-    }
-
-    if (password.length < 6) {
-      setError('كلمة المرور يجب أن لا تقل عن 6 أحرف.');
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('كلمات المرور غير متطابقة.');
-      return;
+    // التحقق الشامل من كل الحقول
+    for (let s = 1; s <= 3; s++) {
+      if (!validateStep(s)) {
+        setCurrentStep(s);
+        return;
+      }
     }
 
     setLoading(true);
 
     try {
       const payload = {
-        name: fullName.trim(),
-        fullName: fullName.trim(),
-        email: email.trim().toLowerCase(),
-        password: password,
+        name: formData.fullName.trim(),
+        fullName: formData.fullName.trim(),
+        email: formData.email.trim().toLowerCase(),
+        password: formData.password,
         age: formData.age || '20',
-        phone: phone.trim() || '01000000000',
-        whatsapp: whatsapp.trim() || phone.trim() || '01000000000',
-        residence: cairoAddress.trim() || 'القاهرة، مصر',
-        cairoAddress: cairoAddress.trim() || 'القاهرة، مصر',
-        emergencyContact: emergencyContactName.trim(),
-        emergencyContactName: emergencyContactName.trim(),
+        phone: formData.phone.trim() || '01000000000',
+        whatsapp: formData.whatsapp.trim() || formData.phone.trim() || '01000000000',
+        residence: formData.cairoAddress.trim() || 'القاهرة، مصر',
+        cairoAddress: formData.cairoAddress.trim() || 'القاهرة، مصر',
+        emergencyContact: formData.emergencyContactName.trim(),
+        emergencyContactName: formData.emergencyContactName.trim(),
         emergencyContactRelation: formData.emergencyContactRelation,
-        emergencyContactPhone: emergencyContactPhone.trim(),
-        department: department,
-        academicLevel: academicLevel,
-        academicYear: academicLevel,
-        studentId: passportOrNationalId.trim() || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
-        academicId: passportOrNationalId.trim() || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
-        passportOrNationalId: passportOrNationalId.trim(),
-        nationalId: passportOrNationalId.trim(),
+        emergencyContactPhone: formData.emergencyContactPhone.trim(),
+        department: formData.department,
+        academicLevel: formData.academicLevel,
+        academicYear: formData.academicLevel,
+        studentId: formData.passportOrNationalId.trim() || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
+        academicId: formData.passportOrNationalId.trim() || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
+        passportOrNationalId: formData.passportOrNationalId.trim(),
+        nationalId: formData.passportOrNationalId.trim(),
         idCardUrl: formData.idCardUrl || '',
         idDocument: formData.idCardUrl || '',
         nationalIdPhoto: formData.idCardUrl || '',
@@ -171,7 +231,6 @@ export default function Register() {
 
       let resData = null;
 
-      // أولوية المسار القياسي الموحد /api/register
       try {
         const response = await axios.post('/api/register', payload, {
           headers: {
@@ -181,7 +240,6 @@ export default function Register() {
         });
         resData = response.data;
       } catch (primaryErr) {
-        // تجربة مسار الـ auth والمسار التلقائي في حال البيئة المحلية
         try {
           const fallbackResponse = await axios.post(`${API_BASE}/auth/register`, payload, {
             headers: {
@@ -208,7 +266,7 @@ export default function Register() {
         setIsSuccess(true);
         setTimeout(() => {
           navigate('/pending-approval');
-        }, 1200);
+        }, 1500);
       } else {
         setError(resData?.message || 'حدث خطأ أثناء إرسال استمارة التسجيل.');
       }
@@ -225,63 +283,121 @@ export default function Register() {
   };
 
   return (
-    <div className="w-full min-h-screen py-6 sm:py-10 px-3 sm:px-6 lg:px-8 pb-36 font-sans text-slate-100 flex flex-col items-center justify-start" style={{ direction: 'rtl' }}>
-      <div className="w-full max-w-4xl bg-slate-900/95 backdrop-blur-xl border border-slate-700/80 rounded-2xl sm:rounded-3xl shadow-2xl overflow-hidden transition-all duration-300">
+    <div className="w-full min-h-screen py-8 px-4 sm:px-6 lg:px-8 pb-36 text-white" style={{ direction: 'rtl' }}>
+      
+      {/* البطاقة الرئيسية الموحدة الحاوية */}
+      <div className="max-w-4xl mx-auto my-6 sm:my-10 p-6 sm:p-10 bg-slate-900 border border-slate-800 rounded-2xl sm:rounded-3xl shadow-2xl relative overflow-hidden">
         
-        {/* Header Section */}
-        <div className="bg-gradient-to-r from-slate-950 via-slate-900 to-indigo-950/80 p-6 sm:p-8 md:p-10 text-center border-b border-slate-800 relative overflow-hidden">
-          <div className="absolute top-0 right-0 w-64 h-64 bg-amber-500/10 rounded-full blur-3xl pointer-events-none -mr-20 -mt-20"></div>
-          <div className="absolute bottom-0 left-0 w-64 h-64 bg-blue-500/10 rounded-full blur-3xl pointer-events-none -ml-20 -mb-20"></div>
+        {/* خلفية جمالية علوية */}
+        <div className="absolute top-0 right-0 left-0 h-2 bg-gradient-to-r from-amber-500 via-amber-400 to-amber-600"></div>
 
-          <div className="relative z-10 flex flex-col items-center">
-            <div className="inline-flex items-center gap-2 bg-amber-500/15 border border-amber-500/40 px-4 py-1.5 rounded-full text-amber-400 text-xs sm:text-sm font-semibold mb-4 shadow-sm backdrop-blur-md">
-              <GraduationCap className="w-4 h-4 text-amber-400" />
-              <span>رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة (SSA-FS-CU)</span>
-            </div>
+        {/* رأس الصفحة الترحيبي والمعلومات الأساسية */}
+        <div className="text-center mb-8 sm:mb-10 pb-6 sm:pb-8 border-b border-slate-800">
+          <div className="inline-flex items-center gap-2 bg-amber-500/10 border border-amber-500/30 px-4 py-1.5 rounded-full text-amber-400 text-xs sm:text-sm font-bold mb-3 shadow-inner">
+            <GraduationCap className="w-4 h-4 text-amber-400" />
+            <span>رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</span>
+          </div>
 
-            <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-white tracking-tight leading-snug mb-3">
-              استمارة التسجيل المركزي واستبيان الطلاب
-            </h1>
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-2">
+            بوابة تسجيل واستبيان الطلاب المركزي
+          </h1>
 
-            <p className="text-slate-300 text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-              يرجى استيفاء البيانات بدقة لاعتماد القيد وإصدار بطاقة العضوية الرقمية (Digital ID) وتمكين الوصول لكافة خدمات الرابطة والمكتبة الأكاديمية.
-            </p>
+          <p className="text-slate-400 text-xs sm:text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
+            يرجى استيفاء البيانات بدقة لاعتماد القيد وإصدار بطاقة العضوية الرقمية (Digital ID) وتمكين الوصول لكافة خدمات الرابطة.
+          </p>
+        </div>
+
+        {/* شريط المراحل المتقدم (Step Progress Bar) */}
+        <div className="mb-8 sm:mb-10">
+          <div className="grid grid-cols-4 gap-2 sm:gap-4">
+            {steps.map((step) => {
+              const StepIcon = step.icon;
+              const isCompleted = currentStep > step.id;
+              const isCurrent = currentStep === step.id;
+
+              return (
+                <button
+                  key={step.id}
+                  type="button"
+                  onClick={() => {
+                    if (step.id < currentStep || validateStep(currentStep)) {
+                      setCurrentStep(step.id);
+                    }
+                  }}
+                  className={`flex flex-col items-center text-center p-2 sm:p-3 rounded-xl transition-all ${
+                    isCurrent
+                      ? 'bg-amber-500/15 border border-amber-500 text-amber-400'
+                      : isCompleted
+                      ? 'bg-emerald-500/10 border border-emerald-500/40 text-emerald-400'
+                      : 'bg-slate-800/50 border border-slate-800 text-slate-500 hover:text-slate-400'
+                  }`}
+                >
+                  <div
+                    className={`w-7 h-7 sm:w-9 sm:h-9 rounded-full flex items-center justify-center mb-1.5 text-xs sm:text-sm font-bold transition-all ${
+                      isCurrent
+                        ? 'bg-amber-500 text-slate-950 shadow-lg shadow-amber-500/30'
+                        : isCompleted
+                        ? 'bg-emerald-500 text-slate-950'
+                        : 'bg-slate-800 text-slate-400'
+                    }`}
+                  >
+                    {isCompleted ? <Check className="w-4 h-4 sm:w-5 sm:h-5 stroke-[3]" /> : step.id}
+                  </div>
+                  <span className="text-[11px] sm:text-xs font-semibold truncate w-full hidden sm:block">
+                    {step.title}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+          
+          {/* Progress Line */}
+          <div className="w-full bg-slate-800 h-1.5 rounded-full mt-4 overflow-hidden">
+            <div
+              className="bg-amber-500 h-full transition-all duration-300 rounded-full"
+              style={{ width: `${(currentStep / 4) * 100}%` }}
+            ></div>
           </div>
         </div>
 
-        {/* Form Body */}
-        <div className="p-4 sm:p-6 md:p-8 lg:p-10 space-y-6 sm:space-y-8">
-          {/* Alerts */}
-          {error && (
-            <div className="bg-red-500/15 border border-red-500/40 text-red-300 px-4 py-3.5 rounded-xl flex items-center gap-3 text-xs sm:text-sm font-medium animate-fadeIn">
-              <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
-              <span>{error}</span>
-            </div>
-          )}
+        {/* رسائل التنبيه والخطأ */}
+        {error && (
+          <div className="mb-6 p-4 bg-red-500/15 border border-red-500/50 rounded-xl text-red-300 flex items-center gap-3 text-sm font-medium animate-fadeIn">
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <span>{error}</span>
+          </div>
+        )}
 
-          {isSuccess && (
-            <div className="bg-emerald-500/15 border border-emerald-500/40 text-emerald-300 px-4 py-3.5 rounded-xl flex items-center gap-3 text-xs sm:text-sm font-medium animate-fadeIn">
-              <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
-              <span>تم إرسال استمارة التسجيل المركزي بنجاح! جاري تحويلك لصفحة حالة القيد...</span>
-            </div>
-          )}
+        {isSuccess && (
+          <div className="mb-6 p-4 bg-emerald-500/15 border border-emerald-500/50 rounded-xl text-emerald-300 flex items-center gap-3 text-sm font-medium animate-fadeIn">
+            <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            <span>تم إرسال استمارة التسجيل المركزي بنجاح! جاري تحويلك لصفحة حالة القيد...</span>
+          </div>
+        )}
 
-          <form onSubmit={handleSubmit} className="space-y-6 sm:space-y-8">
-            
-            {/* Section 1: Personal Info & Residence */}
-            <div className="bg-slate-800/60 border border-slate-700/70 rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-colors hover:border-slate-600">
-              <div className="flex items-center gap-2.5 pb-3.5 mb-4 sm:mb-6 border-b border-slate-700/60">
-                <User className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-white">
-                  القسم الأول: البيانات الشخصية والسكن بمصر
-                </h2>
+        {/* نموذج الاستمارة الرئيسي */}
+        <form onSubmit={(e) => { e.preventDefault(); if (currentStep === 4) handleSubmit(); else nextStep(); }}>
+          
+          {/* =========================================================================
+              المرحلة 1: البيانات الشخصية وبيانات السكن بمصر
+          ========================================================================= */}
+          {currentStep === 1 && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+                  <User className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-white">القسم الأول: البيانات الشخصية والسكن بمصر</h2>
+                  <p className="text-xs text-slate-400">أدخل بياناتك الأساسية وعنوان إقامتك الحالية</p>
+                </div>
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                {/* Full Name */}
-                <div className="sm:col-span-2 md:col-span-1">
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
-                    الاسم رباعي كما في الجواز/الهوية: <span className="text-amber-400">*</span>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* الاسم رباعي */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    الاسم رباعي كما في الجواز / الهوية: <span className="text-amber-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -290,31 +406,31 @@ export default function Register() {
                     placeholder="مثال: مصعب طارق محمد عثمان"
                     value={formData.fullName}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
 
-                {/* Age */}
+                {/* العمر */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     العمر / سنة الميلاد: <span className="text-amber-400">*</span>
                   </label>
                   <input
                     type="number"
                     name="age"
                     min="16"
-                    max="60"
+                    max="65"
                     required
                     placeholder="20"
                     value={formData.age}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
 
-                {/* Email */}
+                {/* البريد الإلكتروني */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     البريد الإلكتروني الأساسي: <span className="text-amber-400">*</span>
                   </label>
                   <input
@@ -324,13 +440,13 @@ export default function Register() {
                     placeholder="student@example.com"
                     value={formData.email}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
 
-                {/* Phone */}
+                {/* الهاتف المصري */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     رقم الهاتف المصري: <span className="text-amber-400">*</span>
                   </label>
                   <input
@@ -340,14 +456,14 @@ export default function Register() {
                     placeholder="010XXXXXXXX"
                     value={formData.phone}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
 
-                {/* Whatsapp */}
+                {/* الواتساب */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
-                    رقم الواتساب (للإشعارات والتواصل): <span className="text-amber-400">*</span>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    رقم الواتساب: <span className="text-amber-400">*</span>
                   </label>
                   <input
                     type="tel"
@@ -356,13 +472,13 @@ export default function Register() {
                     placeholder="010XXXXXXXX أو +249..."
                     value={formData.whatsapp}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
 
-                {/* Cairo Address */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                {/* عنوان السكن بمصر */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     مكان وعنوان السكن بالتفصيل بمصر: <span className="text-amber-400">*</span>
                   </label>
                   <input
@@ -372,13 +488,13 @@ export default function Register() {
                     placeholder="مثال: الجيزة - بين السرايات / الدقي / فيصل"
                     value={formData.cairoAddress}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
 
-                {/* Password */}
+                {/* كلمة المرور */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     كلمة المرور للحساب: <span className="text-amber-400">*</span>
                   </label>
                   <div className="relative">
@@ -389,21 +505,21 @@ export default function Register() {
                       placeholder="••••••••"
                       value={formData.password}
                       onChange={handleChange}
-                      className="w-full px-3.5 py-2.5 sm:py-3 pl-10 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                      className="w-full px-4 py-3 pl-11 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                     />
                     <button
                       type="button"
                       onClick={() => setShowPassword(!showPassword)}
                       className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-white transition-colors"
                     >
-                      {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
                     </button>
                   </div>
                 </div>
 
-                {/* Confirm Password */}
+                {/* تأكيد كلمة المرور */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     تأكيد كلمة المرور: <span className="text-amber-400">*</span>
                   </label>
                   <input
@@ -413,113 +529,62 @@ export default function Register() {
                     placeholder="••••••••"
                     value={formData.confirmPassword}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Section 2: Emergency Contact */}
-            <div className="bg-slate-800/60 border border-slate-700/70 rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-colors hover:border-slate-600">
-              <div className="flex items-center gap-2.5 pb-3.5 mb-4 sm:mb-6 border-b border-slate-700/60">
-                <HeartHandshake className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-white">
-                  القسم الثاني: بيانات جهة الاتصال في حالات الطوارئ
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                {/* Emergency Contact Name */}
-                <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
-                    اسم جهة الاتصال / ولي الأمر للطوارئ: <span className="text-amber-400">*</span>
-                  </label>
-                  <input
-                    type="text"
-                    name="emergencyContactName"
-                    required
-                    placeholder="اسم القريب أو الصديق بمصر أو السودان"
-                    value={formData.emergencyContactName}
-                    onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
-                  />
+          {/* =========================================================================
+              المرحلة 2: البيانات الأكاديمية - كلية العلوم جامعة القاهرة
+          ========================================================================= */}
+          {currentStep === 2 && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+                  <GraduationCap className="w-5 h-5" />
                 </div>
-
-                {/* Emergency Relation */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
-                    صلة القرابة: <span className="text-amber-400">*</span>
-                  </label>
-                  <select
-                    name="emergencyContactRelation"
-                    value={formData.emergencyContactRelation}
-                    onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all cursor-pointer"
-                  >
-                    <option value="الوالد / الوالدة" className="bg-slate-900 text-white">الوالد / الوالدة</option>
-                    <option value="أخ / أخت" className="bg-slate-900 text-white">أخ / أخت</option>
-                    <option value="عم / خال / قريب" className="bg-slate-900 text-white">عم / خال / قريب</option>
-                    <option value="صديق / زميل سكن" className="bg-slate-900 text-white">صديق / زميل سكن</option>
-                  </select>
-                </div>
-
-                {/* Emergency Contact Phone */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
-                    رقم هاتف الطوارئ: <span className="text-amber-400">*</span>
-                  </label>
-                  <input
-                    type="tel"
-                    name="emergencyContactPhone"
-                    required
-                    placeholder="رقم الهاتف مع رمز الدولة (مثال: +20... أو +249...)"
-                    value={formData.emergencyContactPhone}
-                    onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
-                  />
+                  <h2 className="text-lg sm:text-xl font-bold text-white">القسم الثاني: البيانات الأكاديمية بكلية العلوم</h2>
+                  <p className="text-xs text-slate-400">اختر قسمك العلمي والفرقة الدراسية بكلية العلوم جامعة القاهرة</p>
                 </div>
               </div>
-            </div>
 
-            {/* Section 3: Academic Information */}
-            <div className="bg-slate-800/60 border border-slate-700/70 rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-colors hover:border-slate-600">
-              <div className="flex items-center gap-2.5 pb-3.5 mb-4 sm:mb-6 border-b border-slate-700/60">
-                <GraduationCap className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-white">
-                  القسم الثالث: البيانات الأكاديمية بكلية العلوم
-                </h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 sm:gap-5">
-                {/* Department */}
+              <div className="space-y-5">
+                {/* القسم العلمي والتخصص */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     القسم العلمي / التخصص الأكاديمي: <span className="text-amber-400">*</span>
                   </label>
                   <select
                     name="department"
                     value={formData.department}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-amber-500/40 rounded-lg sm:rounded-xl text-amber-300 font-semibold text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all cursor-pointer"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-amber-500/50 text-amber-300 font-bold text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all cursor-pointer"
                   >
-                    {MAJOR_OPTIONS.map((major) => (
-                      <option key={major} value={major} className="bg-slate-900 text-white">
-                        {major}
+                    {CAIRO_UNIV_DEPARTMENTS.map((dept) => (
+                      <option key={dept} value={dept} className="bg-slate-900 text-white font-normal">
+                        {dept}
                       </option>
                     ))}
                   </select>
+                  <p className="text-[11px] text-slate-400 mt-1.5 flex items-center gap-1">
+                    <Info size={12} className="text-amber-400" />
+                    يشمل القائمة الكاملة لجميع الأقسام المنفردة والمزدوجة بكلية العلوم جامعة القاهرة.
+                  </p>
                 </div>
 
-                {/* Academic Level */}
+                {/* الفرقة / المستوى الدراسي */}
                 <div>
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                     الفرقة / المستوى الدراسي: <span className="text-amber-400">*</span>
                   </label>
                   <select
                     name="academicLevel"
                     value={formData.academicLevel}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all cursor-pointer"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all cursor-pointer"
                   >
                     {ACADEMIC_LEVELS.map((lvl) => (
                       <option key={lvl} value={lvl} className="bg-slate-900 text-white">
@@ -529,10 +594,10 @@ export default function Register() {
                   </select>
                 </div>
 
-                {/* Passport / National ID */}
-                <div className="sm:col-span-2">
-                  <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-1.5">
-                    رقم الهوية / جواز السفر / الرقم الوطني: <span className="text-amber-400">*</span>
+                {/* رقم الهوية / جواز السفر / الرقم الوطني */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    رقم جواز السفر / الرقم الوطني / بطاقة الكلية: <span className="text-amber-400">*</span>
                   </label>
                   <input
                     type="text"
@@ -541,26 +606,103 @@ export default function Register() {
                     placeholder="مثال: P01234567 أو الرقم الوطني"
                     value={formData.passportOrNationalId}
                     onChange={handleChange}
-                    className="w-full px-3.5 py-2.5 sm:py-3 bg-slate-900/90 border border-slate-700 rounded-lg sm:rounded-xl text-white placeholder-slate-500 text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-amber-500/40 focus:border-amber-500 transition-all"
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
                   />
                 </div>
               </div>
             </div>
+          )}
 
-            {/* Section 4: Document Upload */}
-            <div className="bg-slate-800/60 border border-slate-700/70 rounded-xl sm:rounded-2xl p-4 sm:p-6 transition-colors hover:border-slate-600">
-              <div className="flex items-center gap-2.5 pb-3.5 mb-4 sm:mb-6 border-b border-slate-700/60">
-                <CreditCard className="w-5 h-5 text-amber-400 flex-shrink-0" />
-                <h2 className="text-sm sm:text-base md:text-lg font-bold text-white">
-                  القسم الرابع: رفع إثبات الشخصية / الهوية الجامعية
-                </h2>
+          {/* =========================================================================
+              المرحلة 3: بيانات جهة الاتصال في حالات الطوارئ
+          ========================================================================= */}
+          {currentStep === 3 && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+                  <HeartHandshake className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-white">القسم الثالث: جهة الاتصال في حالات الطوارئ</h2>
+                  <p className="text-xs text-slate-400">بيانات القريب أو الصديق للرجوع إليه عند الضرورة</p>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-5">
+                {/* اسم جهة الاتصال */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    اسم جهة الاتصال / ولي الأمر للطوارئ: <span className="text-amber-400">*</span>
+                  </label>
+                  <input
+                    type="text"
+                    name="emergencyContactName"
+                    required
+                    placeholder="اسم القريب أو الصديق بمصر أو السودان"
+                    value={formData.emergencyContactName}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                </div>
+
+                {/* صلة القرابة */}
+                <div>
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    صلة القرابة: <span className="text-amber-400">*</span>
+                  </label>
+                  <select
+                    name="emergencyContactRelation"
+                    value={formData.emergencyContactRelation}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 transition-all cursor-pointer"
+                  >
+                    <option value="الوالد / الوالدة" className="bg-slate-900 text-white">الوالد / الوالدة</option>
+                    <option value="أخ / أخت" className="bg-slate-900 text-white">أخ / أخت</option>
+                    <option value="عم / خال / قريب" className="bg-slate-900 text-white">عم / خال / قريب</option>
+                    <option value="صديق / زميل سكن" className="bg-slate-900 text-white">صديق / زميل سكن</option>
+                  </select>
+                </div>
+
+                {/* هاتف الطوارئ */}
+                <div className="md:col-span-2">
+                  <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
+                    رقم هاتف الطوارئ: <span className="text-amber-400">*</span>
+                  </label>
+                  <input
+                    type="tel"
+                    name="emergencyContactPhone"
+                    required
+                    placeholder="رقم الهاتف مع رمز الدولة (مثال: +20... أو +249...)"
+                    value={formData.emergencyContactPhone}
+                    onChange={handleChange}
+                    className="w-full px-4 py-3 rounded-lg bg-slate-800 border border-slate-700 text-white placeholder-slate-500 text-sm focus:outline-none focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-all"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* =========================================================================
+              المرحلة 4: رفع الوثائق وإثبات الهوية
+          ========================================================================= */}
+          {currentStep === 4 && (
+            <div className="space-y-6 animate-fadeIn">
+              <div className="flex items-center gap-3 pb-3 border-b border-slate-800">
+                <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center text-amber-400">
+                  <CreditCard className="w-5 h-5" />
+                </div>
+                <div>
+                  <h2 className="text-lg sm:text-xl font-bold text-white">القسم الرابع: رفع إثبات الشخصية والهوية الجامعية</h2>
+                  <p className="text-xs text-slate-400">ارفع صورة واضحة من جواز السفر أو البطاقة أو إثبات القيد</p>
+                </div>
               </div>
 
               <div>
-                <label className="block text-xs sm:text-sm font-medium text-slate-300 mb-2">
+                <label className="block text-xs sm:text-sm font-semibold text-slate-300 mb-2">
                   صورة إثبات الهوية (جواز السفر / البطاقة الوطنية / بطاقة الكلية):
                 </label>
-                <div className="border-2 border-dashed border-slate-700 hover:border-amber-500/50 rounded-xl sm:rounded-2xl p-6 text-center bg-slate-900/80 transition-all cursor-pointer group">
+
+                <div className="border-2 border-dashed border-slate-700 hover:border-amber-500/60 rounded-2xl p-6 sm:p-8 text-center bg-slate-800/40 transition-all group cursor-pointer">
                   <input
                     type="file"
                     id="idUpload"
@@ -568,44 +710,74 @@ export default function Register() {
                     onChange={handleFileUpload}
                     className="hidden"
                   />
-                  <label htmlFor="idUpload" className="cursor-pointer flex flex-col items-center gap-2">
-                    <div className="w-12 h-12 rounded-full bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
-                      <Upload className="w-6 h-6" />
+                  <label htmlFor="idUpload" className="cursor-pointer flex flex-col items-center gap-3">
+                    <div className="w-14 h-14 rounded-2xl bg-amber-500/10 flex items-center justify-center text-amber-400 group-hover:scale-110 transition-transform">
+                      <Upload className="w-7 h-7" />
                     </div>
-                    <span className="text-xs sm:text-sm font-semibold text-white">
-                      انقر هنا لرفع صورة الوثيقة أو اسحب الملف
-                    </span>
-                    <span className="text-[11px] sm:text-xs text-slate-400">
-                      الصيغ المقبولة: JPG, PNG, WEBP (الحد الأقصى: 5MB)
-                    </span>
+                    <div>
+                      <span className="block text-sm sm:text-base font-bold text-white mb-1">
+                        انقر هنا لرفع صورة الوثيقة أو اسحب الملف
+                      </span>
+                      <span className="text-xs text-slate-400">
+                        الصيغ المقبولة: JPG, PNG, WEBP (الحد الأقصى: 5MB)
+                      </span>
+                    </div>
                   </label>
 
                   {idPreview && (
-                    <div className="mt-4 pt-4 border-t border-slate-700/60 flex flex-col items-center gap-2 animate-fadeIn">
+                    <div className="mt-5 pt-5 border-t border-slate-700/60 flex flex-col items-center gap-2 animate-fadeIn">
                       <img
                         src={idPreview}
                         alt="ID Preview"
-                        className="max-w-[220px] max-h-[130px] object-contain rounded-lg border border-emerald-500/60 shadow-md"
+                        className="max-w-[240px] max-h-[140px] object-contain rounded-xl border border-emerald-500/60 shadow-lg"
                       />
-                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1">
-                        <CheckCircle size={14} /> تم تجهيز صورة الهوية للاعتماد
+                      <span className="text-xs text-emerald-400 font-bold flex items-center gap-1 mt-1">
+                        <CheckCircle size={14} /> تم تجهيز صورة الهوية للاعتماد بنجاح
                       </span>
                     </div>
                   )}
                 </div>
               </div>
+
+              <div className="bg-slate-800/60 border border-slate-700/60 rounded-xl p-4 text-xs text-slate-300 leading-relaxed">
+                🛡️ <strong className="text-amber-400">إقرار وتعهد:</strong> بالنقر على "إرسال استمارة التسجيل المركزي"، أقر بأن جميع البيانات المدخلة صحيحة ومطابقة لوثائقي الرسمية بكلية العلوم جامعة القاهرة.
+              </div>
             </div>
+          )}
 
-            {/* Submission Declaration & Submit Button */}
-            <div className="pt-2 text-center space-y-4">
-              <p className="text-[11px] sm:text-xs text-slate-400 leading-relaxed max-w-xl mx-auto">
-                بالنقر على "إرسال استمارة التسجيل المركزي"، أقر بأن جميع البيانات المدخلة صحيحة ومطابقة لوثائقي الرسمية بكلية العلوم جامعة القاهرة.
-              </p>
-
+          {/* أزرار التنقل والتقديم (Step Actions) */}
+          <div className="mt-8 pt-6 border-t border-slate-800 flex flex-col-reverse sm:flex-row items-center justify-between gap-4">
+            
+            {/* زر السابق */}
+            {currentStep > 1 ? (
               <button
-                type="submit"
+                type="button"
+                onClick={prevStep}
+                className="w-full sm:w-auto px-6 py-3 bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-sm rounded-xl transition-all flex items-center justify-center gap-2 cursor-pointer"
+              >
+                <ArrowRight className="w-4 h-4" />
+                <span>المرحلة السابقة</span>
+              </button>
+            ) : (
+              <div className="hidden sm:block"></div>
+            )}
+
+            {/* زر التالي أو الإرسال النهائي */}
+            {currentStep < 4 ? (
+              <button
+                type="button"
+                onClick={nextStep}
+                className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm sm:text-base rounded-xl shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2 cursor-pointer active:scale-[0.98]"
+              >
+                <span>المتابعة للمرحلة التالية</span>
+                <ArrowLeft className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSubmit}
                 disabled={loading || isSuccess}
-                className="w-full sm:w-auto min-w-[280px] sm:min-w-[340px] px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 active:scale-[0.98] text-slate-950 font-black text-sm sm:text-base rounded-xl shadow-lg shadow-amber-500/25 transition-all duration-200 inline-flex items-center justify-center gap-2.5 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer"
+                className="w-full sm:w-auto px-8 py-3.5 bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-extrabold text-sm sm:text-base rounded-xl shadow-xl shadow-amber-500/30 transition-all flex items-center justify-center gap-2 disabled:opacity-60 disabled:cursor-not-allowed cursor-pointer active:scale-[0.98]"
               >
                 {loading ? (
                   <>
@@ -615,24 +787,25 @@ export default function Register() {
                 ) : (
                   <>
                     <UserPlus className="w-5 h-5" />
-                    <span>إرسال استمارة التسجيل المركزي (Submit Registration)</span>
+                    <span>إرسال استمارة التسجيل المركزي (Submit)</span>
                   </>
                 )}
               </button>
-            </div>
-          </form>
-
-          {/* Footer Login Link */}
-          <div className="text-center pt-6 mt-6 border-t border-slate-800 text-xs sm:text-sm text-slate-400">
-            <span>لديك حساب مسجل بالفعل؟ </span>
-            <Link
-              to="/login"
-              className="text-amber-400 hover:text-amber-300 font-bold transition-colors mr-1 underline underline-offset-4"
-            >
-              تسجيل دخول الأعضاء
-            </Link>
+            )}
           </div>
+        </form>
+
+        {/* رابط تسجيل الدخول للأعضاء */}
+        <div className="text-center mt-8 pt-6 border-t border-slate-800 text-xs sm:text-sm text-slate-400">
+          <span>لديك حساب مسجل بالفعل؟ </span>
+          <Link
+            to="/login"
+            className="text-amber-400 hover:text-amber-300 font-bold transition-colors mr-1 underline underline-offset-4"
+          >
+            تسجيل دخول الأعضاء
+          </Link>
         </div>
+
       </div>
     </div>
   );
