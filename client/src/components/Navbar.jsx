@@ -3,7 +3,6 @@ import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import logoImg from '../assets/logo.png';
-import AnnouncementTicker from './AnnouncementTicker';
 import {
   Home as HomeIcon,
   UserPlus,
@@ -84,24 +83,12 @@ export default function Navbar() {
   ];
 
   return (
-    <header className="site-header-wrapper" style={{ width: '100%', overflowX: 'hidden' }}>
-      {/* 1. شريط الإعلانات العاجلة المتحرك */}
-      <AnnouncementTicker />
-
-      {/* 2. شريط التنقل الرئيسي المتجاوب */}
+    <header className="sticky top-0 z-50 w-full bg-[#111827] border-b border-slate-800" style={{ direction: 'rtl' }}>
       <nav
         className="navbar-main"
         style={{
-          background: 'rgba(15, 23, 42, 0.96)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          position: 'sticky',
-          top: 0,
-          zIndex: 50,
-          backdropFilter: 'blur(16px)',
-          direction: 'rtl',
           width: '100%',
-          maxWidth: '100vw',
-          overflowX: 'hidden',
+          maxWidth: '100%',
           boxSizing: 'border-box',
         }}
       >
@@ -110,11 +97,11 @@ export default function Navbar() {
           style={{
             maxWidth: '1360px',
             margin: '0 auto',
-            padding: '8px 14px',
+            padding: '10px 16px',
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '8px',
+            gap: '12px',
             width: '100%',
             boxSizing: 'border-box',
           }}

@@ -32,7 +32,6 @@ import ArchivePortal from './pages/ArchivePortal';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
 import DigitalIDPage from './pages/DigitalIDPage';
-import AnnouncementTicker from './components/AnnouncementTicker';
 import SocialLinks from './components/SocialLinks';
 import FloatingAIChatWidget from './components/FloatingAIChatWidget';
 import Navbar from './components/Navbar';
