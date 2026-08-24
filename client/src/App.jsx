@@ -34,41 +34,7 @@ import Contact from './pages/Contact';
 import DigitalIDPage from './pages/DigitalIDPage';
 import SocialLinks from './components/SocialLinks';
 import FloatingAIChatWidget from './components/FloatingAIChatWidget';
-import Navbar from './components/Navbar';
-
-import {
-  Home as HomeIcon,
-  UserPlus,
-  LogIn,
-  LogOut,
-  MessageSquare,
-  Users,
-  Bot,
-  ShieldCheck,
-  Menu,
-  X,
-  Clock,
-  CheckCircle,
-  GraduationCap,
-  Sun,
-  Moon,
-  BookOpen,
-  HelpCircle,
-  PhoneCall,
-  QrCode,
-  Trophy,
-  HeartHandshake,
-  Calendar,
-  Newspaper,
-  Award,
-  Shield,
-  Scale,
-  Sparkles,
-  ChevronDown,
-  Globe,
-  FolderArchive,
-  Grid
-} from 'lucide-react';
+import DashboardLayout from './components/DashboardLayout';
 
 function Footer() {
   const { activeTheme } = useTheme();
@@ -182,45 +148,37 @@ function Footer() {
 }
 
 function MainAppLayout() {
-  const { activeTheme } = useTheme();
-
   return (
-    /* استبدلنا الـ Inline Styles هنا بكلاسات Tailwind صريحة وقوية لإجبار الموقع على أخذ العرض الكامل */
-    <div className="flex flex-col min-h-screen w-full bg-[#0a101d] text-white overflow-x-hidden" dir="rtl">
-      <Navbar />
-
-      {/* الـ main هنا أخذ flex-1 و w-full عشان يتمدد ويملأ أي مساحة متوفرة في النص */}
-      <main className="flex-1 w-full max-w-full">
-        <Routes>
-          <Route path="/" element={<Home />} />
-          <Route path="/academic" element={<AcademicLibrary />} />
-          <Route path="/library" element={<AcademicLibrary />} />
-          <Route path="/sports" element={<SportsHub />} />
-          <Route path="/sudan" element={<SudanPortal />} />
-          <Route path="/social" element={<SocialHub />} />
-          <Route path="/events" element={<EventsHub />} />
-          <Route path="/media" element={<MediaHub />} />
-          <Route path="/achievements" element={<AchievementsHub />} />
-          <Route path="/administration" element={<AdministrationHub />} />
-          <Route path="/constitution" element={<ConstitutionHub />} />
-          <Route path="/archive" element={<ArchivePortal />} />
-          <Route path="/faq" element={<FAQ />} />
-          <Route path="/contact" element={<Contact />} />
-          <Route path="/digital-id" element={<DigitalIDPage />} />
-          <Route path="/login" element={<GuestOnlyRoute><Login /></GuestOnlyRoute>} />
-          <Route path="/register" element={<GuestOnlyRoute><Register /></GuestOnlyRoute>} />
-          <Route path="/pending-approval" element={<PendingOrVerifiedRoute><PendingApproval /></PendingOrVerifiedRoute>} />
-          <Route path="/posts" element={<VerifiedStudentRoute><Posts /></VerifiedStudentRoute>} />
-          <Route path="/chat" element={<VerifiedStudentRoute><Chat /></VerifiedStudentRoute>} />
-          <Route path="/ai" element={<VerifiedStudentRoute><AIChat /></VerifiedStudentRoute>} />
-          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-          <Route path="*" element={<Navigate to="/" replace />} />
-        </Routes>
-      </main>
+    <DashboardLayout>
+      <Routes>
+        <Route path="/" element={<Home />} />
+        <Route path="/academic" element={<AcademicLibrary />} />
+        <Route path="/library" element={<AcademicLibrary />} />
+        <Route path="/sports" element={<SportsHub />} />
+        <Route path="/sudan" element={<SudanPortal />} />
+        <Route path="/social" element={<SocialHub />} />
+        <Route path="/events" element={<EventsHub />} />
+        <Route path="/media" element={<MediaHub />} />
+        <Route path="/achievements" element={<AchievementsHub />} />
+        <Route path="/administration" element={<AdministrationHub />} />
+        <Route path="/constitution" element={<ConstitutionHub />} />
+        <Route path="/archive" element={<ArchivePortal />} />
+        <Route path="/faq" element={<FAQ />} />
+        <Route path="/contact" element={<Contact />} />
+        <Route path="/digital-id" element={<DigitalIDPage />} />
+        <Route path="/login" element={<GuestOnlyRoute><Login /></GuestOnlyRoute>} />
+        <Route path="/register" element={<GuestOnlyRoute><Register /></GuestOnlyRoute>} />
+        <Route path="/pending-approval" element={<PendingOrVerifiedRoute><PendingApproval /></PendingOrVerifiedRoute>} />
+        <Route path="/posts" element={<VerifiedStudentRoute><Posts /></VerifiedStudentRoute>} />
+        <Route path="/chat" element={<VerifiedStudentRoute><Chat /></VerifiedStudentRoute>} />
+        <Route path="/ai" element={<VerifiedStudentRoute><AIChat /></VerifiedStudentRoute>} />
+        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+        <Route path="*" element={<Navigate to="/" replace />} />
+      </Routes>
 
       <Footer />
       <FloatingAIChatWidget />
-    </div>
+    </DashboardLayout>
   );
 }
 

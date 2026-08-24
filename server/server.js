@@ -31,7 +31,7 @@ app.use(cors({
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
 }));
-app.options('*', cors());
+
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -42,7 +42,7 @@ try {
   if (fs.existsSync(uploadsPath)) {
     app.use('/uploads', express.static(uploadsPath));
   }
-} catch (e) {}
+} catch (e) { }
 
 // الاتصال بقاعدة بيانات MongoDB Atlas مع دعم بيئات Serverless (Vercel)
 const MONGO_URI =
@@ -76,7 +76,7 @@ async function connectDB() {
       throw err;
     });
   }
-  
+
   try {
     cached.conn = await cached.promise;
   } catch (err) {
@@ -105,7 +105,7 @@ app.use(async (req, res, next) => {
 });
 
 // محاولة الاتصال المبدئي
-connectDB().catch(() => {});
+connectDB().catch(() => { });
 
 // تسجيل المسارات والـ API Endpoints
 app.use('/api/auth', authRoutes);
