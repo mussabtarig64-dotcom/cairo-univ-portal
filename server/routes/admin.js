@@ -248,6 +248,66 @@ router.get('/students', async (req, res) => {
 });
 
 // 3. تحديث حالة قبول/رفض الطالب (Approve / Reject) وإرسال الإشعارات التلقائية
+router.post('/approve-student', async (req, res) => {
+  try {
+    const { studentId, id, notes } = req.body || {};
+    const targetId = id || studentId;
+    if (!targetId) {
+      return res.status(400).json({ success: false, message: 'معرف الطالب مطلوب' });
+    }
+    const student = await User.findByIdAndUpdate(
+      targetId,
+      {
+        verificationStatus: 'verified',
+        status: 'approved',
+        isApproved: true,
+        notes: notes || '',
+      },
+      { new: true }
+    ).select('-password');
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'لم يتم العثور على الطالب' });
+    }
+    Promise.allSettled([
+      sendStatusUpdateEmail(student, 'verified', notes),
+      sendStatusUpdateSMS(student, 'verified', notes),
+    ]).catch(() => {});
+    return res.json({ success: true, message: 'تم اعتماد وقبول الطالب بنجاح', student });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
+router.post('/reject-student', async (req, res) => {
+  try {
+    const { studentId, id, notes } = req.body || {};
+    const targetId = id || studentId;
+    if (!targetId) {
+      return res.status(400).json({ success: false, message: 'معرف الطالب مطلوب' });
+    }
+    const student = await User.findByIdAndUpdate(
+      targetId,
+      {
+        verificationStatus: 'rejected',
+        status: 'rejected',
+        isApproved: false,
+        notes: notes || '',
+      },
+      { new: true }
+    ).select('-password');
+    if (!student) {
+      return res.status(404).json({ success: false, message: 'لم يتم العثور على الطالب' });
+    }
+    Promise.allSettled([
+      sendStatusUpdateEmail(student, 'rejected', notes),
+      sendStatusUpdateSMS(student, 'rejected', notes),
+    ]).catch(() => {});
+    return res.json({ success: true, message: 'تم رفض طلب الطالب', student });
+  } catch (err) {
+    return res.status(500).json({ success: false, message: err.message });
+  }
+});
+
 router.patch('/students/:id/status', async (req, res) => {
   try {
     const { id } = req.params;

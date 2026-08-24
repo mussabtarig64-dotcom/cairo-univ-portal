@@ -186,7 +186,8 @@ module.exports = async function handler(req, res) {
 
     return res.status(201).json({
       success: true,
-      message: 'تم إرسال استمارة التسجيل واعتماد العضوية بنجاح!',
+      isPending: true,
+      message: 'تم استلام طلب التسجيل بنجاح! حسابك الآن قيد المراجعة والتدقيق بواسطة إدارة الرابطة.',
       user: {
         _id: newUser._id,
         name: newUser.name,
