@@ -70,8 +70,6 @@ import {
   Grid
 } from 'lucide-react';
 
-
-
 function Footer() {
   const { activeTheme } = useTheme();
   return (
@@ -185,22 +183,14 @@ function Footer() {
 
 function MainAppLayout() {
   const { activeTheme } = useTheme();
+
   return (
-    <div
-      style={{
-        display: 'flex',
-        flexDirection: 'column',
-        minHeight: '100vh',
-        backgroundColor: '#0a101d',
-        color: '#ffffff',
-        width: '100%',
-        maxWidth: '100%',
-        overflowX: 'hidden',
-        transition: 'background-color 0.3s ease, color 0.3s ease',
-      }}
-    >
+    /* استبدلنا الـ Inline Styles هنا بكلاسات Tailwind صريحة وقوية لإجبار الموقع على أخذ العرض الكامل */
+    <div className="flex flex-col min-h-screen w-full bg-[#0a101d] text-white overflow-x-hidden" dir="rtl">
       <Navbar />
-      <main style={{ flex: 1, width: '100%', maxWidth: '100%', overflowX: 'hidden' }}>
+
+      {/* الـ main هنا أخذ flex-1 و w-full عشان يتمدد ويملأ أي مساحة متوفرة في النص */}
+      <main className="flex-1 w-full max-w-full">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/academic" element={<AcademicLibrary />} />
@@ -227,6 +217,7 @@ function MainAppLayout() {
           <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
+
       <Footer />
       <FloatingAIChatWidget />
     </div>
