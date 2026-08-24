@@ -1,7 +1,7 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Link, useLocation, useNavigate, Navigate } from 'react-router-dom';
+import React from 'react';
+import { BrowserRouter as Router, Routes, Route, Link, Navigate } from 'react-router-dom';
 import { ThemeProvider, useTheme } from './context/ThemeContext';
-import { AuthProvider, useAuth } from './context/AuthContext';
+import { AuthProvider } from './context/AuthContext';
 import logoImg from './assets/logo.png';
 
 import {
@@ -34,7 +34,7 @@ import Contact from './pages/Contact';
 import DigitalIDPage from './pages/DigitalIDPage';
 import SocialLinks from './components/SocialLinks';
 import FloatingAIChatWidget from './components/FloatingAIChatWidget';
-import DashboardLayout from './components/DashboardLayout';
+import Navbar from './components/Navbar';
 
 function Footer() {
   const { activeTheme } = useTheme();
@@ -149,36 +149,38 @@ function Footer() {
 
 function MainAppLayout() {
   return (
-    <DashboardLayout>
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/academic" element={<AcademicLibrary />} />
-        <Route path="/library" element={<AcademicLibrary />} />
-        <Route path="/sports" element={<SportsHub />} />
-        <Route path="/sudan" element={<SudanPortal />} />
-        <Route path="/social" element={<SocialHub />} />
-        <Route path="/events" element={<EventsHub />} />
-        <Route path="/media" element={<MediaHub />} />
-        <Route path="/achievements" element={<AchievementsHub />} />
-        <Route path="/administration" element={<AdministrationHub />} />
-        <Route path="/constitution" element={<ConstitutionHub />} />
-        <Route path="/archive" element={<ArchivePortal />} />
-        <Route path="/faq" element={<FAQ />} />
-        <Route path="/contact" element={<Contact />} />
-        <Route path="/digital-id" element={<DigitalIDPage />} />
-        <Route path="/login" element={<GuestOnlyRoute><Login /></GuestOnlyRoute>} />
-        <Route path="/register" element={<GuestOnlyRoute><Register /></GuestOnlyRoute>} />
-        <Route path="/pending-approval" element={<PendingOrVerifiedRoute><PendingApproval /></PendingOrVerifiedRoute>} />
-        <Route path="/posts" element={<VerifiedStudentRoute><Posts /></VerifiedStudentRoute>} />
-        <Route path="/chat" element={<VerifiedStudentRoute><Chat /></VerifiedStudentRoute>} />
-        <Route path="/ai" element={<VerifiedStudentRoute><AIChat /></VerifiedStudentRoute>} />
-        <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
-        <Route path="*" element={<Navigate to="/" replace />} />
-      </Routes>
-
+    <div className="min-h-screen w-full bg-[#0a101d] text-white flex flex-col overflow-x-hidden" dir="rtl">
+      <Navbar />
+      <main className="flex-1 w-full max-w-full">
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/academic" element={<AcademicLibrary />} />
+          <Route path="/library" element={<AcademicLibrary />} />
+          <Route path="/sports" element={<SportsHub />} />
+          <Route path="/sudan" element={<SudanPortal />} />
+          <Route path="/social" element={<SocialHub />} />
+          <Route path="/events" element={<EventsHub />} />
+          <Route path="/media" element={<MediaHub />} />
+          <Route path="/achievements" element={<AchievementsHub />} />
+          <Route path="/administration" element={<AdministrationHub />} />
+          <Route path="/constitution" element={<ConstitutionHub />} />
+          <Route path="/archive" element={<ArchivePortal />} />
+          <Route path="/faq" element={<FAQ />} />
+          <Route path="/contact" element={<Contact />} />
+          <Route path="/digital-id" element={<DigitalIDPage />} />
+          <Route path="/login" element={<GuestOnlyRoute><Login /></GuestOnlyRoute>} />
+          <Route path="/register" element={<GuestOnlyRoute><Register /></GuestOnlyRoute>} />
+          <Route path="/pending-approval" element={<PendingOrVerifiedRoute><PendingApproval /></PendingOrVerifiedRoute>} />
+          <Route path="/posts" element={<VerifiedStudentRoute><Posts /></VerifiedStudentRoute>} />
+          <Route path="/chat" element={<VerifiedStudentRoute><Chat /></VerifiedStudentRoute>} />
+          <Route path="/ai" element={<VerifiedStudentRoute><AIChat /></VerifiedStudentRoute>} />
+          <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Routes>
+      </main>
       <Footer />
       <FloatingAIChatWidget />
-    </DashboardLayout>
+    </div>
   );
 }
 

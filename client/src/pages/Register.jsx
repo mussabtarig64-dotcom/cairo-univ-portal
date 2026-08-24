@@ -19,6 +19,9 @@ import {
   Loader2,
   Trash2,
   Sparkles,
+  Phone,
+  MapPin,
+  ShieldCheck,
 } from 'lucide-react';
 
 export const CAIRO_UNIV_DEPARTMENTS = [
@@ -273,240 +276,437 @@ export default function Register() {
   };
 
   const inputClass =
-    "w-full bg-[#060b13] border border-slate-700 rounded-xl px-4 py-3 text-white placeholder-slate-500 focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-right mt-2";
-  const labelClass = "block text-sm font-bold text-slate-300";
-  const cardClass = "bg-[#112233] border border-slate-700/50 rounded-2xl p-6 sm:p-8 shadow-xl w-full";
+    'w-full bg-transparent border border-slate-700 rounded-lg px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-right';
+  const labelClass = 'block text-xs font-medium text-slate-400 mb-2 text-right';
 
   return (
-    <div className="min-h-screen w-full flex justify-center items-start py-10 px-4 sm:px-6 lg:px-8 bg-[#0b1622]" dir="rtl">
-      <div className="w-full max-w-4xl mx-auto space-y-8">
+    <div className="w-full min-h-screen bg-[#0a101d] py-10 px-4" dir="rtl">
+      <div className="max-w-6xl mx-auto w-full p-4 py-10">
 
-        {/* Header */}
-        <div className="text-center w-full space-y-3 mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400">
+        {/* Page Header */}
+        <div className="text-center w-full mb-8">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3">
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span>رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight">
-            استمارة التسجيل المركزي
+          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+            استمارة التسجيل المركزي واستبيان الطلاب
           </h1>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto leading-relaxed">
+          <p className="text-sm text-slate-400 max-w-xl mx-auto">
             يرجى استيفاء البيانات بدقة لاعتماد القيد الأكاديمي وإصدار بطاقة العضوية الرقمية.
           </p>
         </div>
 
+        {/* Global Error Banner */}
         {error && (
-          <div className="w-full p-4 bg-red-500/10 border border-red-500/50 rounded-xl text-red-400 flex items-center gap-3 text-sm font-medium">
-            <AlertCircle className="w-5 h-5 flex-shrink-0" />
-            <span>{error}</span>
+          <div className="mb-6 w-full p-4 bg-red-500/10 border border-red-500/40 rounded-xl text-red-300 flex items-center gap-3 text-sm font-medium">
+            <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
+            <span className="text-right flex-1">{error}</span>
           </div>
         )}
 
+        {/* Global Success Banner */}
         {isSuccess && (
-          <div className="w-full p-4 bg-emerald-500/10 border border-emerald-500/50 rounded-xl text-emerald-400 flex items-center gap-3 text-sm font-medium">
-            <CheckCircle className="w-5 h-5 flex-shrink-0" />
-            <span>تم استلام طلب التسجيل بنجاح! جاري التحويل...</span>
+          <div className="mb-6 w-full p-4 bg-emerald-500/10 border border-emerald-500/40 rounded-xl text-emerald-300 flex items-center gap-3 text-sm font-medium">
+            <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
+            <span className="text-right flex-1">
+              تم استلام استمارة التسجيل بنجاح! حسابك قيد التدقيق والمراجعة، جاري توجيهك الآن...
+            </span>
           </div>
         )}
 
-        <form onSubmit={handleSubmit} className="w-full space-y-8">
+        {/* Main 2-Column Card */}
+        <form onSubmit={handleSubmit} className="w-full">
+          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 lg:p-10 shadow-2xl flex flex-col lg:flex-row gap-10">
 
-          {/* Card 1: البيانات الشخصية والسكن */}
-          <div className={cardClass}>
-            <div className="flex items-center gap-3 border-b border-slate-700/60 pb-4 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <User className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">القسم الأول: البيانات الشخصية والسكن</h2>
-                <p className="text-xs text-slate-400">معلومات الهوية الأساسية وعنوان الإقامة في جمهورية مصر العربية</p>
-              </div>
-            </div>
+            {/* Left Column (Form Fields - lg:w-2/3) */}
+            <div className="w-full lg:w-2/3 space-y-8">
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className={labelClass}>الاسم رباعي كما في الجواز / الهوية <span className="text-amber-400">*</span></label>
-                <input type="text" name="fullName" required placeholder="مثال: مصعب طارق محمد عثمان" value={formData.fullName} onChange={handleChange} className={inputClass} />
-              </div>
+              {/* Section 1: البيانات الشخصية والسكن */}
               <div>
-                <label className={labelClass}>العمر / سنة الميلاد <span className="text-amber-400">*</span></label>
-                <input type="number" name="age" min="16" max="65" required placeholder="20" value={formData.age} onChange={handleChange} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>البريد الإلكتروني <span className="text-amber-400">*</span></label>
-                <input type="email" name="email" required placeholder="student@example.com" value={formData.email} onChange={handleChange} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>رقم الهاتف المصري <span className="text-amber-400">*</span></label>
-                <input type="tel" name="phone" required placeholder="010XXXXXXXX" value={formData.phone} onChange={handleChange} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>رقم الواتساب <span className="text-amber-400">*</span></label>
-                <input type="tel" name="whatsapp" required placeholder="010XXXXXXXX أو +249..." value={formData.whatsapp} onChange={handleChange} className={inputClass} />
-              </div>
-              <div className="md:col-span-2">
-                <label className={labelClass}>مكان وعنوان السكن بالتفصيل بمصر <span className="text-amber-400">*</span></label>
-                <input type="text" name="cairoAddress" required placeholder="مثال: الجيزة - بين السرايات / الدقي / فيصل" value={formData.cairoAddress} onChange={handleChange} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>كلمة المرور للحساب <span className="text-amber-400">*</span></label>
-                <div className="relative">
-                  <input type={showPassword ? 'text' : 'password'} name="password" required placeholder="••••••••" value={formData.password} onChange={handleChange} className={`${inputClass} pl-11`} />
-                  <button type="button" onClick={() => setShowPassword(!showPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 mt-1 text-slate-400 hover:text-amber-400 p-1">
-                    {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
+                  <User className="w-5 h-5 text-amber-400" />
+                  <span>البيانات الشخصية والسكن بمصر</span>
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                  <div className="md:col-span-2">
+                    <label className={labelClass}>
+                      الاسم رباعي كما في الجواز أو الهوية <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="fullName"
+                      required
+                      placeholder="مثال: مصعب طارق محمد عثمان"
+                      value={formData.fullName}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      العمر / سنة الميلاد <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      name="age"
+                      min="16"
+                      max="65"
+                      required
+                      placeholder="20"
+                      value={formData.age}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      البريد الإلكتروني الأساسي <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="email"
+                      name="email"
+                      required
+                      placeholder="student@example.com"
+                      value={formData.email}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      رقم الهاتف المصري <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="phone"
+                      required
+                      placeholder="010XXXXXXXX"
+                      value={formData.phone}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      رقم الواتساب للتواصل <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="whatsapp"
+                      required
+                      placeholder="010XXXXXXXX أو +249..."
+                      value={formData.whatsapp}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className={labelClass}>
+                      مكان وعنوان السكن بمصر بالتفصيل <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="cairoAddress"
+                      required
+                      placeholder="مثال: الجيزة - بين السرايات / الدقي / فيصل"
+                      value={formData.cairoAddress}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      كلمة المرور للحساب <span className="text-amber-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showPassword ? 'text' : 'password'}
+                        name="password"
+                        required
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={handleChange}
+                        className={`${inputClass} pl-11`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowPassword(!showPassword)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-400 p-1 transition-colors"
+                        aria-label="تبديل إظهار كلمة المرور"
+                      >
+                        {showPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      تأكيد كلمة المرور <span className="text-amber-400">*</span>
+                    </label>
+                    <div className="relative">
+                      <input
+                        type={showConfirmPassword ? 'text' : 'password'}
+                        name="confirmPassword"
+                        required
+                        placeholder="••••••••"
+                        value={formData.confirmPassword}
+                        onChange={handleChange}
+                        className={`${inputClass} pl-11`}
+                      />
+                      <button
+                        type="button"
+                        onClick={() => setShowConfirmPassword(!showConfirmPassword)}
+                        className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-amber-400 p-1 transition-colors"
+                        aria-label="تبديل إظهار تأكيد كلمة المرور"
+                      >
+                        {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
+                      </button>
+                    </div>
+                  </div>
                 </div>
               </div>
+
+              {/* Section 2: بيانات جهة الاتصال للطوارئ */}
               <div>
-                <label className={labelClass}>تأكيد كلمة المرور <span className="text-amber-400">*</span></label>
-                <div className="relative">
-                  <input type={showConfirmPassword ? 'text' : 'password'} name="confirmPassword" required placeholder="••••••••" value={formData.confirmPassword} onChange={handleChange} className={`${inputClass} pl-11`} />
-                  <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute left-3 top-1/2 -translate-y-1/2 mt-1 text-slate-400 hover:text-amber-400 p-1">
-                    {showConfirmPassword ? <EyeOff size={16} /> : <Eye size={16} />}
-                  </button>
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
+                  <HeartHandshake className="w-5 h-5 text-amber-400" />
+                  <span>بيانات جهة الاتصال في حالات الطوارئ</span>
+                </h2>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                  <div>
+                    <label className={labelClass}>
+                      اسم ولي الأمر / جهة الاتصال <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="emergencyContactName"
+                      required
+                      placeholder="اسم القريب أو الصديق بمصر أو السودان"
+                      value={formData.emergencyContactName}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
+
+                  <div>
+                    <label className={labelClass}>
+                      صلة القرابة <span className="text-amber-400">*</span>
+                    </label>
+                    <select
+                      name="emergencyContactRelation"
+                      value={formData.emergencyContactRelation}
+                      onChange={handleChange}
+                      className={`${inputClass} bg-[#0B1221] cursor-pointer`}
+                    >
+                      <option value="الوالد / الوالدة" className="bg-[#0B1221]">الوالد / الوالدة</option>
+                      <option value="أخ / أخت" className="bg-[#0B1221]">أخ / أخت</option>
+                      <option value="عم / خال / قريب" className="bg-[#0B1221]">عم / خال / قريب</option>
+                      <option value="صديق / زميل سكن" className="bg-[#0B1221]">صديق / زميل سكن</option>
+                    </select>
+                  </div>
+
+                  <div className="md:col-span-2">
+                    <label className={labelClass}>
+                      رقم هاتف الطوارئ مع رمز الدولة <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="tel"
+                      name="emergencyContactPhone"
+                      required
+                      placeholder="مثال: +2010... أو +2499..."
+                      value={formData.emergencyContactPhone}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
+                  </div>
                 </div>
               </div>
-            </div>
-          </div>
 
-          {/* Card 2: بيانات الطوارئ */}
-          <div className={cardClass}>
-            <div className="flex items-center gap-3 border-b border-slate-700/60 pb-4 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <HeartHandshake className="w-5 h-5" />
-              </div>
+              {/* Section 3: البيانات الأكاديمية */}
               <div>
-                <h2 className="text-lg font-bold text-white">القسم الثاني: بيانات الاتصال للطوارئ</h2>
-                <p className="text-xs text-slate-400">للتواصل مع الأهل أو الأقارب عند الحاجة الماسة أو الطوارئ</p>
-              </div>
-            </div>
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
+                  <GraduationCap className="w-5 h-5 text-amber-400" />
+                  <span>البيانات الأكاديمية بكلية العلوم</span>
+                </h2>
 
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className={labelClass}>اسم ولي الأمر / جهة الاتصال للطوارئ <span className="text-amber-400">*</span></label>
-                <input type="text" name="emergencyContactName" required placeholder="اسم القريب أو الصديق بمصر أو السودان" value={formData.emergencyContactName} onChange={handleChange} className={inputClass} />
-              </div>
-              <div>
-                <label className={labelClass}>صلة القرابة <span className="text-amber-400">*</span></label>
-                <select name="emergencyContactRelation" value={formData.emergencyContactRelation} onChange={handleChange} className={inputClass}>
-                  <option value="الوالد / الوالدة" className="bg-[#112233]">الوالد / الوالدة</option>
-                  <option value="أخ / أخت" className="bg-[#112233]">أخ / أخت</option>
-                  <option value="عم / خال / قريب" className="bg-[#112233]">عم / خال / قريب</option>
-                  <option value="صديق / زميل سكن" className="bg-[#112233]">صديق / زميل سكن</option>
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>رقم هاتف الطوارئ <span className="text-amber-400">*</span></label>
-                <input type="tel" name="emergencyContactPhone" required placeholder="رقم الهاتف مع رمز الدولة (مثال: +20...)" value={formData.emergencyContactPhone} onChange={handleChange} className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 3: البيانات الأكاديمية */}
-          <div className={cardClass}>
-            <div className="flex items-center gap-3 border-b border-slate-700/60 pb-4 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <GraduationCap className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">القسم الثالث: البيانات الأكاديمية بكلية العلوم</h2>
-                <p className="text-xs text-slate-400">التخصص، المستوى الدراسي، ورقم الهوية أو الجواز</p>
-              </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-              <div className="md:col-span-2">
-                <label className={labelClass}>القسم العلمي / التخصص <span className="text-amber-400">*</span></label>
-                <select name="department" value={formData.department} onChange={handleChange} className={`${inputClass} border-amber-500/50 text-amber-300 font-medium`}>
-                  {CAIRO_UNIV_DEPARTMENTS.map((dept) => (
-                    <option key={dept} value={dept} className="bg-[#112233] text-white">{dept}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>المستوى الدراسي <span className="text-amber-400">*</span></label>
-                <select name="academicLevel" value={formData.academicLevel} onChange={handleChange} className={inputClass}>
-                  {ACADEMIC_LEVELS.map((lvl) => (
-                    <option key={lvl} value={lvl} className="bg-[#112233] text-white">{lvl}</option>
-                  ))}
-                </select>
-              </div>
-              <div>
-                <label className={labelClass}>رقم جواز السفر / الرقم الوطني / بطاقة الكلية <span className="text-amber-400">*</span></label>
-                <input type="text" name="passportOrNationalId" required placeholder="مثال: P01234567" value={formData.passportOrNationalId} onChange={handleChange} className={inputClass} />
-              </div>
-            </div>
-          </div>
-
-          {/* Card 4: رفع إثبات الشخصية */}
-          <div className={cardClass}>
-            <div className="flex items-center gap-3 border-b border-slate-700/60 pb-4 mb-6">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400">
-                <CreditCard className="w-5 h-5" />
-              </div>
-              <div>
-                <h2 className="text-lg font-bold text-white">القسم الرابع: رفع إثبات الشخصية</h2>
-                <p className="text-xs text-slate-400">إرفاق صورة ضوئية واضحة من جواز السفر أو البطاقة الجامعية</p>
-              </div>
-            </div>
-
-            <div
-              onDragOver={handleDragOver}
-              onDragLeave={handleDragLeave}
-              onDrop={handleDrop}
-              className={`w-full relative border-2 border-dashed rounded-2xl p-8 text-center transition-all mt-2 ${
-                isDragging ? 'border-amber-400 bg-amber-500/10' : 'border-slate-700 bg-[#060b13] hover:border-amber-500/60'
-              }`}
-            >
-              <input type="file" id="idUpload" accept="image/*" onChange={handleFileUpload} className="hidden" />
-
-              {!idPreview ? (
-                <label htmlFor="idUpload" className="cursor-pointer flex flex-col items-center gap-4">
-                  <div className="w-16 h-16 rounded-2xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-amber-400 shadow-inner">
-                    <Upload className="w-8 h-8" />
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                  <div className="md:col-span-2">
+                    <label className={labelClass}>
+                      القسم العلمي / التخصص الأكاديمي <span className="text-amber-400">*</span>
+                    </label>
+                    <select
+                      name="department"
+                      value={formData.department}
+                      onChange={handleChange}
+                      className={`${inputClass} bg-[#0B1221] border-amber-500/50 text-amber-300 font-medium cursor-pointer`}
+                    >
+                      {CAIRO_UNIV_DEPARTMENTS.map((dept) => (
+                        <option key={dept} value={dept} className="bg-[#0B1221] text-white">
+                          {dept}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                  <div className="space-y-1">
-                    <p className="text-base font-bold text-white">
-                      اسحب الصورة وأفلتها هنا، أو <span className="text-amber-400 underline underline-offset-4">تصفح من جهازك</span>
-                    </p>
-                    <p className="text-xs text-slate-400">الصيغ المدعومة: JPG, PNG, WEBP (الحد الأقصى: 5MB)</p>
+
+                  <div>
+                    <label className={labelClass}>
+                      الفرقة / المستوى الدراسي <span className="text-amber-400">*</span>
+                    </label>
+                    <select
+                      name="academicLevel"
+                      value={formData.academicLevel}
+                      onChange={handleChange}
+                      className={`${inputClass} bg-[#0B1221] cursor-pointer`}
+                    >
+                      {ACADEMIC_LEVELS.map((lvl) => (
+                        <option key={lvl} value={lvl} className="bg-[#0B1221] text-white">
+                          {lvl}
+                        </option>
+                      ))}
+                    </select>
                   </div>
-                </label>
-              ) : (
-                <div className="flex flex-col items-center gap-4">
-                  <div className="relative">
-                    <img src={idPreview} alt="Preview" className="h-44 rounded-xl border border-emerald-500/50 object-contain bg-black/60 p-1 shadow-lg" />
-                    <button type="button" onClick={handleRemoveFile} className="absolute -top-3 -right-3 bg-red-600 hover:bg-red-500 text-white p-2 rounded-full hover:scale-110 transition-transform shadow-md" title="حذف الصورة">
-                      <Trash2 size={16} />
-                    </button>
+
+                  <div>
+                    <label className={labelClass}>
+                      رقم جواز السفر / الرقم الوطني / بطاقة الكلية <span className="text-amber-400">*</span>
+                    </label>
+                    <input
+                      type="text"
+                      name="passportOrNationalId"
+                      required
+                      placeholder="مثال: P01234567 أو الرقم الوطني"
+                      value={formData.passportOrNationalId}
+                      onChange={handleChange}
+                      className={inputClass}
+                    />
                   </div>
-                  <p className="text-sm text-emerald-400 font-semibold flex items-center gap-2">
-                    <CheckCircle size={16} /> {fileName || 'تم إرفاق صورة الهوية بنجاح'}
-                  </p>
-                  <label htmlFor="idUpload" className="text-xs text-slate-400 hover:text-amber-400 underline underline-offset-4 cursor-pointer transition-colors">
-                    تغيير أو اختيار ملف آخر
-                  </label>
                 </div>
-              )}
-            </div>
-          </div>
+              </div>
 
-          {/* Submit Button */}
-          <div className="pt-2 pb-6 flex justify-center w-full">
-            <button
-              type="submit"
-              disabled={loading || isSuccess}
-              className="w-full sm:w-2/3 md:w-1/2 py-4 px-8 bg-amber-500 hover:bg-amber-400 text-slate-950 font-black text-lg rounded-xl shadow-xl shadow-amber-500/25 hover:shadow-amber-500/40 transition-all duration-200 flex items-center justify-center gap-3 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
-            >
-              {loading ? <Loader2 className="w-6 h-6 animate-spin text-slate-950" /> : <UserPlus className="w-6 h-6 text-slate-950" />}
-              <span>إرسال استمارة التسجيل</span>
-            </button>
+            </div>
+
+            {/* Right Column (Upload & Submit - lg:w-1/3) */}
+            <div className="w-full lg:w-1/3 flex flex-col justify-between lg:sticky lg:top-24 h-fit space-y-6">
+              
+              <div>
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
+                  <CreditCard className="w-5 h-5 text-amber-400" />
+                  <span>وثيقة إثبات الشخصية</span>
+                </h2>
+
+                <p className="text-xs text-slate-400 leading-relaxed mb-3">
+                  يرجى إرفاق صورة ضوئية واضحة من جواز السفر، الرقم الوطني، أو بطاقة الكلية.
+                </p>
+
+                {/* Upload Box */}
+                <div
+                  onDragOver={handleDragOver}
+                  onDragLeave={handleDragLeave}
+                  onDrop={handleDrop}
+                  className={`border-2 border-dashed border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px] transition-all relative ${
+                    isDragging ? 'border-amber-400 bg-amber-500/15 scale-[1.01]' : ''
+                  }`}
+                >
+                  <input
+                    type="file"
+                    id="idUpload"
+                    accept="image/*"
+                    onChange={handleFileUpload}
+                    className="hidden"
+                  />
+
+                  {!idPreview ? (
+                    <label htmlFor="idUpload" className="cursor-pointer flex flex-col items-center gap-3 w-full">
+                      <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+                        <Upload className="w-7 h-7 text-amber-400" />
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-bold text-white">
+                          اسحب الملف هنا، أو <span className="text-amber-400 underline underline-offset-4">تصفح</span>
+                        </p>
+                        <p className="text-[11px] text-slate-400">JPG, PNG, WEBP (الحد الأقصى: 5MB)</p>
+                      </div>
+                    </label>
+                  ) : (
+                    <div className="flex flex-col items-center gap-3 w-full">
+                      <div className="relative">
+                        <img
+                          src={idPreview}
+                          alt="معاينة إثبات الهوية"
+                          className="h-36 max-w-full rounded-lg border border-emerald-500/50 object-contain bg-black/50 p-1"
+                        />
+                        <button
+                          type="button"
+                          onClick={handleRemoveFile}
+                          className="absolute -top-2.5 -right-2.5 bg-red-600 hover:bg-red-500 text-white p-1.5 rounded-full shadow-md transition-transform hover:scale-110"
+                          title="حذف الصورة"
+                        >
+                          <Trash2 size={14} />
+                        </button>
+                      </div>
+                      <div className="flex items-center gap-1.5 text-xs text-emerald-400 font-semibold">
+                        <CheckCircle size={14} />
+                        <span className="truncate max-w-[200px]">{fileName || 'تم إرفاق الصورة بنجاح'}</span>
+                      </div>
+                      <label
+                        htmlFor="idUpload"
+                        className="text-xs text-slate-400 hover:text-amber-400 underline cursor-pointer"
+                      >
+                        تغيير الصورة
+                      </label>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Submit Action Area */}
+              <div>
+                <div className="flex items-start gap-2 p-3 bg-slate-900/60 border border-slate-800 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+                  <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                  <span>
+                    أقر بأن جميع البيانات المدخلة صحيحة ومطابقة لوثائقي الرسمية بكلية العلوم جامعة القاهرة.
+                  </span>
+                </div>
+
+                <button
+                  type="submit"
+                  disabled={loading || isSuccess}
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-900 font-bold text-lg rounded-xl py-4 mt-6 shadow-lg shadow-amber-500/20 transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                >
+                  {loading ? (
+                    <>
+                      <Loader2 className="w-5 h-5 animate-spin text-slate-900" />
+                      <span>جاري الإرسال...</span>
+                    </>
+                  ) : (
+                    <>
+                      <UserPlus className="w-5 h-5 text-slate-900" />
+                      <span>إرسال استمارة التسجيل</span>
+                    </>
+                  )}
+                </button>
+
+                <div className="text-center mt-4 text-xs text-slate-400">
+                  لديك حساب مسجل بالفعل؟{' '}
+                  <Link to="/login" className="text-amber-400 font-bold hover:underline underline-offset-4">
+                    تسجيل الدخول
+                  </Link>
+                </div>
+              </div>
+
+            </div>
+
           </div>
         </form>
-
-        <div className="text-center mt-6 text-sm text-slate-400 border-t border-slate-800/80 pt-6">
-          لديك حساب مسجل بالفعل؟ <Link to="/login" className="text-amber-400 font-bold hover:underline mr-1 underline-offset-4">تسجيل الدخول</Link>
-        </div>
 
       </div>
     </div>
