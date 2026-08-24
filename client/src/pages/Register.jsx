@@ -280,8 +280,8 @@ export default function Register() {
   const labelClass = 'block text-xs font-medium text-slate-400 mb-2 text-right';
 
   return (
-    <div className="w-full min-h-screen bg-[#0a101d] py-10 px-4" dir="rtl">
-      <div className="max-w-6xl mx-auto w-full p-4 py-10">
+    <div className="w-full min-h-screen bg-[#0a101d]" dir="rtl">
+      <div className="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Page Header */}
         <div className="text-center w-full mb-8">
@@ -317,10 +317,10 @@ export default function Register() {
 
         {/* Main 2-Column Card */}
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 lg:p-10 shadow-2xl flex flex-col lg:flex-row gap-10">
+          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 lg:p-10 shadow-2xl flex flex-col lg:flex-row gap-10 w-full mt-8">
 
             {/* Left Column (Form Fields - lg:w-2/3) */}
-            <div className="w-full lg:w-2/3 space-y-8">
+            <div className="lg:w-2/3 w-full space-y-8">
 
               {/* Section 1: البيانات الشخصية والسكن */}
               <div>
@@ -595,7 +595,7 @@ export default function Register() {
             </div>
 
             {/* Right Column (Upload & Submit - lg:w-1/3) */}
-            <div className="w-full lg:w-1/3 flex flex-col justify-between lg:sticky lg:top-24 h-fit space-y-6">
+            <div className="lg:w-1/3 w-full flex flex-col gap-6 lg:sticky lg:top-24 h-fit">
               
               <div>
                 <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
