@@ -315,12 +315,12 @@ export default function Register() {
           </div>
         )}
 
-        {/* Main 2-Column Card */}
+        {/* Main 2-Column Card (Fixed RTL Grid Layout) */}
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 lg:p-10 shadow-2xl grid grid-cols-1 lg:grid-cols-3 gap-8 lg:gap-10 w-full mt-8">
+          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 lg:p-10 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 w-full mt-8">
 
-            {/* Left Column in RTL (Form Fields - 2 columns width) */}
-            <div className="lg:col-span-2 w-full space-y-8">
+            {/* Right Column in RTL (Form Fields - Span 8 out of 12) */}
+            <div className="lg:col-span-8 w-full space-y-8 order-2 lg:order-1">
 
               {/* Section 1: البيانات الشخصية والسكن */}
               <div>
@@ -594,8 +594,8 @@ export default function Register() {
 
             </div>
 
-            {/* Right Column in RTL (Upload & Submit - 1 column width) */}
-            <div className="lg:col-span-1 w-full flex flex-col gap-6 lg:sticky lg:top-24 h-fit">
+            {/* Left Column in RTL (Upload & Submit - Span 4 out of 12) */}
+            <div className="lg:col-span-4 w-full flex flex-col gap-6 lg:sticky lg:top-24 h-fit order-1 lg:order-2">
 
               <div>
                 <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
