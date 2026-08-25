@@ -1,3 +1,2 @@
-// تصدير تطبيق Express لمعالجات Vercel Serverless Functions
-const app = require('./server');
+const app = require('../server'); // أو '../server/server.js' حسب مكان ملف السيرفر الأساسي
 module.exports = app;
