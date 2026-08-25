@@ -278,8 +278,8 @@ export default function Register() {
   const labelClass = 'block text-xs font-medium text-slate-400 mb-2 text-right';
 
   return (
-    <div className="w-full min-h-screen bg-[#0a101d]" dir="rtl">
-      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+    <div className="w-full min-h-screen bg-[#0a101d] flex flex-col items-center justify-start py-10 px-4 sm:px-6 lg:px-8" dir="rtl">
+      <div className="w-full max-w-4xl mx-auto">
 
         {/* Page Header */}
         <div className="text-center w-full mb-8">
@@ -313,9 +313,9 @@ export default function Register() {
           </div>
         )}
 
-        {/* Main Stacked Card (Vertical 1-Column Layout for Perfect Mobile & Desktop Experience) */}
+        {/* Main Stacked Card (Centered perfectly in the middle of the screen) */}
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 sm:p-10 shadow-2xl flex flex-col gap-10 w-full">
+          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 sm:p-10 shadow-2xl flex flex-col gap-10 w-full mx-auto">
 
             {/* Form Fields Section */}
             <div className="w-full space-y-8">
@@ -595,7 +595,7 @@ export default function Register() {
             {/* Divider */}
             <div className="border-t border-slate-800 my-2"></div>
 
-            {/* Upload & Submit Section (At the bottom, full width, stacked perfectly) */}
+            {/* Upload & Submit Section */}
             <div className="w-full flex flex-col gap-6">
 
               <div>
