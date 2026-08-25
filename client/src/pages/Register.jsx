@@ -337,7 +337,7 @@ export default function Register() {
                       type="text"
                       name="fullName"
                       required
-                      placeholder="مثال: مصعب طارق محمد عثمان"
+                      placeholder="الاسم كامل"
                       value={formData.fullName}
                       onChange={handleChange}
                       className={inputClass}
