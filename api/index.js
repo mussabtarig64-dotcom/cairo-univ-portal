@@ -1,4 +1,6 @@
-// نقطة الدخول المركزية لتطبيق Express في Vercel Serverless Functions
+// نقطة الدخول المركزية والشاملة لتطبيق Express في Vercel Serverless Functions
 const app = require('../server/server');
 
-module.exports = app;
+module.exports = (req, res) => {
+  return app(req, res);
+};

@@ -2,6 +2,7 @@
   "name": "cairo-univ-portal",
   "version": "1.0.0",
   "description": "Official Portal for the Sudanese Students Association - Faculty of Science, Cairo University (SSA-FS-CU)",
+  "main": "server/server.js",
   "scripts": {
     "start": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
     "dev": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
@@ -12,7 +13,13 @@
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.5",
-    "mongoose": "^9.9.1"
+    "dotenv": "^17.4.2",
+    "express": "^5.2.1",
+    "groq-sdk": "^1.5.0",
+    "mongoose": "^9.9.1",
+    "multer": "^2.2.0",
+    "nodemailer": "^9.0.5",
+    "socket.io": "^4.8.3"
   },
   "devDependencies": {
     "concurrently": "^9.1.2"
