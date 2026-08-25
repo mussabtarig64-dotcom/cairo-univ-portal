@@ -223,7 +223,8 @@ export default function Register() {
       let resData = null;
 
       try {
-        const response = await axios.post('/api/register', payload, {
+        // تم تعديل المسار هنا حصرياً ليكون مطابقاً للـ Backend الصحيح
+        const response = await axios.post('/api/auth/register', payload, {
           headers: {
             'Content-Type': 'application/json',
             Accept: 'application/json',
@@ -273,7 +274,6 @@ export default function Register() {
     }
   };
 
-  // تعديل تصميم الحقول لتكون العناوين باللون الأبيض الناصع والواضح
   const inputClass =
     'w-full bg-transparent border border-slate-700 rounded-lg px-4 py-3 text-slate-100 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-right placeholder:text-slate-500';
   const labelClass = 'block text-xs sm:text-sm font-bold text-white mb-2 text-right tracking-wide';
