@@ -40,26 +40,10 @@ function Footer() {
   const { activeTheme } = useTheme();
   return (
     <footer
-      style={{
-        background: '#09131f',
-        borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-        padding: '45px 20px 24px',
-        marginTop: 'auto',
-        color: '#cbd5e1',
-        fontSize: '14px',
-        direction: 'rtl',
-      }}
+      className="w-full bg-[#09131f] border-t border-white/10 py-10 px-4 sm:px-6 lg:px-8 mt-auto text-slate-300 text-sm"
+      dir="rtl"
     >
-      <div
-        style={{
-          maxWidth: '1300px',
-          margin: '0 auto',
-          display: 'grid',
-          gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
-          gap: '30px',
-          marginBottom: '30px',
-        }}
-      >
+      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
         {/* معلومات الرابطة */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
@@ -133,13 +117,7 @@ function Footer() {
       </div>
 
       <div
-        style={{
-          borderTop: '1px solid rgba(255, 255, 255, 0.1)',
-          paddingTop: '20px',
-          textAlign: 'center',
-          fontSize: '13px',
-          color: '#cbd5e1',
-        }}
+        className="w-full max-w-7xl mx-auto border-t border-white/10 pt-5 text-center text-xs text-slate-400"
       >
         جميع الحقوق محفوظة © {new Date().getFullYear()} رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة (SSA-FS-CU)
       </div>
@@ -151,7 +129,7 @@ function MainAppLayout() {
   return (
     <div className="min-h-screen w-full bg-[#0a101d] text-white flex flex-col overflow-x-hidden" dir="rtl">
       <Navbar />
-      <main className="flex-1 w-full max-w-full">
+      <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/academic" element={<AcademicLibrary />} />
