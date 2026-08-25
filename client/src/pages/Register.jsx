@@ -278,8 +278,8 @@ export default function Register() {
   const labelClass = 'block text-xs font-medium text-slate-400 mb-2 text-right';
 
   return (
-    <div className="w-full min-h-screen bg-[#0a101d] flex flex-col items-center justify-start py-10 px-4 sm:px-6 lg:px-8" dir="rtl">
-      <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full min-h-screen bg-[#0a101d] flex flex-col items-center justify-start py-8 px-4 sm:px-6 md:px-10 lg:px-12 overflow-x-hidden" dir="rtl">
+      <div className="w-full max-w-4xl mx-auto box-border">
 
         {/* Page Header */}
         <div className="text-center w-full mb-8">
@@ -287,10 +287,10 @@ export default function Register() {
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span>رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</span>
           </div>
-          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+          <h1 className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-white tracking-tight mb-2">
             استمارة التسجيل المركزي واستبيان الطلاب
           </h1>
-          <p className="text-sm text-slate-400 max-w-xl mx-auto">
+          <p className="text-xs sm:text-sm text-slate-400 max-w-xl mx-auto px-2 leading-relaxed">
             يرجى استيفاء البيانات بدقة لاعتماد القيد الأكاديمي وإصدار بطاقة العضوية الرقمية.
           </p>
         </div>
@@ -313,21 +313,21 @@ export default function Register() {
           </div>
         )}
 
-        {/* Main Stacked Card (Centered perfectly in the middle of the screen) */}
+        {/* Main Omni-Device Stacked Card */}
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 sm:p-10 shadow-2xl flex flex-col gap-10 w-full mx-auto">
+          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-5 sm:p-8 md:p-10 shadow-2xl flex flex-col gap-8 w-full mx-auto box-border">
 
             {/* Form Fields Section */}
-            <div className="w-full space-y-8">
+            <div className="w-full space-y-6">
 
               {/* Section 1: البيانات الشخصية والسكن */}
               <div>
-                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
+                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
                   <User className="w-5 h-5 text-amber-400" />
                   <span>البيانات الشخصية والسكن بمصر</span>
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                   <div className="md:col-span-2">
                     <label className={labelClass}>
                       الاسم رباعي كما في الجواز أو الهوية <span className="text-amber-400">*</span>
@@ -474,12 +474,12 @@ export default function Register() {
 
               {/* Section 2: بيانات جهة الاتصال للطوارئ */}
               <div>
-                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
+                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
                   <HeartHandshake className="w-5 h-5 text-amber-400" />
                   <span>بيانات جهة الاتصال في حالات الطوارئ</span>
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                   <div>
                     <label className={labelClass}>
                       اسم ولي الأمر / جهة الاتصال <span className="text-amber-400">*</span>
@@ -531,12 +531,12 @@ export default function Register() {
 
               {/* Section 3: البيانات الأكاديمية */}
               <div>
-                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
+                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-amber-400" />
                   <span>البيانات الأكاديمية بكلية العلوم</span>
                 </h2>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-5">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                   <div className="md:col-span-2">
                     <label className={labelClass}>
                       القسم العلمي / التخصص الأكاديمي <span className="text-amber-400">*</span>
@@ -593,13 +593,13 @@ export default function Register() {
             </div>
 
             {/* Divider */}
-            <div className="border-t border-slate-800 my-2"></div>
+            <div className="border-t border-slate-800 my-1"></div>
 
             {/* Upload & Submit Section */}
             <div className="w-full flex flex-col gap-6">
 
               <div>
-                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
+                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800 pb-2 mb-3 flex items-center gap-2">
                   <CreditCard className="w-5 h-5 text-amber-400" />
                   <span>وثيقة إثبات الشخصية</span>
                 </h2>
@@ -613,7 +613,7 @@ export default function Register() {
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[200px] transition-all relative ${isDragging ? 'border-amber-400 bg-amber-500/15 scale-[1.01]' : ''
+                  className={`border-2 border-dashed border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl p-4 sm:p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[180px] transition-all relative box-border ${isDragging ? 'border-amber-400 bg-amber-500/15 scale-[1.01]' : ''
                     }`}
                 >
                   <input
@@ -626,14 +626,14 @@ export default function Register() {
 
                   {!idPreview ? (
                     <label htmlFor="idUpload" className="cursor-pointer flex flex-col items-center gap-3 w-full">
-                      <div className="w-14 h-14 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
-                        <Upload className="w-7 h-7 text-amber-400" />
+                      <div className="w-12 h-12 rounded-full bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-400 shadow-inner">
+                        <Upload className="w-6 h-6 text-amber-400" />
                       </div>
                       <div className="space-y-1">
-                        <p className="text-sm font-bold text-white">
+                        <p className="text-xs sm:text-sm font-bold text-white">
                           اسحب الملف هنا، أو <span className="text-amber-400 underline underline-offset-4">تصفح</span>
                         </p>
-                        <p className="text-[11px] text-slate-400">JPG, PNG, WEBP (الحد الأقصى: 5MB)</p>
+                        <p className="text-[10px] sm:text-[11px] text-slate-400">JPG, PNG, WEBP (الحد الأقصى: 5MB)</p>
                       </div>
                     </label>
                   ) : (
@@ -642,7 +642,7 @@ export default function Register() {
                         <img
                           src={idPreview}
                           alt="معاينة إثبات الهوية"
-                          className="h-36 max-w-full rounded-lg border border-emerald-500/50 object-contain bg-black/50 p-1"
+                          className="h-32 sm:h-36 max-w-full rounded-lg border border-emerald-500/50 object-contain bg-black/50 p-1"
                         />
                         <button
                           type="button"
@@ -680,7 +680,7 @@ export default function Register() {
                 <button
                   type="submit"
                   disabled={loading || isSuccess}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-900 font-bold text-lg rounded-xl py-4 mt-6 shadow-lg shadow-amber-500/20 transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-900 font-bold text-base sm:text-lg rounded-xl py-3.5 sm:py-4 mt-5 shadow-lg shadow-amber-500/20 transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <>
