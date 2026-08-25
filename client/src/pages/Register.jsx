@@ -19,8 +19,6 @@ import {
   Loader2,
   Trash2,
   Sparkles,
-  Phone,
-  MapPin,
   ShieldCheck,
 } from 'lucide-react';
 
@@ -276,20 +274,20 @@ export default function Register() {
   };
 
   const inputClass =
-    'w-full bg-transparent border border-slate-700 rounded-lg px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-right placeholder:text-slate-600';
+    'w-full bg-transparent border border-slate-700 rounded-lg px-4 py-3 text-slate-200 text-sm focus:outline-none focus:border-amber-500 focus:ring-1 focus:ring-amber-500 transition-all text-right';
   const labelClass = 'block text-xs font-medium text-slate-400 mb-2 text-right';
 
   return (
-    <div className="w-full min-h-screen bg-[#070b14] text-slate-200 py-10 px-4 sm:px-6 lg:px-8" dir="rtl">
-      <div className="w-full max-w-7xl mx-auto">
+    <div className="w-full min-h-screen bg-[#0a101d]" dir="rtl">
+      <div className="w-full max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
 
         {/* Page Header */}
         <div className="text-center w-full mb-8">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-semibold bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3 shadow-[0_0_15px_rgba(245,158,11,0.15)]">
+          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 border border-amber-500/30 text-amber-400 mb-3">
             <Sparkles className="w-4 h-4 text-amber-400" />
             <span>رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</span>
           </div>
-          <h1 className="text-3xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
+          <h1 className="text-2xl sm:text-4xl font-extrabold text-white tracking-tight mb-2">
             استمارة التسجيل المركزي واستبيان الطلاب
           </h1>
           <p className="text-sm text-slate-400 max-w-xl mx-auto">
@@ -299,7 +297,7 @@ export default function Register() {
 
         {/* Global Error Banner */}
         {error && (
-          <div className="mb-6 w-full max-w-7xl mx-auto p-4 bg-red-500/10 border border-red-500/40 rounded-xl text-red-300 flex items-center gap-3 text-sm font-medium">
+          <div className="mb-6 w-full p-4 bg-red-500/10 border border-red-500/40 rounded-xl text-red-300 flex items-center gap-3 text-sm font-medium">
             <AlertCircle className="w-5 h-5 text-red-400 flex-shrink-0" />
             <span className="text-right flex-1">{error}</span>
           </div>
@@ -307,7 +305,7 @@ export default function Register() {
 
         {/* Global Success Banner */}
         {isSuccess && (
-          <div className="mb-6 w-full max-w-7xl mx-auto p-4 bg-emerald-500/10 border border-emerald-500/40 rounded-xl text-emerald-300 flex items-center gap-3 text-sm font-medium">
+          <div className="mb-6 w-full p-4 bg-emerald-500/10 border border-emerald-500/40 rounded-xl text-emerald-300 flex items-center gap-3 text-sm font-medium">
             <CheckCircle className="w-5 h-5 text-emerald-400 flex-shrink-0" />
             <span className="text-right flex-1">
               تم استلام استمارة التسجيل بنجاح! حسابك قيد التدقيق والمراجعة، جاري توجيهك الآن...
@@ -315,16 +313,16 @@ export default function Register() {
           </div>
         )}
 
-        {/* Main Card Layout (Split 2-Column Design) */}
+        {/* Main Stacked Card (Vertical 1-Column Layout for Perfect Mobile & Desktop Experience) */}
         <form onSubmit={handleSubmit} className="w-full">
-          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 sm:p-10 shadow-2xl grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 w-full max-w-7xl mx-auto mt-8">
+          <div className="bg-[#0B1221] border border-slate-700/60 rounded-2xl p-6 sm:p-10 shadow-2xl flex flex-col gap-10 w-full">
 
-            {/* Left Column / Form Inputs (8 Columns on Desktop) */}
-            <div className="lg:col-span-8 w-full space-y-8 order-2 lg:order-1">
+            {/* Form Fields Section */}
+            <div className="w-full space-y-8">
 
               {/* Section 1: البيانات الشخصية والسكن */}
               <div>
-                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800/80 pb-2.5 mb-6 flex items-center gap-2.5">
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
                   <User className="w-5 h-5 text-amber-400" />
                   <span>البيانات الشخصية والسكن بمصر</span>
                 </h2>
@@ -476,7 +474,7 @@ export default function Register() {
 
               {/* Section 2: بيانات جهة الاتصال للطوارئ */}
               <div>
-                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800/80 pb-2.5 mb-6 flex items-center gap-2.5">
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
                   <HeartHandshake className="w-5 h-5 text-amber-400" />
                   <span>بيانات جهة الاتصال في حالات الطوارئ</span>
                 </h2>
@@ -507,10 +505,10 @@ export default function Register() {
                       onChange={handleChange}
                       className={`${inputClass} bg-[#0B1221] cursor-pointer`}
                     >
-                      <option value="الوالد / الوالدة" className="bg-[#0B1221] text-slate-200">الوالد / الوالدة</option>
-                      <option value="أخ / أخت" className="bg-[#0B1221] text-slate-200">أخ / أخت</option>
-                      <option value="عم / خال / قريب" className="bg-[#0B1221] text-slate-200">عم / خال / قريب</option>
-                      <option value="صديق / زميل سكن" className="bg-[#0B1221] text-slate-200">صديق / زميل سكن</option>
+                      <option value="الوالد / الوالدة" className="bg-[#0B1221]">الوالد / الوالدة</option>
+                      <option value="أخ / أخت" className="bg-[#0B1221]">أخ / أخت</option>
+                      <option value="عم / خال / قريب" className="bg-[#0B1221]">عم / خال / قريب</option>
+                      <option value="صديق / زميل سكن" className="bg-[#0B1221]">صديق / زميل سكن</option>
                     </select>
                   </div>
 
@@ -533,7 +531,7 @@ export default function Register() {
 
               {/* Section 3: البيانات الأكاديمية */}
               <div>
-                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800/80 pb-2.5 mb-6 flex items-center gap-2.5">
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-6 flex items-center gap-2">
                   <GraduationCap className="w-5 h-5 text-amber-400" />
                   <span>البيانات الأكاديمية بكلية العلوم</span>
                 </h2>
@@ -550,7 +548,7 @@ export default function Register() {
                       className={`${inputClass} bg-[#0B1221] border-amber-500/50 text-amber-300 font-medium cursor-pointer`}
                     >
                       {CAIRO_UNIV_DEPARTMENTS.map((dept) => (
-                        <option key={dept} value={dept} className="bg-[#0B1221] text-slate-200">
+                        <option key={dept} value={dept} className="bg-[#0B1221] text-white">
                           {dept}
                         </option>
                       ))}
@@ -568,7 +566,7 @@ export default function Register() {
                       className={`${inputClass} bg-[#0B1221] cursor-pointer`}
                     >
                       {ACADEMIC_LEVELS.map((lvl) => (
-                        <option key={lvl} value={lvl} className="bg-[#0B1221] text-slate-200">
+                        <option key={lvl} value={lvl} className="bg-[#0B1221] text-white">
                           {lvl}
                         </option>
                       ))}
@@ -594,11 +592,14 @@ export default function Register() {
 
             </div>
 
-            {/* Right Column / Upload & Submit (4 Columns on Desktop) */}
-            <div className="lg:col-span-4 w-full flex flex-col gap-6 lg:sticky lg:top-24 h-fit order-1 lg:order-2">
+            {/* Divider */}
+            <div className="border-t border-slate-800 my-2"></div>
+
+            {/* Upload & Submit Section (At the bottom, full width, stacked perfectly) */}
+            <div className="w-full flex flex-col gap-6">
 
               <div>
-                <h2 className="text-amber-400 font-semibold text-base sm:text-lg border-b border-slate-800/80 pb-2.5 mb-4 flex items-center gap-2.5">
+                <h2 className="text-amber-400 font-semibold text-lg border-b border-slate-800 pb-2 mb-4 flex items-center gap-2">
                   <CreditCard className="w-5 h-5 text-amber-400" />
                   <span>وثيقة إثبات الشخصية</span>
                 </h2>
@@ -607,14 +608,13 @@ export default function Register() {
                   يرجى إرفاق صورة ضوئية واضحة من جواز السفر، الرقم الوطني، أو بطاقة الكلية.
                 </p>
 
-                {/* Digital ID Upload Box */}
+                {/* Upload Box */}
                 <div
                   onDragOver={handleDragOver}
                   onDragLeave={handleDragLeave}
                   onDrop={handleDrop}
-                  className={`border-2 border-dashed border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[220px] transition-all relative ${
-                    isDragging ? 'border-amber-400 bg-amber-500/15 scale-[1.01]' : ''
-                  }`}
+                  className={`border-2 border-dashed border-amber-500/50 bg-amber-500/5 hover:bg-amber-500/10 rounded-xl p-6 flex flex-col items-center justify-center text-center cursor-pointer min-h-[200px] transition-all relative ${isDragging ? 'border-amber-400 bg-amber-500/15 scale-[1.01]' : ''
+                    }`}
                 >
                   <input
                     type="file"
@@ -668,19 +668,19 @@ export default function Register() {
                 </div>
               </div>
 
-              {/* Submit & Security Area */}
+              {/* Submit Action Area */}
               <div>
-                <div className="flex items-start gap-2.5 p-3 bg-slate-900/60 border border-slate-800/80 rounded-xl text-[11px] text-slate-400 leading-relaxed">
+                <div className="flex items-start gap-2 p-3 bg-slate-900/60 border border-slate-800 rounded-xl text-[11px] text-slate-400 leading-relaxed">
                   <ShieldCheck className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                   <span>
-                    أقر بأن جميع البيانات المدخلة صحيحة ومطابقة لوثائقي الرسمية بكلية العلوم جامعة القاهرة. معلوماتك مشفرة ومحمية بأعلى معايير الأمان.
+                    أقر بأن جميع البيانات المدخلة صحيحة ومطابقة لوثائقي الرسمية بكلية العلوم جامعة القاهرة.
                   </span>
                 </div>
 
                 <button
                   type="submit"
                   disabled={loading || isSuccess}
-                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-900 font-bold text-lg rounded-xl py-4 mt-5 shadow-lg shadow-amber-500/20 transition-all flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
+                  className="w-full bg-gradient-to-r from-amber-500 to-amber-400 hover:from-amber-400 hover:to-amber-300 text-slate-900 font-bold text-lg rounded-xl py-4 mt-6 shadow-lg shadow-amber-500/20 transition-all duration-200 flex items-center justify-center gap-2.5 disabled:opacity-50 disabled:cursor-not-allowed cursor-pointer"
                 >
                   {loading ? (
                     <>
