@@ -1,15 +1,15 @@
 {
   "version": 2,
-  "buildCommand": "npm run build --prefix client",
-  "outputDirectory": "client/dist",
-  "rewrites": [
+  "builds": [
     {
-      "source": "/api/(.*)",
-      "destination": "/api/index.js"
-    },
+      "use": "@vercel/node",
+      "src": "server.js"
+    }
+  ],
+  "routes": [
     {
-      "source": "/(.*)",
-      "destination": "/index.html"
+      "src": "/(.*)",
+      "dest": "server.js"
     }
   ]
 }
