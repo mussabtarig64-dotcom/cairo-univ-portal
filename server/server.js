@@ -21,7 +21,7 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: {
     origin: '*',
-    methods: ['GET', 'POST'],
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
 
@@ -43,7 +43,7 @@ try {
   }
 } catch (e) { }
 
-// الاتصال بقاعدة بيانات MongoDB Atlas مع دعم بيئات Serverless (Vercel)
+// الاتصال بقاعدة بيانات MongoDB Atlas مع دعم بيئات Serverless (Vercel) بشكل آمن
 const MONGO_URI =
   process.env.MONGODB_URI ||
   process.env.MONGO_URI ||
@@ -63,14 +63,14 @@ async function connectDB() {
   if (!cached.promise) {
     const opts = {
       bufferCommands: false,
-      serverSelectionTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 10000,
     };
 
     cached.promise = mongoose.connect(MONGO_URI, opts).then((mongooseInstance) => {
       console.log('✅ تم الاتصال بالسجل المركزي لقاعدة البيانات MongoDB Atlas بنجاح');
       return mongooseInstance;
     }).catch((err) => {
-      console.error('❌ خطأ في الاتصال بقاعدة بيانات MongoDB:', err.message, err.stack);
+      console.error('❌ خطأ في الاتصال بقاعدة بيانات MongoDB:', err.message);
       cached.promise = null;
       throw err;
     });
@@ -87,26 +87,17 @@ async function connectDB() {
   return cached.conn;
 }
 
-// التأكد من جاهزية الاتصال بقاعدة البيانات قبل كل طلب
+// ضمان الاتصال بقاعدة البيانات لكل طلب بدون إيقاف الـ Request
 app.use(async (req, res, next) => {
   try {
     await connectDB();
-    next();
   } catch (err) {
-    console.error('Database connection middleware error:', err.message, err.stack);
-    res.status(500).json({
-      success: false,
-      message: 'Database connection failed',
-      error: err.message,
-      stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined
-    });
+    console.error('Database connection warning:', err.message);
   }
+  next();
 });
 
-// محاولة الاتصال المبدئي
-connectDB().catch(() => { });
-
-// تسجيل المسارات والـ API Endpoints الأساسية
+// تسجيل المسارات والـ API Endpoints الأساسية بوضوح تام لتجنب خطأ 405
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/posts', postsRoutes);
@@ -115,88 +106,19 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/cms', cmsRoutes);
 
-// ربط المسارات المباشرة لدعم المسارات النسبية والبيئات المتنوعة
-app.use('/api', authRoutes);
-app.use('/api', adminRoutes);
-app.use('/api', postsRoutes);
-app.use('/api', roomsRoutes);
-app.use('/api', aiRoutes);
-app.use('/api', paymentsRoutes);
-app.use('/api', cmsRoutes);
-
-// مسارات الجذر بدون بادئة /api
-app.use('/auth', authRoutes);
-app.use('/admin', adminRoutes);
-app.use('/posts', postsRoutes);
-app.use('/rooms', roomsRoutes);
-app.use('/ai', aiRoutes);
-app.use('/payments', paymentsRoutes);
-app.use('/cms', cmsRoutes);
-
-// مسار فحص صحة الخادم (Health Check)
-app.get(['/api/health', '/health'], (req, res) => {
-  res.json({ status: 'ok', time: new Date().toISOString() });
-});
-
-
-// مسار تنظيف قاعدة البيانات وتهيئة حساب الأدمن الوحيد (Reset Database Endpoint)
-app.get('/api/reset-database', async (req, res) => {
+// مسار فحص صحة الخادم وقاعدة البيانات (Health Check)
+app.get(['/api/health', '/health'], async (req, res) => {
   try {
-    const bcrypt = require('bcryptjs');
-    const User = require('./models/User');
-
-    const email = 'mussab@gmail.com';
-    const plainPassword = '123456789';
-    const name = 'مصعب طارق (المدير العام)';
-    const role = 'admin';
-
-    // 1. مسح جميع المستخدمين القدامى من قاعدة البيانات
-    const deleteResult = await User.deleteMany({});
-    console.log(`Database reset: Deleted ${deleteResult.deletedCount} user documents.`);
-
-    // 2. تشفير كلمة المرور وتعيين حساب الأدمن الأساسي
-    const salt = await bcrypt.genSalt(10);
-    const hashedPassword = await bcrypt.hash(plainPassword, salt);
-
-    const user = await User.create({
-      fullName: name,
-      name: name,
-      email: email.toLowerCase().trim(),
-      password: hashedPassword,
-      role: role,
-      phone: '01000000000',
-      whatsapp: '01000000000',
-      cairoAddress: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
-      residence: 'مقر الرابطة - كلية العلوم جامعة القاهرة',
-      studentId: 'ADMIN-MUSSAB',
-      academicId: 'ADMIN-MUSSAB',
-      department: 'إدارة الرابطة',
-      academicLevel: 'هيئة إدارية',
-      academicYear: 'هيئة إدارية',
-      status: 'approved',
-      verificationStatus: 'verified',
-    });
-
+    const isConnected = mongoose.connection.readyState === 1;
     res.json({
-      success: true,
-      message: 'تم تنظيف قاعدة البيانات بنجاح وتهيئة حساب الأدمن الوحيد mussab@gmail.com',
-      deletedCount: deleteResult.deletedCount,
-      admin: {
-        id: user._id,
-        email: user.email,
-        role: user.role,
-        status: user.status,
-        verificationStatus: user.verificationStatus,
-      },
+      status: 'online',
+      database: isConnected ? 'connected' : 'connecting_or_error',
+      readyState: mongoose.connection.readyState,
+      portal: 'رابطة الطلاب السودانيين - كلية العلوم - جامعة القاهرة (SSA-FS-CU)',
+      timestamp: new Date().toISOString(),
     });
   } catch (error) {
-    console.error('Reset Database error:', error.message, error.stack);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to reset database',
-      error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
-    });
+    res.status(500).json({ success: false, error: error.message });
   }
 });
 
@@ -263,54 +185,22 @@ app.get('/api/setup-admin', async (req, res) => {
       },
     });
   } catch (error) {
-    console.error('Setup Admin error:', error.message, error.stack);
-    res.status(500).json({
-      success: false,
-      message: 'Failed to initialize admin account',
-      error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
-    });
-  }
-});
-
-// نقطة فحص صحة الخادم وقاعدة البيانات (Health Check)
-app.get('/api/health', async (req, res) => {
-  try {
-    const isConnected = mongoose.connection.readyState === 1;
-    res.json({
-      status: 'online',
-      database: isConnected ? 'connected' : 'connecting_or_error',
-      readyState: mongoose.connection.readyState,
-      portal: 'رابطة الطلاب السودانيين - كلية العلوم - جامعة القاهرة (SSA-FS-CU)',
-      timestamp: new Date().toISOString(),
-    });
-  } catch (error) {
-    console.error('Health Check Error:', error.message, error.stack);
-    res.status(500).json({
-      success: false,
-      error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
-    });
+    console.error('Setup Admin error:', error.message);
+    res.status(500).json({ success: false, message: 'Failed to initialize admin account', error: error.message });
   }
 });
 
 // إدارة اتصالات Socket.IO
 io.on('connection', (socket) => {
-  console.log(`🔌 [Socket.io] مستخدم جديد متصل: ${socket.id}`);
-
   socket.on('join_room', (roomId) => {
     socket.join(roomId);
-    console.log(`👥 المستخدم ${socket.id} انضم إلى الغرفة: ${roomId}`);
   });
 
   socket.on('send_message', (data) => {
-    // إعادة توجيه الرسالة لجميع أفراد الغرفة
     socket.to(data.room).emit('receive_message', data);
   });
 
-  socket.on('disconnect', () => {
-    console.log(`🔌 [Socket.io] انقطع اتصال المستخدم: ${socket.id}`);
-  });
+  socket.on('disconnect', () => { });
 });
 
 // تشغيل الخادم المستقل في البيئات المحلية
