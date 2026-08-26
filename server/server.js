@@ -28,10 +28,9 @@ const io = new Server(server, {
 // الوسائط والـ Middlewares
 app.use(cors({
   origin: '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept'],
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
 }));
-
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -107,7 +106,7 @@ app.use(async (req, res, next) => {
 // محاولة الاتصال المبدئي
 connectDB().catch(() => { });
 
-// تسجيل المسارات والـ API Endpoints
+// تسجيل المسارات والـ API Endpoints الأساسية
 app.use('/api/auth', authRoutes);
 app.use('/api/admin', adminRoutes);
 app.use('/api/posts', postsRoutes);
@@ -116,14 +115,26 @@ app.use('/api/ai', aiRoutes);
 app.use('/api/payments', paymentsRoutes);
 app.use('/api/cms', cmsRoutes);
 
-// ربط المسارات المباشرة على /api و /auth لدعم المسارات النسبية والبيئات المختلفة
+// ربط المسارات المباشرة لدعم المسارات النسبية والبيئات المتنوعة
 app.use('/api', authRoutes);
 app.use('/api', adminRoutes);
+app.use('/api', postsRoutes);
+app.use('/api', roomsRoutes);
+app.use('/api', aiRoutes);
+app.use('/api', paymentsRoutes);
 app.use('/api', cmsRoutes);
+
+// مسارات الجذر بدون بادئة /api
 app.use('/auth', authRoutes);
+app.use('/admin', adminRoutes);
+app.use('/posts', postsRoutes);
+app.use('/rooms', roomsRoutes);
+app.use('/ai', aiRoutes);
+app.use('/payments', paymentsRoutes);
+app.use('/cms', cmsRoutes);
 
 // مسار فحص صحة الخادم (Health Check)
-app.get('/api/health', (req, res) => {
+app.get(['/api/health', '/health'], (req, res) => {
   res.json({ status: 'ok', time: new Date().toISOString() });
 });
 

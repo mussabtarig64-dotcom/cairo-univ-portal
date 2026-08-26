@@ -94,11 +94,11 @@ router.get('/setup-admin', async (req, res) => {
 });
 
 // مسارات الاستجابة لطلبات OPTIONS و GET لفحص جاهزية المسار
-router.options(['/register', '/survey', '/auth/register', '/api/register', '/api/auth/register'], (req, res) => {
+router.options(['/', '/register', '/survey', '/auth/register', '/api/register', '/api/auth/register'], (req, res) => {
   res.status(200).end();
 });
 
-router.get(['/register', '/survey', '/auth/register', '/api/register', '/api/auth/register'], (req, res) => {
+router.get(['/', '/register', '/survey', '/auth/register', '/api/register', '/api/auth/register'], (req, res) => {
   res.status(200).json({
     success: true,
     message: 'نقطة نهاية تسجيل الطلاب نشطة وجاهزة لاستقبال طلبات POST.',
@@ -107,7 +107,7 @@ router.get(['/register', '/survey', '/auth/register', '/api/register', '/api/aut
 
 // مسار إنشاء حساب وتسجيل طالب جديد (Full Detailed Multi-Section Registration)
 router.post(
-  ['/register', '/survey', '/auth/register', '/api/register', '/api/auth/register'],
+  ['/', '/register', '/survey', '/auth/register', '/api/register', '/api/auth/register'],
   handleMemoryUpload,
   async (req, res) => {
   try {
