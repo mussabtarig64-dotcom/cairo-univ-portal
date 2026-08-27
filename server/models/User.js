@@ -146,42 +146,66 @@ const userSchema = new mongoose.Schema(
   }
 );
 
-// Middleware لمزامنة الحقول المترادفة تلقائياً وضمان عدم حدوث أخطاء
+// Middleware لمزامنة الحقول المترادفة تلقائياً وضمان عدم حدوث أخطاء أو فقدان في البيانات
 userSchema.pre('save', function () {
   try {
+    // 1. مزامنة الاسم
     if (!this.name && this.fullName) {
       this.name = this.fullName;
     }
     if (!this.fullName && this.name) {
       this.fullName = this.name;
     }
+
+    // 2. مزامنة السكن والعنوان بالقاهرة
     if (!this.cairoAddress && this.residence) {
       this.cairoAddress = this.residence;
     }
     if (!this.residence && this.cairoAddress) {
       this.residence = this.cairoAddress;
     }
+
+    // 3. مزامنة رقم القيد والرقم الأكاديمي
     if (!this.studentId && this.academicId) {
       this.studentId = this.academicId;
     }
     if (!this.academicId && this.studentId) {
       this.academicId = this.studentId;
     }
+
+    // 4. مزامنة وثيقة إثبات الهوية والبطاقة
     if (!this.idDocument && this.idCardUrl) {
       this.idDocument = this.idCardUrl;
     }
     if (!this.idCardUrl && this.idDocument) {
       this.idCardUrl = this.idDocument;
     }
+
+    // 5. مزامنة الهاتف ورقم الواتساب
     if (!this.whatsapp && this.phone) {
       this.whatsapp = this.phone;
     }
+    if (!this.phone && this.whatsapp) {
+      this.phone = this.whatsapp;
+    }
+
+    // 6. مزامنة المستوى الأكاديمي والفرقة الدراسية
     if (!this.academicLevel && this.academicYear) {
       this.academicLevel = this.academicYear;
     }
     if (!this.academicYear && this.academicLevel) {
       this.academicYear = this.academicLevel;
     }
+
+    // 7. مزامنة بيانات الاتصال في حالات الطوارئ
+    if (!this.emergencyContact && this.emergencyContactName) {
+      this.emergencyContact = this.emergencyContactName;
+    }
+    if (!this.emergencyContactName && this.emergencyContact) {
+      this.emergencyContactName = this.emergencyContact;
+    }
+
+    // 8. مزامنة حالة الحساب والرتب الإدارية
     if (this.role === 'student') {
       this.role = 'user';
     }
