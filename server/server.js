@@ -97,14 +97,14 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// تسجيل المسارات والـ API Endpoints الأساسية بوضوح تام لتجنب خطأ 405
-app.use('/api/auth', authRoutes);
-app.use('/api/admin', adminRoutes);
-app.use('/api/posts', postsRoutes);
-app.use('/api/rooms', roomsRoutes);
-app.use('/api/ai', aiRoutes);
-app.use('/api/payments', paymentsRoutes);
-app.use('/api/cms', cmsRoutes);
+// تسجيل المسارات والـ API Endpoints الأساسية بدعم المسار المباشر والنسبي لتجنب خطأ 405 أو 404
+app.use(['/api/auth', '/auth'], authRoutes);
+app.use(['/api/admin', '/admin'], adminRoutes);
+app.use(['/api/posts', '/posts'], postsRoutes);
+app.use(['/api/rooms', '/rooms'], roomsRoutes);
+app.use(['/api/ai', '/ai'], aiRoutes);
+app.use(['/api/payments', '/payments'], paymentsRoutes);
+app.use(['/api/cms', '/cms'], cmsRoutes);
 
 // مسار فحص صحة الخادم وقاعدة البيانات (Health Check)
 app.get(['/api/health', '/health'], async (req, res) => {

@@ -220,47 +220,35 @@ export default function Register() {
         nationalIdPhoto: formData.idCardUrl || '',
       };
 
-      let resData = null;
-
+      let res = null;
       try {
-        // تم تعديل المسار هنا حصرياً ليكون مطابقاً للـ Backend الصحيح
-        const response = await axios.post('/api/auth/register', payload, {
-          headers: {
-            'Content-Type': 'application/json',
-            Accept: 'application/json',
-          },
-        });
-        resData = response.data;
-      } catch (primaryErr) {
-        try {
-          const fallbackResponse = await axios.post(`${API_BASE}/auth/register`, payload, {
+        if (typeof register === 'function') {
+          res = await register(payload);
+        } else {
+          const response = await axios.post('/api/auth/register', payload, {
             headers: {
               'Content-Type': 'application/json',
               Accept: 'application/json',
             },
           });
-          resData = fallbackResponse.data;
-        } catch (secondaryErr) {
-          if (typeof register === 'function') {
-            const authRes = await register(payload);
-            if (authRes && authRes.success) {
-              resData = authRes;
-            } else {
-              throw secondaryErr || primaryErr;
-            }
-          } else {
-            throw secondaryErr || primaryErr;
-          }
+          res = response.data;
         }
+      } catch (reqErr) {
+        const errorMsg =
+          reqErr?.response?.data?.message ||
+          reqErr?.response?.data?.error ||
+          reqErr?.message ||
+          'حدث خطأ في إرسال استمارة التسجيل.';
+        res = { success: false, message: errorMsg };
       }
 
-      if (resData && (resData.success || resData.user)) {
+      if (res && (res.success || res.user)) {
         setIsSuccess(true);
         setTimeout(() => {
           navigate('/pending-approval');
         }, 1500);
       } else {
-        setError(resData?.message || 'حدث خطأ أثناء إرسال استمارة التسجيل.');
+        setError(res?.message || 'حدث خطأ أثناء إرسال استمارة التسجيل.');
       }
     } catch (err) {
       setError(
