@@ -222,17 +222,14 @@ export default function Register() {
 
       let res = null;
       try {
-        if (typeof register === 'function') {
-          res = await register(payload);
-        } else {
-          const response = await axios.post('/api/auth/register', payload, {
-            headers: {
-              'Content-Type': 'application/json',
-              Accept: 'application/json',
-            },
-          });
-          res = response.data;
-        }
+        // إجبار النظام على استخدام مسار الـ API المباشر على Vercel متجاوزاً أي تداخل في السياق
+        const response = await axios.post('/api/auth/register', payload, {
+          headers: {
+            'Content-Type': 'application/json',
+            Accept: 'application/json',
+          },
+        });
+        res = response.data;
       } catch (reqErr) {
         const errorMsg =
           reqErr?.response?.data?.message ||
