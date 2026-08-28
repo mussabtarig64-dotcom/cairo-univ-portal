@@ -99,34 +99,59 @@ export default function AdminDashboard() {
       let all = [];
       let pendingList = [];
 
-      if (studentsRes.status === 'fulfilled' && studentsRes.value.data?.students) {
-        all = studentsRes.value.data.students;
+      if (studentsRes.status === 'fulfilled' && (studentsRes.value.data?.students || studentsRes.value.data?.users)) {
+        all = studentsRes.value.data.students || studentsRes.value.data.users || [];
         setAllStudents(all);
       }
 
-      if (pendingRes.status === 'fulfilled' && pendingRes.value.data?.students) {
-        pendingList = pendingRes.value.data.students;
+      if (pendingRes.status === 'fulfilled' && (pendingRes.value.data?.students || pendingRes.value.data?.users)) {
+        pendingList = pendingRes.value.data.students || pendingRes.value.data.users || [];
       }
 
-      if (all.length > 0 || pendingList.length > 0) {
-        // الطلاب المعلقون (Pending Registration Forms from MongoDB Atlas)
-        const p = pendingList.length > 0 ? pendingList : all.filter(
+      // دمج السجلات الواردة من قاعدة البيانات مع الاحتفاظ بكافة الاستمارات
+      const mergedMap = new Map();
+
+      // إضافة السجلات العامة
+      all.forEach((s) => {
+        const key = (s._id || s.id || s.email || '').toString().toLowerCase();
+        if (key) mergedMap.set(key, s);
+      });
+
+      // دمج أو تحديث بسجلات المعلقين الأحدث
+      pendingList.forEach((s) => {
+        const key = (s._id || s.id || s.email || '').toString().toLowerCase();
+        if (key) mergedMap.set(key, s);
+      });
+
+      // دمج السجلات المحلية إذا كانت قاعدة البيانات لم تقم بإرجاعها بعد
+      try {
+        const localPending = JSON.parse(localStorage.getItem('pending_users') || '[]');
+        localPending.forEach((lp) => {
+          const key = (lp._id || lp.id || lp.email || '').toString().toLowerCase();
+          if (key && !mergedMap.has(key)) {
+            mergedMap.set(key, lp);
+          }
+        });
+      } catch (e) {}
+
+      const mergedList = Array.from(mergedMap.values());
+
+      if (mergedList.length > 0) {
+        // الطلاب المعلقون (Pending Registration Forms)
+        const p = mergedList.filter(
           (s) =>
             s.role !== 'admin' &&
             !s.isAdmin &&
-            (s.isApproved === false ||
-              s.verificationStatus === 'pending' ||
-              s.status === 'pending' ||
-              (!s.verificationStatus && !s.status)) &&
-            s.verificationStatus !== 'rejected' &&
-            s.status !== 'rejected' &&
             s.verificationStatus !== 'verified' &&
             s.verificationStatus !== 'approved' &&
-            s.status !== 'approved'
+            s.status !== 'approved' &&
+            s.isApproved !== true &&
+            s.verificationStatus !== 'rejected' &&
+            s.status !== 'rejected'
         );
 
         // الطلاب المعتمدون (Approved)
-        const a = all.filter(
+        const a = mergedList.filter(
           (s) =>
             (s.isApproved === true ||
               s.verificationStatus === 'verified' ||
@@ -137,9 +162,11 @@ export default function AdminDashboard() {
         );
 
         // الحسابات المرفوضة (Rejected)
-        const r = all.filter((s) => s.verificationStatus === 'rejected' || s.status === 'rejected');
+        const r = mergedList.filter(
+          (s) => s.verificationStatus === 'rejected' || s.status === 'rejected'
+        );
 
-        // تحديث التخزين المحلي ليكون مطابقاً بدقة لقاعدة بيانات MongoDB المركزية
+        // تحديث التخزين المحلي ليكون متطابقاً مع البيانات المحدثة
         try {
           localStorage.setItem('pending_users', JSON.stringify(p));
           localStorage.setItem('approved_users', JSON.stringify(a));

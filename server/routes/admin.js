@@ -82,20 +82,24 @@ router.get('/stats', async (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    const totalStudents = await User.countDocuments({ role: { $ne: 'admin' } });
+    const totalStudents = await User.countDocuments({ role: { $ne: 'admin' }, isAdmin: { $ne: true } });
     const verifiedStudents = await User.countDocuments({
       role: { $ne: 'admin' },
+      isAdmin: { $ne: true },
       $or: [{ verificationStatus: { $in: ['verified', 'approved'] } }, { status: 'approved' }, { isApproved: true }],
     });
     const pendingStudents = await User.countDocuments({
       role: { $ne: 'admin' },
-      $or: [{ verificationStatus: 'pending' }, { status: 'pending' }, { isApproved: false }],
+      isAdmin: { $ne: true },
+      verificationStatus: { $nin: ['verified', 'approved', 'rejected'] },
+      status: { $nin: ['approved', 'rejected'] },
+      isApproved: { $ne: true },
     });
     const rejectedStudents = await User.countDocuments({
       role: { $ne: 'admin' },
       $or: [{ verificationStatus: 'rejected' }, { status: 'rejected' }],
     });
-    const adminCount = await User.countDocuments({ role: 'admin' });
+    const adminCount = await User.countDocuments({ $or: [{ role: 'admin' }, { isAdmin: true }] });
 
     res.json({
       success: true,
@@ -111,7 +115,7 @@ router.get('/stats', async (req, res) => {
       success: false,
       message: 'خطأ في جلب إحصائيات الإدارة',
       error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
@@ -125,20 +129,10 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
 
     const pending = await User.find({
       role: { $ne: 'admin' },
-      $or: [
-        { verificationStatus: 'pending' },
-        { status: 'pending' },
-        { isApproved: false },
-        { verificationStatus: { $exists: false } },
-        { verificationStatus: null },
-      ],
-      $and: [
-        { verificationStatus: { $ne: 'rejected' } },
-        { status: { $ne: 'rejected' } },
-        { verificationStatus: { $nin: ['verified', 'approved'] } },
-        { status: { $ne: 'approved' } },
-        { isApproved: { $ne: true } },
-      ],
+      isAdmin: { $ne: true },
+      verificationStatus: { $nin: ['verified', 'approved', 'rejected'] },
+      status: { $nin: ['approved', 'rejected'] },
+      isApproved: { $ne: true },
     })
       .select('-password')
       .sort({ createdAt: -1 });
@@ -155,7 +149,7 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
       success: false,
       message: 'خطأ في جلب بيانات الطلاب المعلقين',
       error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
@@ -183,7 +177,7 @@ router.get(['/users', '/all-users'], async (req, res) => {
       success: false,
       message: 'خطأ في جلب بيانات المستخدمين',
       error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
@@ -195,7 +189,7 @@ router.get('/students', async (req, res) => {
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
 
-    const { search, status, role, limit = 500 } = req.query;
+    const { search, status, role, limit = 1000 } = req.query;
     const filter = {};
 
     if (search) {
@@ -215,12 +209,22 @@ router.get('/students', async (req, res) => {
 
     if (status && status !== 'all') {
       if (status === 'verified' || status === 'approved') {
-        filter.$or = [{ verificationStatus: { $in: ['verified', 'approved'] } }, { status: 'approved' }, { isApproved: true }];
+        filter.$or = [
+          { verificationStatus: { $in: ['verified', 'approved'] } },
+          { status: 'approved' },
+          { isApproved: true },
+        ];
       } else if (status === 'rejected') {
-        filter.$or = [{ verificationStatus: 'rejected' }, { status: 'rejected' }];
+        filter.$or = [
+          { verificationStatus: 'rejected' },
+          { status: 'rejected' },
+        ];
       } else if (status === 'pending') {
         filter.role = { $ne: 'admin' };
-        filter.$or = [{ verificationStatus: 'pending' }, { status: 'pending' }, { isApproved: false }];
+        filter.isAdmin = { $ne: true };
+        filter.verificationStatus = { $nin: ['verified', 'approved', 'rejected'] };
+        filter.status = { $nin: ['approved', 'rejected'] };
+        filter.isApproved = { $ne: true };
       } else {
         filter.verificationStatus = status;
       }
@@ -242,7 +246,7 @@ router.get('/students', async (req, res) => {
       success: false,
       message: 'خطأ في جلب بيانات الطلاب',
       error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });

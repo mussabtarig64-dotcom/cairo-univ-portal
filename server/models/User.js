@@ -206,26 +206,31 @@ userSchema.pre('save', function () {
     }
 
     // 8. مزامنة حالة الحساب والرتب الإدارية
-    if (this.role === 'student') {
-      this.role = 'user';
-    }
     if (this.role === 'admin') {
       this.isAdmin = true;
       this.isApproved = true;
       this.status = 'approved';
       this.verificationStatus = 'verified';
-    } else if (this.status === 'approved' || this.verificationStatus === 'verified' || this.verificationStatus === 'approved') {
+    } else if (
+      this.status === 'approved' ||
+      this.verificationStatus === 'verified' ||
+      this.verificationStatus === 'approved' ||
+      this.isApproved === true
+    ) {
       this.isApproved = true;
       this.status = 'approved';
       this.verificationStatus = 'verified';
+      if (!this.role || this.role === 'student') this.role = 'user';
     } else if (this.status === 'rejected' || this.verificationStatus === 'rejected') {
       this.isApproved = false;
       this.status = 'rejected';
       this.verificationStatus = 'rejected';
+      if (!this.role || this.role === 'student') this.role = 'user';
     } else {
       this.isApproved = false;
       this.status = 'pending';
       this.verificationStatus = 'pending';
+      if (!this.role || this.role === 'student') this.role = 'user';
     }
   } catch (e) {
     console.error('Error in User pre-save hook:', e);

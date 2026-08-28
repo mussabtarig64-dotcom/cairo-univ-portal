@@ -131,9 +131,26 @@ export function AuthProvider({ children }) {
       });
 
       if (res.data && (res.data.success || res.status === 200 || res.status === 201)) {
+        const savedUser = res.data.user || userData;
+        try {
+          const pendingUsers = JSON.parse(localStorage.getItem('pending_users') || '[]');
+          const cleanPending = pendingUsers.filter(
+            (u) => u.email?.toLowerCase() !== savedUser.email?.toLowerCase()
+          );
+          const studentRecord = {
+            ...userData,
+            ...savedUser,
+            role: savedUser.role || 'user',
+            status: 'pending',
+            verificationStatus: 'pending',
+            isApproved: false,
+          };
+          localStorage.setItem('pending_users', JSON.stringify([studentRecord, ...cleanPending]));
+        } catch (e) {}
+
         return {
           success: true,
-          user: res.data.user,
+          user: res.data.user || userData,
           message: res.data.message || 'تم إرسال استمارة التسجيل واعتماد العضوية بنجاح!',
         };
       } else {
@@ -153,9 +170,26 @@ export function AuthProvider({ children }) {
             },
           });
           if (fallbackRes.data && (fallbackRes.data.success || fallbackRes.status === 200 || fallbackRes.status === 201)) {
+            const savedUser = fallbackRes.data.user || userData;
+            try {
+              const pendingUsers = JSON.parse(localStorage.getItem('pending_users') || '[]');
+              const cleanPending = pendingUsers.filter(
+                (u) => u.email?.toLowerCase() !== savedUser.email?.toLowerCase()
+              );
+              const studentRecord = {
+                ...userData,
+                ...savedUser,
+                role: savedUser.role || 'user',
+                status: 'pending',
+                verificationStatus: 'pending',
+                isApproved: false,
+              };
+              localStorage.setItem('pending_users', JSON.stringify([studentRecord, ...cleanPending]));
+            } catch (e) {}
+
             return {
               success: true,
-              user: fallbackRes.data.user,
+              user: fallbackRes.data.user || userData,
               message: fallbackRes.data.message || 'تم إرسال استمارة التسجيل واعتماد العضوية بنجاح!',
             };
           }
