@@ -2,4 +2,4 @@ const isLocal = window.location.hostname === 'localhost' || window.location.host
 
 export const API_BASE = isLocal
     ? 'http://localhost:5000/api'
-    : 'https://cairo-univ-backend.onrender.com/api';
+    : 'https://cairo-univ-portal-production.up.railway.app/api';
