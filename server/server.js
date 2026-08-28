@@ -26,7 +26,7 @@ const io = new Server(server, {
   },
 });
 
-// الوسائط والـ Middlewares (تم تعديل الـ CORS ليعمل بسلاسة مع الواجهة الأمامية)
+// الوسائط والـ Middlewares
 const allowedOrigins = [
   'http://localhost:5173',
   'http://localhost:3000',
@@ -38,7 +38,7 @@ const corsOptions = {
     if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
       callback(null, true);
     } else {
-      callback(null, true); // السماح المرن لمنع أي حظر للطلبات
+      callback(null, true);
     }
   },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
@@ -47,7 +47,7 @@ const corsOptions = {
 };
 
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions)); // دعم طلبات المعاينة Preflight OPTIONS
+app.options('*', cors(corsOptions));
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -73,17 +73,45 @@ app.use(async (req, res, next) => {
   next();
 });
 
-// تسجيل المسارات والـ API Endpoints الأساسية بدعم المسار المباشر والنسبي لتجنب خطأ 405 أو 404
-app.use(['/api/auth', '/auth'], authRoutes);
-app.use(['/api/admin', '/admin'], adminRoutes);
-app.use(['/api/posts', '/posts'], postsRoutes);
-app.use(['/api/rooms', '/rooms'], roomsRoutes);
-app.use(['/api/ai', '/ai'], aiRoutes);
-app.use(['/api/payments', '/payments'], paymentsRoutes);
-app.use(['/api/cms', '/cms'], cmsRoutes);
+// تسجيل المسارات والـ API Endpoints الأساسية بمسارات مفردة لتجنب أخطاء Express
+app.use('/api/auth', authRoutes);
+app.use('/auth', authRoutes);
+
+app.use('/api/admin', adminRoutes);
+app.use('/admin', adminRoutes);
+
+app.use('/api/posts', postsRoutes);
+app.use('/posts', postsRoutes);
+
+app.use('/api/rooms', roomsRoutes);
+app.use('/rooms', roomsRoutes);
+
+app.use('/api/ai', aiRoutes);
+app.use('/ai', aiRoutes);
+
+app.use('/api/payments', paymentsRoutes);
+app.use('/payments', paymentsRoutes);
+
+app.use('/api/cms', cmsRoutes);
+app.use('/cms', cmsRoutes);
 
 // مسار فحص صحة الخادم وقاعدة البيانات (Health Check)
-app.get(['/api/health', '/health'], async (req, res) => {
+app.get('/api/health', async (req, res) => {
+  try {
+    const isConnected = mongoose.connection.readyState === 1;
+    res.json({
+      status: 'online',
+      database: isConnected ? 'connected' : 'connecting_or_error',
+      readyState: mongoose.connection.readyState,
+      portal: 'رابطة الطلاب السودانيين - كلية العلوم - جامعة القاهرة (SSA-FS-CU)',
+      timestamp: new Date().toISOString(),
+    });
+  } catch (error) {
+    res.status(500).json({ success: false, error: error.message });
+  }
+});
+
+app.get('/health', async (req, res) => {
   try {
     const isConnected = mongoose.connection.readyState === 1;
     res.json({
