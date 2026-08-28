@@ -74,23 +74,53 @@ export default function AdminDashboard() {
   }, [activeTab]);
 
   const loadDashboardData = async () => {
-    const noCacheConfig = {
-      headers: {
-        'Cache-Control': 'no-cache, no-store, must-revalidate',
-        Pragma: 'no-cache',
-        Expires: '0',
-      },
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('ssa_token') ||
+      (user && (user.token || user._id)) ||
+      '';
+
+    const authHeaders = {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      Pragma: 'no-cache',
+      Expires: '0',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+
+    const requestConfig = {
+      headers: authHeaders,
       params: { _t: Date.now() },
     };
 
+    console.log(`📡 [AdminDashboard] Fetching live data from: ${API_BASE}/admin/... with Token: ${token ? 'Attached' : 'None'}`);
+
     // 1. تحميل البيانات الحية من قاعدة بيانات MongoDB Atlas
     try {
-      const [studentsRes, pendingRes, annRes, kbRes] = await Promise.allSettled([
-        axios.get(`${API_BASE}/admin/students`, noCacheConfig),
-        axios.get(`${API_BASE}/admin/pending`, noCacheConfig),
-        axios.get(`${API_BASE}/admin/announcements`, noCacheConfig),
-        axios.get(`${API_BASE}/admin/faq`, noCacheConfig),
+      const [studentsRes, pendingRes, statsRes, annRes, kbRes] = await Promise.allSettled([
+        axios.get(`${API_BASE}/admin/students`, requestConfig),
+        axios.get(`${API_BASE}/admin/pending`, requestConfig),
+        axios.get(`${API_BASE}/admin/stats`, requestConfig),
+        axios.get(`${API_BASE}/admin/announcements`, requestConfig),
+        axios.get(`${API_BASE}/admin/faq`, requestConfig),
       ]);
+
+      if (studentsRes.status === 'fulfilled') {
+        console.log('✅ [AdminDashboard] studentsRes success:', studentsRes.value.data);
+      } else {
+        console.error('❌ [AdminDashboard] studentsRes failed:', studentsRes.reason);
+      }
+
+      if (pendingRes.status === 'fulfilled') {
+        console.log('✅ [AdminDashboard] pendingRes success:', pendingRes.value.data);
+      } else {
+        console.error('❌ [AdminDashboard] pendingRes failed:', pendingRes.reason);
+      }
+
+      if (statsRes.status === 'fulfilled') {
+        console.log('📊 [AdminDashboard] statsRes success:', statsRes.value.data);
+      } else {
+        console.warn('⚠️ [AdminDashboard] statsRes note:', statsRes.reason?.message);
+      }
 
       if (kbRes.status === 'fulfilled' && kbRes.value.data?.items) {
         setKbItems(kbRes.value.data.items);
@@ -135,6 +165,7 @@ export default function AdminDashboard() {
       } catch (e) {}
 
       const mergedList = Array.from(mergedMap.values());
+      console.log(`📋 [AdminDashboard] Total merged student records count: ${mergedList.length}`);
 
       if (mergedList.length > 0) {
         // الطلاب المعلقون (Pending Registration Forms)
@@ -166,6 +197,8 @@ export default function AdminDashboard() {
           (s) => s.verificationStatus === 'rejected' || s.status === 'rejected'
         );
 
+        console.log(`📊 [AdminDashboard] Computed: Pending=${p.length}, Approved=${a.length}, Rejected=${r.length}`);
+
         // تحديث التخزين المحلي ليكون متطابقاً مع البيانات المحدثة
         try {
           localStorage.setItem('pending_users', JSON.stringify(p));
@@ -177,6 +210,7 @@ export default function AdminDashboard() {
         setApprovedUsers(a);
         setRejectedUsers(r);
       } else {
+        console.warn('⚠️ [AdminDashboard] Merged list is empty, falling back to localStorage');
         fallbackToLocalStorage();
       }
 
@@ -184,7 +218,7 @@ export default function AdminDashboard() {
         setAnnouncements(annRes.value.data);
       }
     } catch (e) {
-      console.warn('Dashboard live sync note:', e.message);
+      console.error('❌ [AdminDashboard] Dashboard live sync error:', e);
       fallbackToLocalStorage();
     }
   };

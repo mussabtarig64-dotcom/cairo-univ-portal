@@ -101,6 +101,8 @@ router.get('/stats', async (req, res) => {
     });
     const adminCount = await User.countDocuments({ $or: [{ role: 'admin' }, { isAdmin: true }] });
 
+    console.log(`📊 [Admin API] GET /stats -> Total: ${totalStudents}, Pending: ${pendingStudents}, Verified: ${verifiedStudents}, Rejected: ${rejectedStudents}, Admins: ${adminCount}`);
+
     res.json({
       success: true,
       totalStudents,
@@ -110,7 +112,7 @@ router.get('/stats', async (req, res) => {
       adminCount,
     });
   } catch (error) {
-    console.error('Admin Stats Error:', error.message, error.stack);
+    console.error('❌ [Admin Stats Error]:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب إحصائيات الإدارة',
@@ -137,6 +139,8 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
       .select('-password')
       .sort({ createdAt: -1 });
 
+    console.log(`⏳ [Admin API] GET /pending -> Returned ${pending.length} pending registration(s).`);
+
     res.json({
       success: true,
       count: pending.length,
@@ -144,7 +148,7 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
       users: pending,
     });
   } catch (error) {
-    console.error('Fetch Pending Students Error:', error.message, error.stack);
+    console.error('❌ [Fetch Pending Students Error]:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب بيانات الطلاب المعلقين',
@@ -165,6 +169,8 @@ router.get(['/users', '/all-users'], async (req, res) => {
       .select('-password')
       .sort({ createdAt: -1 });
 
+    console.log(`👥 [Admin API] GET /users -> Returned ${users.length} user(s).`);
+
     res.json({
       success: true,
       count: users.length,
@@ -172,7 +178,7 @@ router.get(['/users', '/all-users'], async (req, res) => {
       students: users,
     });
   } catch (error) {
-    console.error('Fetch Users Error:', error.message, error.stack);
+    console.error('❌ [Fetch Users Error]:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب بيانات المستخدمين',
@@ -239,9 +245,11 @@ router.get('/students', async (req, res) => {
       .sort({ createdAt: -1 })
       .limit(parseInt(limit, 10));
 
+    console.log(`📋 [Admin API] GET /students -> Returned ${students.length} student(s). Filter:`, JSON.stringify(filter));
+
     res.json({ success: true, count: students.length, students, users: students });
   } catch (error) {
-    console.error('Fetch Students Error:', error.message, error.stack);
+    console.error('❌ [Fetch Students Error]:', error.message, error.stack);
     res.status(500).json({
       success: false,
       message: 'خطأ في جلب بيانات الطلاب',
