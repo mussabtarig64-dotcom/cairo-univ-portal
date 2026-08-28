@@ -20,26 +20,34 @@ const server = http.createServer(app);
 // إعداد Socket.IO للتواصل الحي في غرف المذاكرة
 const io = new Server(server, {
   cors: {
-    origin: '*',
+    origin: true,
+    credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
 });
 
-// الوسائط والـ Middlewares
+// الوسائط والـ Middlewares (تم تعديل الـ CORS ليعمل بسلاسة مع الواجهة الأمامية)
+const allowedOrigins = [
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'https://cairo-univ-app.vercel.app'
+];
+
 const corsOptions = {
-  origin: '*',
+  origin: function (origin, callback) {
+    if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
+      callback(null, true);
+    } else {
+      callback(null, true); // السماح المرن لمنع أي حظر للطلبات
+    }
+  },
   methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
 };
 
 app.use(cors(corsOptions));
-app.use((req, res, next) => {
-  if (req.method === 'OPTIONS') {
-    return res.status(200).end();
-  }
-  next();
-});
+app.options('*', cors(corsOptions)); // دعم طلبات المعاينة Preflight OPTIONS
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
