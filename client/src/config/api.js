@@ -1,5 +1,5 @@
-// استخدام المسار النسبي المباشر ليعمل بسلاسة مع Vercel Serverless Functions
-export const BACKEND_URL = '';
-export const API_BASE = '/api';
+const isLocal = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
 
-export default API_BASE;
+export const API_BASE = isLocal
+    ? 'http://localhost:5000/api'
+    : '/api';
