@@ -533,17 +533,23 @@ router.post('/announcements', async (req, res) => {
     });
     await newAnnouncement.save();
 
-    // إرسال إشعارات الإعلان العاجل للطلاب النشطين إذا كان مثبتاً أو هاماً
-    if (isPinned) {
-      User.find({ verificationStatus: { $in: ['verified', 'approved'] } })
-        .limit(100)
-        .then((students) => {
-          students.forEach((student) => {
-            sendAnnouncementBroadcastEmail(student, newAnnouncement).catch(() => {});
-            sendAnnouncementSMS(student, newAnnouncement).catch(() => {});
-          });
-        })
-        .catch(() => {});
+    // إنشاء وبث إشعار فوري لجميع الأجهزة والطلاب
+    try {
+      const Notification = require('../models/Notification');
+      const notif = new Notification({
+        title: `📢 ${title || 'إعلان جديد من إدارة الرابطة'}`,
+        message: content.length > 150 ? `${content.substring(0, 147)}...` : content,
+        type: isPinned ? 'urgent' : 'announcement',
+        link: '/',
+        sender: 'إدارة الرابطة (SSA)',
+        senderRole: 'admin',
+      });
+      await notif.save();
+      if (req.io) {
+        req.io.emit('new_notification', notif);
+      }
+    } catch (notifErr) {
+      console.error('Announcement Notification Error:', notifErr.message);
     }
 
     res.status(201).json({ success: true, announcement: newAnnouncement });
@@ -595,12 +601,14 @@ router.get('/settings', async (req, res) => {
 
 router.post('/settings', async (req, res) => {
   try {
-    const { activeTheme, themeTitle } = req.body;
+    const { activeTheme, themeTitle, occasionMode, occasionGreeting } = req.body;
     let settings = await Settings.findOne();
     if (!settings) settings = new Settings();
 
     if (activeTheme) settings.activeTheme = activeTheme;
     if (themeTitle) settings.themeTitle = themeTitle;
+    if (occasionMode !== undefined) settings.occasionMode = occasionMode;
+    if (occasionGreeting !== undefined) settings.occasionGreeting = occasionGreeting;
     settings.updatedAt = new Date();
 
     await settings.save();

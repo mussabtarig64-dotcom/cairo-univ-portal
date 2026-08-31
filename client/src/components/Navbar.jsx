@@ -31,6 +31,7 @@ import {
   Moon,
   History
 } from 'lucide-react';
+import NotificationCenter from './NotificationCenter';
 
 export default function Navbar() {
   const { activeTheme, switchTheme } = useTheme();
@@ -79,7 +80,7 @@ export default function Navbar() {
     { path: '/media', label: 'الإعلام', icon: Newspaper, desc: 'البيانات والأخبار الرسمية' },
     { path: '/achievements', label: 'التكريم والإنجازات', icon: Award, desc: 'المتفوقون، المبتكرون، والرياضيون' },
     { path: '/administration', label: 'الإدارة', icon: Shield, desc: 'المكتب التنفيذي واللجان والخطط' },
-    { path: '/constitution', label: 'الدستور واللوائح', icon: Scale, desc: 'الدستور والمراسيم والتقارير' },
+    { path: '/constitution', label: 'الدستور واللوائح', icon: Scale, desc: 'الدستور والمراسيم والتقارير', badge: 'أدمن 🔒', adminOnly: true },
     { path: '/sudan', label: 'سوداننا', icon: Sparkles, desc: 'التراث، الولايات، المواهب والأدب', badge: '🇸🇩 بوابة الوطن' },
     { path: '/archive', label: 'أرشيف الرابطة', icon: FolderArchive, desc: 'الوثائق التاريخية والمطبوعات والألبومات', badge: 'جديد' },
   ];
@@ -475,6 +476,9 @@ export default function Navbar() {
                 </Link>
               </div>
             )}
+
+            {/* Notification Center */}
+            <NotificationCenter />
 
             {/* Dark / Light Toggle */}
             <button

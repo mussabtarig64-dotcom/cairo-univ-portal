@@ -36,6 +36,7 @@ import SiteStory from './pages/SiteStory';
 import SocialLinks from './components/SocialLinks';
 import FloatingAIChatWidget from './components/FloatingAIChatWidget';
 import Navbar from './components/Navbar';
+import OccasionBanner from './components/OccasionBanner';
 
 function Footer() {
   const { activeTheme } = useTheme();
@@ -102,7 +103,7 @@ function Footer() {
             <Link to="/media" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📢 الإعلام</Link>
             <Link to="/achievements" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🏆 الإنجازات</Link>
             <Link to="/administration" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🛡️ الإدارة</Link>
-            <Link to="/constitution" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚖️ الدستور</Link>
+            <Link to="/constitution" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚖️ الدستور (أدمن 🔒)</Link>
             <Link to="/sudan" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>🇸🇩 سوداننا</Link>
             <Link to="/archive" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold' }}>🏛️ أرشيف الرابطة</Link>
             <Link to="/story" style={{ color: '#f59e0b', textDecoration: 'none', fontWeight: 'bold', gridColumn: 'span 2' }}>✨ قصة الموقع (Site Story)</Link>
@@ -130,6 +131,7 @@ function Footer() {
 function MainAppLayout() {
   return (
     <div className="min-h-screen w-full bg-[#0a101d] text-white flex flex-col overflow-x-hidden" dir="rtl">
+      <OccasionBanner />
       <Navbar />
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <Routes>
@@ -145,7 +147,7 @@ function MainAppLayout() {
           <Route path="/media" element={<MediaHub />} />
           <Route path="/achievements" element={<AchievementsHub />} />
           <Route path="/administration" element={<AdministrationHub />} />
-          <Route path="/constitution" element={<ConstitutionHub />} />
+          <Route path="/constitution" element={<AdminRoute><ConstitutionHub /></AdminRoute>} />
           <Route path="/archive" element={<ArchivePortal />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<Contact />} />

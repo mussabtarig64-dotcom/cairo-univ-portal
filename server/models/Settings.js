@@ -3,11 +3,20 @@ const mongoose = require('mongoose');
 const settingsSchema = new mongoose.Schema({
   activeTheme: {
     type: String,
-    default: 'official-emerald',
+    default: 'classic-gold-blue',
   },
   themeTitle: {
     type: String,
-    default: 'الهوية الرسمية للرابطة (الأخضر والذهبي)',
+    default: 'الكحلي والذهب الكلاسيكي (Classic Gold & Dark Blue)',
+  },
+  occasionMode: {
+    type: String,
+    enum: ['auto', 'none', 'ramadan', 'eid-fitr', 'eid-adha', 'sudan-national'],
+    default: 'auto',
+  },
+  occasionGreeting: {
+    type: String,
+    default: '',
   },
   associationNameAr: {
     type: String,

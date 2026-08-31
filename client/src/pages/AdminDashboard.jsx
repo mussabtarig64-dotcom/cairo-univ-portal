@@ -29,16 +29,32 @@ import {
   CheckCircle2,
   BarChart3,
   PieChart,
-  TrendingUp
+  TrendingUp,
+  Bell,
+  BellRing,
+  Send,
+  Radio,
+  Moon,
+  Flame
 } from 'lucide-react';
 
 import { API_BASE } from '../config/api';
 
 export default function AdminDashboard() {
-  const { currentThemeKey, activeTheme, switchTheme, availableThemes } = useTheme();
+  const {
+    currentThemeKey,
+    activeTheme,
+    switchTheme,
+    availableThemes,
+    occasionMode,
+    switchOccasionMode,
+    currentOccasion,
+    availableOccasions,
+    customOccasionGreeting,
+  } = useTheme();
   const { user, updateUserRole } = useAuth();
 
-  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'themes' | 'announcements' | 'kb' | 'analytics'
+  const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'themes' | 'announcements' | 'kb' | 'analytics' | 'notifications'
   const [allStudents, setAllStudents] = useState([]);
   const [pendingUsers, setPendingUsers] = useState([]);
   const [approvedUsers, setApprovedUsers] = useState([]);
@@ -46,11 +62,15 @@ export default function AdminDashboard() {
   const [registrationSubFilter, setRegistrationSubFilter] = useState('all'); // 'all' | 'pending' | 'approved'
   const [announcements, setAnnouncements] = useState([]);
   const [kbItems, setKbItems] = useState([]);
+  const [notificationsList, setNotificationsList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
   const [newAnnouncement, setNewAnnouncement] = useState({ title: '', content: '', isPinned: true });
+  const [newNotif, setNewNotif] = useState({ title: '', message: '', type: 'general', link: '/posts' });
   const [themeSuccessMsg, setThemeSuccessMsg] = useState('');
   const [kbSuccessMsg, setKbSuccessMsg] = useState('');
+  const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
+  const [customGreetingInput, setCustomGreetingInput] = useState(customOccasionGreeting || '');
 
   // حالة نموذج إضافة/تعديل أسئلة المستشار الأكاديمي
   const [newKbQuestion, setNewKbQuestion] = useState('');
@@ -427,6 +447,50 @@ export default function AdminDashboard() {
     setTimeout(() => setThemeSuccessMsg(''), 4000);
   };
 
+  // 6.1 حفظ وضع المناسبات والأعياد
+  const handleSaveOccasion = async (modeKey) => {
+    await switchOccasionMode(modeKey, customGreetingInput);
+    setThemeSuccessMsg(`تم تفعيل مناسبة [${availableOccasions[modeKey]?.name || modeKey}] وحفظ المظهر والتنسيق عالمياً! 🌙✨`);
+    setTimeout(() => setThemeSuccessMsg(''), 4000);
+  };
+
+  // 6.2 إرسال وبث إشعار فوري لجميع الأجهزة والطلاب (Web Push / Real-time Notification)
+  const handleBroadcastNotification = async (e) => {
+    e.preventDefault();
+    if (!newNotif.title.trim() || !newNotif.message.trim()) return;
+
+    try {
+      const res = await axios.post(`${API_BASE}/notifications`, {
+        title: newNotif.title.trim(),
+        message: newNotif.message.trim(),
+        type: newNotif.type || 'general',
+        link: newNotif.link || '/posts',
+        sender: user?.fullName || user?.name || 'إدارة الرابطة (SSA-FS-CU)',
+        senderRole: 'admin',
+      });
+
+      if (res.data?.notification) {
+        setNotificationsList((prev) => [res.data.notification, ...prev]);
+        setNotifSuccessMsg('تم إرسال وبث الإشعار الفوري بنجاح لجميع الأجهزة والطلاب! 🔔🚀');
+        setNewNotif({ title: '', message: '', type: 'general', link: '/posts' });
+        setTimeout(() => setNotifSuccessMsg(''), 4500);
+      }
+    } catch (err) {
+      console.error('Broadcast notification error:', err);
+    }
+  };
+
+  // 6.3 حذف إشعار
+  const handleDeleteNotification = async (id) => {
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا الإشعار؟')) return;
+    try {
+      await axios.delete(`${API_BASE}/notifications/${id}`);
+      setNotificationsList((prev) => prev.filter((n) => n._id !== id));
+    } catch (err) {
+      console.error('Delete notif error:', err);
+    }
+  };
+
   // 7. إضافة إعلان لشريط الأخبار
   const handleAddAnnouncement = async (e) => {
     e.preventDefault();
@@ -794,10 +858,35 @@ export default function AdminDashboard() {
             <Megaphone size={16} />
             <span>شريط الأخبار والإعلانات</span>
           </button>
+
+          <button
+            onClick={() => {
+              setActiveTab('notifications');
+              axios.get(`${API_BASE}/notifications`).then(res => {
+                if (res.data?.notifications) setNotificationsList(res.data.notifications);
+              }).catch(() => {});
+            }}
+            style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              padding: '10px 18px',
+              borderRadius: '10px',
+              fontSize: '13px',
+              fontWeight: 'bold',
+              cursor: 'pointer',
+              border: `1px solid ${activeTab === 'notifications' ? '#f59e0b' : activeTheme.border}`,
+              background: activeTab === 'notifications' ? 'rgba(245, 158, 11, 0.25)' : 'rgba(0, 0, 0, 0.25)',
+              color: activeTab === 'notifications' ? '#fbbf24' : activeTheme.textMuted,
+            }}
+          >
+            <BellRing size={16} />
+            <span>بث الإشعارات الفورية (Push Notifications) 🔔</span>
+          </button>
         </div>
 
         {/* حقل البحث */}
-        {activeTab !== 'announcements' && activeTab !== 'themes' && (
+        {activeTab !== 'announcements' && activeTab !== 'themes' && activeTab !== 'notifications' && (
           <div style={{ position: 'relative', flex: '1 1 240px', maxWidth: '100%', minWidth: 'min(100%, 240px)' }}>
             <input
               type="text"
@@ -1759,6 +1848,95 @@ export default function AdminDashboard() {
       {/* 3. تبويب إعدادات المظهر والثيمات المخصص للأدمن فقط (Theme & Color Customization) */}
       {activeTab === 'themes' && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* قسم إدارة المظهر الخاص بالمناسبات والأعياد (Seasonal Occasion Modes) */}
+          <div style={studentCardStyle(activeTheme)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+              <Sparkles size={24} color="#f59e0b" />
+              <div>
+                <h3 style={{ color: activeTheme.textMain, fontSize: '18px', fontWeight: 'bold', margin: 0 }}>
+                  المظهر الخاص بالمناسبات والأعياد الرسمية (Seasonal & Festive Modes) 🌙🎉
+                </h3>
+                <p style={{ color: activeTheme.textMuted, fontSize: '13px', margin: '4px 0 0' }}>
+                  تحويل مظهر البوابة وإظهار زينة وشرائط التهنئة الخاصة بشهر رمضان المبارك، عيدي الفطر والأضحى، أو المناسبات الوطنية.
+                </p>
+              </div>
+            </div>
+
+            {/* شبكة خيارات المناسبات */}
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
+              {[
+                { id: 'ramadan', label: 'شهر رمضان المبارك', icon: '🌙', desc: 'زينة رمضانية ونفحات مباركة', color: '#f59e0b' },
+                { id: 'eid-fitr', label: 'عيد الفطر المبارك', icon: '🎉', desc: 'بهجة العيد والتهاني المباركة', color: '#ec4899' },
+                { id: 'eid-adha', label: 'عيد الأضحى المبارك', icon: '🐑', desc: 'تهاني الأضحى وفرحة العيد', color: '#10b981' },
+                { id: 'sudan-national', label: 'المناسبات الوطنية', icon: '🇸🇩', desc: 'فخر واعتزاز بالوطن السوداني', color: '#38bdf8' },
+                { id: 'none', label: 'الوضع الطبيعي', icon: '🏛️', desc: 'بدون مناسبة خاصة', color: '#94a3b8' },
+              ].map((occ) => {
+                const isSelected = occasionMode === occ.id;
+                return (
+                  <div
+                    key={occ.id}
+                    onClick={() => handleSaveOccasion(occ.id)}
+                    style={{
+                      background: isSelected ? 'rgba(245, 158, 11, 0.15)' : 'rgba(255, 255, 255, 0.04)',
+                      border: `2px solid ${isSelected ? occ.color : activeTheme.border}`,
+                      borderRadius: '14px',
+                      padding: '16px',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      textAlign: 'center',
+                    }}
+                  >
+                    <div style={{ fontSize: '28px', marginBottom: '6px' }}>{occ.icon}</div>
+                    <div style={{ fontWeight: 'bold', fontSize: '14px', color: isSelected ? occ.color : activeTheme.textMain }}>
+                      {occ.label}
+                    </div>
+                    <div style={{ fontSize: '11px', color: activeTheme.textMuted, marginTop: '4px' }}>
+                      {occ.desc}
+                    </div>
+                    {isSelected && (
+                      <div style={{ marginTop: '8px', fontSize: '11px', fontWeight: 'bold', color: occ.color, display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
+                        <Check size={12} />
+                        <span>مفعل حالياً</span>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
+
+            {/* تخصيص عبارة التهنئة */}
+            <div style={{ marginTop: '18px', paddingTop: '16px', borderTop: `1px solid ${activeTheme.border}` }}>
+              <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>
+                ✍️ نص عبارة التهنئة المخصصة في شريط المناسبات (اختياري):
+              </label>
+              <div style={{ display: 'flex', gap: '10px' }}>
+                <input
+                  type="text"
+                  placeholder="مثال: رابطة الطلاب السودانيين تهنئكم بحلول الشهر الفضيل..."
+                  value={customGreetingInput}
+                  onChange={(e) => setCustomGreetingInput(e.target.value)}
+                  style={{ ...inputStyle(activeTheme), flex: 1 }}
+                />
+                <button
+                  type="button"
+                  onClick={() => handleSaveOccasion(occasionMode || 'ramadan')}
+                  style={{
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#0b1622',
+                    fontWeight: 'bold',
+                    padding: '0 20px',
+                    borderRadius: '10px',
+                    border: 'none',
+                    cursor: 'pointer',
+                    fontSize: '13px',
+                  }}
+                >
+                  حفظ العبارة
+                </button>
+              </div>
+            </div>
+          </div>
+
           <div style={studentCardStyle(activeTheme)}>
             <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
               <Palette size={24} color={activeTheme.accentLight} />
@@ -1991,6 +2169,224 @@ export default function AdminDashboard() {
                 </button>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* 5. تبويب بث الإشعارات الفورية (Push Notifications Hub) */}
+      {activeTab === 'notifications' && (
+        <div style={{ display: 'flex', flexDirection: 'column', gap: '20px' }}>
+          {/* فورم إرسال إشعار فوري جديد */}
+          <div style={studentCardStyle(activeTheme)}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
+              <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.2)', color: '#fbbf24' }}>
+                <BellRing size={22} />
+              </div>
+              <div>
+                <h3 style={{ color: activeTheme.textMain, fontSize: '17px', fontWeight: 'bold', margin: 0 }}>
+                  مركز بث الإشعارات الفورية لجميع الطلاب والأجهزة (Push Notifications) 🔔🚀
+                </h3>
+                <p style={{ color: activeTheme.textMuted, fontSize: '12.5px', margin: '4px 0 0' }}>
+                  أرسل إشعاراً عاجلاً أو تنبيهاً أكاديمياً أو دعوة لفعالية؛ سيصل الإشعار فورياً إلى أجهزة الطلاب عبر Web Push وSocket.IO وجرس التنبيهات.
+                </p>
+              </div>
+            </div>
+
+            {notifSuccessMsg && (
+              <div
+                style={{
+                  background: 'rgba(34, 197, 94, 0.15)',
+                  border: '1px solid #22c55e',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  color: '#22c55e',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <CheckCircle2 size={18} />
+                <span>{notifSuccessMsg}</span>
+              </div>
+            )}
+
+            <form onSubmit={handleBroadcastNotification} style={{ display: 'flex', flexDirection: 'column', gap: '14px' }}>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '14px' }}>
+                <div>
+                  <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                    عنوان الإشعار *
+                  </label>
+                  <input
+                    type="text"
+                    required
+                    placeholder="مثال: تنويه عاجل بخصوص جداول الامتحانات والمعامل..."
+                    value={newNotif.title}
+                    onChange={(e) => setNewNotif({ ...newNotif, title: e.target.value })}
+                    style={inputStyle(activeTheme)}
+                  />
+                </div>
+
+                <div>
+                  <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                    نوع وتصنيف الإشعار
+                  </label>
+                  <select
+                    value={newNotif.type}
+                    onChange={(e) => setNewNotif({ ...newNotif, type: e.target.value })}
+                    style={inputStyle(activeTheme)}
+                  >
+                    <option value="urgent">🚨 عاجل ومهم جداً (Urgent)</option>
+                    <option value="announcement">📢 إعلان وبيان رسمي (Announcement)</option>
+                    <option value="academic">📚 تنبيه أكاديمي ومذكرات (Academic)</option>
+                    <option value="event">📅 فعالية أو نشاط (Event)</option>
+                    <option value="post">📝 منشور في الملتقى (Post)</option>
+                    <option value="general">✨ إشعار عام (General)</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                  نص ورسالة الإشعار *
+                </label>
+                <textarea
+                  required
+                  rows={3}
+                  placeholder="اكتب الرسالة المفصلة التي ستظهر في إشعار الجهاز وصندوق التنبيهات..."
+                  value={newNotif.message}
+                  onChange={(e) => setNewNotif({ ...newNotif, message: e.target.value })}
+                  style={{ ...inputStyle(activeTheme), resize: 'vertical' }}
+                />
+              </div>
+
+              <div>
+                <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '12px', fontWeight: 'bold', marginBottom: '6px' }}>
+                  🔗 رابط التوجيه عند النقر على الإشعار (اختياري)
+                </label>
+                <select
+                  value={newNotif.link}
+                  onChange={(e) => setNewNotif({ ...newNotif, link: e.target.value })}
+                  style={inputStyle(activeTheme)}
+                >
+                  <option value="/posts">الملتقى الأكاديمي والمنشورات (/posts)</option>
+                  <option value="/academic">المكتبة الأكاديمية والملازم (/academic)</option>
+                  <option value="/events">الفعاليات والأنشطة (/events)</option>
+                  <option value="/sports">القطاع الرياضي والبطولات (/sports)</option>
+                  <option value="/social">القطاع الاجتماعي والمبادرات (/social)</option>
+                  <option value="/media">المركز الإعلامي والبيانات (/media)</option>
+                  <option value="/sudan">بوابة سوداننا (/sudan)</option>
+                  <option value="/story">قصة الموقع والمسيرة (/story)</option>
+                  <option value="/">الصفحة الرئيسية (/)</option>
+                </select>
+              </div>
+
+              <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
+                <button
+                  type="submit"
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    color: '#0b1622',
+                    border: 'none',
+                    padding: '12px 24px',
+                    borderRadius: '10px',
+                    fontSize: '13.5px',
+                    fontWeight: '900',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)',
+                  }}
+                >
+                  <Send size={16} />
+                  <span>إرسال وبث الإشعار الفوري لجميع الأجهزة 🚀</span>
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* سجل الإشعارات المرسلة */}
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '10px' }}>
+            <h4 style={{ color: activeTheme.textMain, fontSize: '15px', fontWeight: 'bold', margin: '10px 0 4px' }}>
+              سجل الإشعارات المرسلة مؤخراً ({notificationsList.length})
+            </h4>
+
+            {notificationsList.length === 0 ? (
+              <div style={emptyCardStyle(activeTheme)}>
+                <Bell size={36} color={activeTheme.accentLight} style={{ marginBottom: '8px' }} />
+                <p style={{ margin: 0 }}>لم يتم إرسال أي إشعارات حتى الآن.</p>
+              </div>
+            ) : (
+              notificationsList.map((notif) => (
+                <div
+                  key={notif._id || Math.random()}
+                  style={{
+                    background: activeTheme.bgCard,
+                    border: `1px solid ${activeTheme.border}`,
+                    borderRadius: '12px',
+                    padding: '16px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start',
+                    gap: '12px',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                      <span
+                        style={{
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          backgroundColor:
+                            notif.type === 'urgent'
+                              ? 'rgba(239, 68, 68, 0.2)'
+                              : notif.type === 'academic'
+                              ? 'rgba(16, 185, 129, 0.2)'
+                              : 'rgba(245, 158, 11, 0.2)',
+                          color:
+                            notif.type === 'urgent'
+                              ? '#f87171'
+                              : notif.type === 'academic'
+                              ? '#34d399'
+                              : '#fbbf24',
+                        }}
+                      >
+                        {notif.type}
+                      </span>
+                      <strong style={{ color: activeTheme.textMain, fontSize: '14px' }}>{notif.title}</strong>
+                    </div>
+                    <p style={{ color: activeTheme.textMuted, fontSize: '13px', margin: '4px 0 6px', lineHeight: '1.5' }}>
+                      {notif.message}
+                    </p>
+                    <div style={{ fontSize: '11px', color: activeTheme.textMuted }}>
+                      <span>بواسطة: {notif.sender || 'الإدارة'}</span> • <span>التاريخ: {notif.createdAt ? new Date(notif.createdAt).toLocaleDateString('ar-EG') : ''}</span>
+                    </div>
+                  </div>
+
+                  <button
+                    onClick={() => handleDeleteNotification(notif._id)}
+                    style={{
+                      background: 'rgba(239, 68, 68, 0.15)',
+                      border: '1px solid rgba(239, 68, 68, 0.3)',
+                      color: '#ef4444',
+                      padding: '6px 12px',
+                      borderRadius: '8px',
+                      fontSize: '12px',
+                      fontWeight: 'bold',
+                      cursor: 'pointer',
+                      flexShrink: 0,
+                    }}
+                  >
+                    حذف
+                  </button>
+                </div>
+              ))
+            )}
           </div>
         </div>
       )}

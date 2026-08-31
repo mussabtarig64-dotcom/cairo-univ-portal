@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { Link } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -14,7 +15,10 @@ import {
   PlusCircle,
   Edit,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Lock,
+  Shield,
+  ArrowLeft
 } from 'lucide-react';
 import AdminHubCMSModal from '../components/AdminHubCMSModal';
 import { fetchHubContent, deleteHubContent } from '../utils/cmsApi';
@@ -131,6 +135,38 @@ export default function ConstitutionHub() {
       }
     }
   };
+
+  if (!isAdmin) {
+    return (
+      <div className="min-h-[80vh] flex items-center justify-center p-6" dir="rtl">
+        <div className="max-w-lg w-full bg-slate-900/90 border-2 border-amber-500/40 rounded-3xl p-8 text-center backdrop-blur-xl shadow-2xl">
+          <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mx-auto mb-5 shadow-lg">
+            <Lock size={32} />
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-3">
+            وصول مقيد | خاص بإدارة الرابطة 🔒
+          </h2>
+          <p className="text-slate-300 text-sm leading-relaxed mb-6">
+            عذراً، هذا القسم مخصص لأعضاء المكتب التنفيذي وهيئة إدارة الرابطة فقط لمراجعة وإدارة الدستور واللوائح والقرارات والمحاضر الرسمية.
+          </p>
+          <div className="flex flex-col sm:flex-row gap-3 justify-center">
+            <Link
+              to="/login"
+              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-sm transition-all shadow-md"
+            >
+              تسجيل الدخول كأدمن 🛡️
+            </Link>
+            <Link
+              to="/"
+              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-sm transition-all"
+            >
+              العودة للرئيسية
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div style={{ minHeight: '90vh', paddingBottom: '80px', direction: 'rtl' }}>

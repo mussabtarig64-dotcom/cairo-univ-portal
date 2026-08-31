@@ -51,6 +51,26 @@ router.post('/', async (req, res) => {
     });
 
     await post.save();
+
+    // إنشاء وبث إشعار للجميع
+    try {
+      const Notification = require('../models/Notification');
+      const notif = new Notification({
+        title: isPinned ? `📌 تنويه هام: ${title || 'منشور مثبت'}` : `📝 منشور جديد: ${title || 'مشاركة أكاديمية'}`,
+        message: content.length > 120 ? `${content.substring(0, 117)}...` : content,
+        type: isPinned ? 'urgent' : 'post',
+        link: '/posts',
+        sender: author || 'عضو الرابطة',
+        senderRole: authorRole || 'student',
+      });
+      await notif.save();
+      if (req.io) {
+        req.io.emit('new_notification', notif);
+      }
+    } catch (notifErr) {
+      console.error('Post Notification Broadcast error:', notifErr.message);
+    }
+
     res.status(201).json({ message: 'تم نشر المنشور بنجاح', post });
   } catch (err) {
     console.error('Create Post Error:', err.message, err.stack);

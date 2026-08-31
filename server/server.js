@@ -13,6 +13,7 @@ const roomsRoutes = require('./routes/rooms');
 const aiRoutes = require('./routes/ai');
 const paymentsRoutes = require('./routes/payments');
 const cmsRoutes = require('./routes/cms');
+const notificationsRoutes = require('./routes/notifications');
 
 const app = express();
 const server = http.createServer(app);
@@ -24,6 +25,12 @@ const io = new Server(server, {
     credentials: true,
     methods: ['GET', 'POST', 'PUT', 'DELETE'],
   },
+});
+
+// إتاحة io لكافة الـ middlewares والمسارات
+app.use((req, res, next) => {
+  req.io = io;
+  next();
 });
 
 // الوسائط والـ Middlewares
@@ -100,6 +107,9 @@ app.use('/payments', paymentsRoutes);
 
 app.use('/api/cms', cmsRoutes);
 app.use('/cms', cmsRoutes);
+
+app.use('/api/notifications', notificationsRoutes);
+app.use('/notifications', notificationsRoutes);
 
 // مسار فحص صحة الخادم وقاعدة البيانات (Health Check)
 app.get('/api/health', async (req, res) => {
