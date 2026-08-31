@@ -21,7 +21,8 @@ import {
   XCircle,
   HelpCircle,
   MapPin,
-  QrCode
+  QrCode,
+  History
 } from 'lucide-react';
 import { Link } from 'react-router-dom';
 import teamImg from '../assets/team.jpg';
@@ -300,6 +301,76 @@ export default function Home() {
             </div>
           </div>
         </div>
+      </section>
+
+      {/* بنر قصة إنشاء المنصة (Site Story Spotlight) */}
+      <section style={{ maxWidth: '1200px', margin: '24px auto 0', padding: '0 20px' }}>
+        <Link
+          to="/story"
+          style={{
+            display: 'block',
+            textDecoration: 'none',
+            background: 'linear-gradient(135deg, rgba(245, 158, 11, 0.15) 0%, rgba(15, 23, 42, 0.95) 100%)',
+            border: '1px solid rgba(245, 158, 11, 0.4)',
+            borderRadius: '20px',
+            padding: '22px 26px',
+            boxShadow: '0 10px 30px rgba(0, 0, 0, 0.35)',
+            transition: 'all 0.25s ease',
+          }}
+          className="hover:scale-[1.01] hover:border-amber-400"
+        >
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: '16px' }}>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '16px' }}>
+              <div
+                style={{
+                  width: '50px',
+                  height: '50px',
+                  borderRadius: '14px',
+                  background: 'rgba(245, 158, 11, 0.2)',
+                  border: '1px solid #f59e0b',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#fbbf24',
+                  flexShrink: 0,
+                }}
+              >
+                <History size={26} />
+              </div>
+              <div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '4px' }}>
+                  <span style={{ fontSize: '12px', fontWeight: 'bold', backgroundColor: 'rgba(245, 158, 11, 0.25)', color: '#fbbf24', padding: '2px 8px', borderRadius: '6px' }}>
+                    توثيق خاص
+                  </span>
+                  <h3 style={{ margin: 0, fontSize: '18px', fontWeight: 'bold', color: '#ffffff' }}>
+                    قصة الموقع | من فكرة على ورق… إلى منصة على أرض الواقع
+                  </h3>
+                </div>
+                <p style={{ margin: 0, fontSize: '13px', color: '#cbd5e1' }}>
+                  تعرّف على مسيرة تأسيس وبناء المنصة الرقمية الرسمية، ومحطات الفكرة، والتصميم، والبرمجة، والإشراف.
+                </p>
+              </div>
+            </div>
+
+            <div
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '6px',
+                color: '#fbbf24',
+                fontWeight: 'bold',
+                fontSize: '13.5px',
+                padding: '8px 14px',
+                borderRadius: '10px',
+                background: 'rgba(245, 158, 11, 0.1)',
+                border: '1px solid rgba(245, 158, 11, 0.3)',
+              }}
+            >
+              <span>قراءة القصة كاملة</span>
+              <ArrowLeft size={16} />
+            </div>
+          </div>
+        </Link>
       </section>
 
       {/* 2. شريط الاستعلام المباشر عن حالة القيد (Application Status Tracker) */}

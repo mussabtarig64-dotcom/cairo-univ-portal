@@ -28,7 +28,8 @@ import {
   FolderArchive,
   Grid,
   Sun,
-  Moon
+  Moon,
+  History
 } from 'lucide-react';
 
 export default function Navbar() {
@@ -70,6 +71,7 @@ export default function Navbar() {
   // قطاعات الرابطة الأساسية
   const primarySectors = [
     { path: '/', label: 'الرئيسية', icon: HomeIcon, desc: 'الأخبار، الإعلانات، والفعاليات' },
+    { path: '/story', label: 'قصة الموقع', icon: History, desc: 'من فكرة على ورق… إلى منصة على أرض الواقع', badge: 'مميز' },
     { path: '/academic', label: 'الأكاديمية', icon: BookOpen, desc: 'مذكرات، امتحانات، ومجموعات دراسة' },
     { path: '/sports', label: 'الرياضة', icon: Trophy, desc: 'البطولات، الفرق، النتائج والترتيب', badge: 'دوري 2026' },
     { path: '/social', label: 'الاجتماعي', icon: HeartHandshake, desc: 'المبادرات، التطوع، ونظام الأسر' },

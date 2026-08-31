@@ -32,6 +32,7 @@ import ArchivePortal from './pages/ArchivePortal';
 import FAQ from './pages/FAQ';
 import Contact from './pages/Contact';
 import DigitalIDPage from './pages/DigitalIDPage';
+import SiteStory from './pages/SiteStory';
 import SocialLinks from './components/SocialLinks';
 import FloatingAIChatWidget from './components/FloatingAIChatWidget';
 import Navbar from './components/Navbar';
@@ -104,6 +105,7 @@ function Footer() {
             <Link to="/constitution" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚖️ الدستور</Link>
             <Link to="/sudan" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>🇸🇩 سوداننا</Link>
             <Link to="/archive" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold' }}>🏛️ أرشيف الرابطة</Link>
+            <Link to="/story" style={{ color: '#f59e0b', textDecoration: 'none', fontWeight: 'bold', gridColumn: 'span 2' }}>✨ قصة الموقع (Site Story)</Link>
           </div>
         </div>
 
@@ -132,6 +134,8 @@ function MainAppLayout() {
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/story" element={<SiteStory />} />
+          <Route path="/site-story" element={<SiteStory />} />
           <Route path="/academic" element={<AcademicLibrary />} />
           <Route path="/library" element={<AcademicLibrary />} />
           <Route path="/sports" element={<SportsHub />} />
