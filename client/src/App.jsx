@@ -147,7 +147,7 @@ function MainAppLayout() {
           <Route path="/media" element={<MediaHub />} />
           <Route path="/achievements" element={<AchievementsHub />} />
           <Route path="/administration" element={<AdministrationHub />} />
-          <Route path="/constitution" element={<AdminRoute><ConstitutionHub /></AdminRoute>} />
+          <Route path="/constitution" element={<ConstitutionHub />} />
           <Route path="/archive" element={<ArchivePortal />} />
           <Route path="/faq" element={<FAQ />} />
           <Route path="/contact" element={<Contact />} />

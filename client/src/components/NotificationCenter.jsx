@@ -15,9 +15,7 @@ import {
   Calendar,
   Sparkles,
   ExternalLink,
-  Trash2,
-  X,
-  Volume2
+  X
 } from 'lucide-react';
 
 export default function NotificationCenter() {
@@ -61,9 +59,9 @@ export default function NotificationCenter() {
       setNotifications((prev) => [newNotif, ...prev]);
       setUnreadCount((prev) => prev + 1);
 
-      // إظهار Toast داخلي سريع
+      // إظهار Toast داخلي سلس وراقي
       setToastNotif(newNotif);
-      setTimeout(() => setToastNotif(null), 6000);
+      setTimeout(() => setToastNotif(null), 6500);
 
       // إطلاق إشعار المتصفح الخارجي إذا كانت الصلاحية ممنوحة
       if ('Notification' in window && Notification.permission === 'granted') {
@@ -135,7 +133,6 @@ export default function NotificationCenter() {
 
   // النقر على إشعار محدد
   const handleNotificationClick = async (notif) => {
-    // تحديث القراءة
     try {
       if (!notif.readBy || !notif.readBy.includes(userEmail)) {
         await axios.post(`${API_BASE}/notifications/${notif._id}/read`, { userEmail });
@@ -171,25 +168,32 @@ export default function NotificationCenter() {
 
   return (
     <div className="relative" ref={dropdownRef} dir="rtl">
-      {/* Toast Popup عند وصول إشعار جديد */}
+      {/* Toast Popup عند وصول إشعار جديد - متناسق على الموبايل والديسكتوب */}
       {toastNotif && (
         <div
-          className="fixed top-16 left-4 z-50 max-w-sm w-full bg-slate-900/95 border-2 border-amber-500/60 rounded-2xl p-4 shadow-2xl backdrop-blur-xl animate-bounce duration-500"
-          style={{ boxShadow: '0 10px 30px rgba(245, 158, 11, 0.3)' }}
+          className="fixed top-16 left-3 right-3 sm:right-auto sm:left-4 sm:w-96 max-w-[calc(100vw-24px)] z-50 bg-slate-900/95 border-2 border-amber-500/70 rounded-2xl p-3.5 sm:p-4 shadow-2xl backdrop-blur-2xl transition-all duration-300 transform translate-y-0"
+          style={{ boxShadow: '0 12px 36px rgba(245, 158, 11, 0.25)' }}
         >
-          <div className="flex items-start justify-between gap-3">
-            <div className="flex items-start gap-2.5">
-              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 mt-0.5">
+          <div className="flex items-start justify-between gap-2.5">
+            <div className="flex items-start gap-2.5 min-w-0 flex-1">
+              <div className="p-2 rounded-xl bg-amber-500/20 text-amber-400 shrink-0 mt-0.5">
                 <BellRing size={18} />
               </div>
-              <div>
-                <div className="text-xs font-bold text-amber-400 mb-0.5">إشعار فوري جديد 🔔</div>
-                <h4 className="text-sm font-bold text-white mb-1">{toastNotif.title}</h4>
-                <p className="text-xs text-slate-300 line-clamp-2">{toastNotif.message}</p>
+              <div className="min-w-0 flex-1">
+                <div className="text-[11px] font-bold text-amber-400 mb-0.5 flex items-center gap-1">
+                  <span>إشعار فوري جديد</span>
+                  <span>🔔</span>
+                </div>
+                <h4 className="text-xs sm:text-sm font-bold text-white mb-1 truncate">{toastNotif.title}</h4>
+                <p className="text-xs text-slate-300 line-clamp-2 leading-relaxed">{toastNotif.message}</p>
               </div>
             </div>
-            <button onClick={() => setToastNotif(null)} className="text-slate-400 hover:text-white p-1">
-              <X size={14} />
+            <button
+              onClick={() => setToastNotif(null)}
+              aria-label="إغلاق التنبيه"
+              className="text-slate-400 hover:text-white p-1 rounded-lg hover:bg-white/10 shrink-0 cursor-pointer"
+            >
+              <X size={15} />
             </button>
           </div>
         </div>
@@ -199,8 +203,9 @@ export default function NotificationCenter() {
       <button
         type="button"
         onClick={() => setIsOpen(!isOpen)}
+        aria-label="مركز الإشعارات الفورية"
         title="مركز الإشعارات الفورية"
-        className="relative p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 hover:text-amber-400 transition-all flex items-center justify-center"
+        className="relative p-2 rounded-xl bg-white/5 hover:bg-white/10 border border-white/10 text-slate-200 hover:text-amber-400 transition-all flex items-center justify-center cursor-pointer active:scale-95"
       >
         {unreadCount > 0 ? (
           <BellRing size={18} className="text-amber-400 animate-pulse" />
@@ -209,20 +214,23 @@ export default function NotificationCenter() {
         )}
 
         {unreadCount > 0 && (
-          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-gradient-to-r from-amber-500 to-red-500 text-white font-bold text-[10.5px] rounded-full flex items-center justify-center shadow-lg border border-slate-900">
+          <span className="absolute -top-1 -right-1 min-w-5 h-5 px-1 bg-gradient-to-r from-amber-500 to-red-500 text-white font-bold text-[10.5px] rounded-full flex items-center justify-center shadow-lg border border-slate-900 animate-pulse">
             {unreadCount > 99 ? '99+' : unreadCount}
           </span>
         )}
       </button>
 
-      {/* القائمة المنسدلة لمركز الإشعارات */}
+      {/* القائمة المنسدلة لمركز الإشعارات - معالجة العرض لتفادي أي Overflow */}
       {isOpen && (
         <div
-          className="absolute left-0 sm:right-auto top-full mt-3 w-80 sm:w-96 max-h-[85vh] bg-slate-900/95 border border-white/15 rounded-2xl shadow-2xl backdrop-blur-2xl z-50 flex flex-col overflow-hidden text-right"
-          style={{ boxShadow: '0 20px 50px rgba(0,0,0,0.6)' }}
+          className="absolute left-0 sm:left-0 sm:right-auto top-full mt-3 w-[calc(100vw-28px)] sm:w-96 max-w-sm max-h-[85vh] bg-slate-900/98 border border-white/15 rounded-2xl shadow-2xl backdrop-blur-2xl z-50 flex flex-col overflow-hidden text-right"
+          style={{
+            boxShadow: '0 20px 50px rgba(0,0,0,0.7)',
+            transform: 'translateX(0)',
+          }}
         >
           {/* Header */}
-          <div className="p-3.5 px-4 border-b border-white/10 flex items-center justify-between bg-slate-950/60">
+          <div className="p-3.5 px-4 border-b border-white/10 flex items-center justify-between bg-slate-950/70">
             <div className="flex items-center gap-2">
               <div className="p-1.5 rounded-lg bg-amber-500/20 text-amber-400">
                 <Bell size={16} />
@@ -238,7 +246,7 @@ export default function NotificationCenter() {
             {unreadCount > 0 && (
               <button
                 onClick={handleMarkAllRead}
-                className="text-[11px] font-bold text-slate-300 hover:text-amber-400 flex items-center gap-1 transition-colors"
+                className="text-[11px] font-bold text-slate-300 hover:text-amber-400 flex items-center gap-1 transition-colors cursor-pointer"
                 title="تحديد الكل كمقروء"
               >
                 <CheckCheck size={13} />
@@ -250,12 +258,12 @@ export default function NotificationCenter() {
           {/* Browser Push Notice banner */}
           {!webPushEnabled && (
             <div className="p-3 bg-amber-500/10 border-b border-amber-500/20 flex items-center justify-between gap-2 text-xs">
-              <div className="text-amber-300">
-                <span>فعّل إشعارات الجهاز لاستقبال التنبيهات حتى عند إغلاق الموقع 🔔</span>
+              <div className="text-amber-300 text-[11.5px] leading-snug">
+                <span>فعّل إشعارات الجهاز لاستقبال التنبيهات 🔔</span>
               </div>
               <button
                 onClick={enableBrowserPush}
-                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-[11px] shrink-0 transition-colors shadow-sm"
+                className="px-2.5 py-1 bg-amber-500 hover:bg-amber-600 text-slate-950 font-bold rounded-lg text-[11px] shrink-0 transition-colors shadow-sm cursor-pointer"
               >
                 تفعيل الآن
               </button>
@@ -263,7 +271,7 @@ export default function NotificationCenter() {
           )}
 
           {/* List of Notifications */}
-          <div className="overflow-y-auto divide-y divide-white/5 flex-1 max-h-[380px]">
+          <div className="overflow-y-auto divide-y divide-white/5 flex-1 max-h-[360px] sm:max-h-[380px]">
             {notifications.length === 0 ? (
               <div className="p-8 text-center text-slate-400 text-xs">
                 <Bell size={32} className="mx-auto mb-2 text-slate-600 opacity-60" />
@@ -298,13 +306,13 @@ export default function NotificationCenter() {
                         )}
                       </div>
 
-                      <p className="text-[11.5px] text-slate-300 line-clamp-2 leading-relaxed mb-1.5">
+                      <p className="text-[11.5px] text-slate-300 line-clamp-2 leading-relaxed mb-1.5 break-words">
                         {notif.message}
                       </p>
 
                       <div className="flex items-center justify-between text-[10px] text-slate-400">
-                        <span className="font-semibold text-slate-400">{notif.sender}</span>
-                        <span>
+                        <span className="font-semibold text-slate-400 truncate max-w-[140px]">{notif.sender}</span>
+                        <span className="shrink-0">
                           {notif.createdAt
                             ? new Date(notif.createdAt).toLocaleTimeString('ar-EG', {
                                 hour: '2-digit',
@@ -322,7 +330,7 @@ export default function NotificationCenter() {
 
           {/* Footer */}
           <div className="p-2.5 px-4 bg-slate-950/80 border-t border-white/10 text-center text-xs text-slate-400 flex items-center justify-between">
-            <span className="text-[11px]">بث مباشر عبر Socket.IO ⚡</span>
+            <span className="text-[11px] text-slate-400">بث مباشر عبر Socket.IO ⚡</span>
             <Link
               to="/posts"
               onClick={() => setIsOpen(false)}
@@ -337,3 +345,4 @@ export default function NotificationCenter() {
     </div>
   );
 }
+

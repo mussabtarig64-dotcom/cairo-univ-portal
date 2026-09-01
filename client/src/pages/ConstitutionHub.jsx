@@ -7,18 +7,14 @@ import {
   FileText,
   BookOpen,
   FileCheck2,
-  Download,
   CheckCircle,
-  Clock,
-  ShieldAlert,
-  ChevronRight,
   PlusCircle,
   Edit,
   Trash2,
   CheckCircle2,
   Lock,
   Shield,
-  ArrowLeft
+  ArrowRight
 } from 'lucide-react';
 import AdminHubCMSModal from '../components/AdminHubCMSModal';
 import { fetchHubContent, deleteHubContent } from '../utils/cmsApi';
@@ -63,7 +59,7 @@ export default function ConstitutionHub() {
   const [notification, setNotification] = useState('');
 
   const tabs = [
-    { id: 'constitution', label: 'الدستور واللوائح المنظمة', icon: Scale, count: 'البنود والمواد' },
+    { id: 'constitution', label: 'الدستور واللوائح', icon: Scale, count: 'المواد والبنود' },
     { id: 'decisions', label: 'القرارات والمراسيم', icon: FileCheck2, count: 'قرارات نافذة' },
     { id: 'reports', label: 'التقارير الإدارية والمالية', icon: BookOpen, count: 'تقارير الأداء' },
     { id: 'minutes', label: 'محاضر الاجتماعات', icon: FileText, count: 'أرشيف الجلسات' },
@@ -136,31 +132,71 @@ export default function ConstitutionHub() {
     }
   };
 
+  // شاشة الوصول المقيد للأدمن فقط
   if (!isAdmin) {
     return (
-      <div className="min-h-[80vh] flex items-center justify-center p-6" dir="rtl">
-        <div className="max-w-lg w-full bg-slate-900/90 border-2 border-amber-500/40 rounded-3xl p-8 text-center backdrop-blur-xl shadow-2xl">
-          <div className="w-16 h-16 rounded-2xl bg-amber-500/20 text-amber-400 border border-amber-500/40 flex items-center justify-center mx-auto mb-5 shadow-lg">
+      <div className="min-h-[75vh] flex items-center justify-center px-4 py-12" dir="rtl">
+        <div
+          className="max-w-md w-full rounded-3xl p-6 sm:p-8 text-center backdrop-blur-xl shadow-2xl border theme-transition"
+          style={{
+            background: activeTheme.bgCard,
+            borderColor: activeTheme.border,
+            boxShadow: '0 20px 50px rgba(0,0,0,0.4)',
+          }}
+        >
+          <div
+            className="w-16 h-16 rounded-2xl flex items-center justify-center mx-auto mb-5 shadow-lg border"
+            style={{
+              background: 'rgba(245, 158, 11, 0.15)',
+              borderColor: '#f59e0b',
+              color: '#fbbf24',
+            }}
+          >
             <Lock size={32} />
           </div>
-          <h2 className="text-2xl font-bold text-white mb-3">
+
+          <div
+            className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-bold mb-3"
+            style={{
+              background: 'rgba(245, 158, 11, 0.15)',
+              color: '#fbbf24',
+              border: '1px solid rgba(245, 158, 11, 0.3)',
+            }}
+          >
+            <Shield size={13} />
+            <span>بوابة الإدارة والتنظيم القانوني</span>
+          </div>
+
+          <h2 className="text-xl sm:text-2xl font-black mb-3" style={{ color: activeTheme.textMain }}>
             وصول مقيد | خاص بإدارة الرابطة 🔒
           </h2>
-          <p className="text-slate-300 text-sm leading-relaxed mb-6">
-            عذراً، هذا القسم مخصص لأعضاء المكتب التنفيذي وهيئة إدارة الرابطة فقط لمراجعة وإدارة الدستور واللوائح والقرارات والمحاضر الرسمية.
+
+          <p className="text-xs sm:text-sm leading-relaxed mb-6" style={{ color: activeTheme.textMuted }}>
+            عذراً، هذا القسم مخصص لأعضاء المكتب التنفيذي وهيئة إدارة الرابطة لمراجعة وإدارة الدستور واللوائح والقرارات والمحاضر الرسمية.
           </p>
+
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
             <Link
               to="/login"
-              className="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-600 hover:to-amber-700 text-slate-950 font-bold text-sm transition-all shadow-md"
+              className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all shadow-md flex items-center justify-center gap-2 cursor-pointer active:scale-95"
+              style={{
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: '#0b1622',
+              }}
             >
-              تسجيل الدخول كأدمن 🛡️
+              <span>تسجيل الدخول كأدمن 🛡️</span>
             </Link>
             <Link
               to="/"
-              className="px-5 py-2.5 rounded-xl bg-white/10 hover:bg-white/15 border border-white/10 text-white font-bold text-sm transition-all"
+              className="px-5 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all border flex items-center justify-center gap-1.5 cursor-pointer active:scale-95"
+              style={{
+                background: 'rgba(255, 255, 255, 0.06)',
+                borderColor: activeTheme.border,
+                color: activeTheme.textMain,
+              }}
             >
-              العودة للرئيسية
+              <span>العودة للرئيسية</span>
+              <ArrowRight size={14} />
             </Link>
           </div>
         </div>
@@ -170,15 +206,14 @@ export default function ConstitutionHub() {
 
   return (
     <div style={{ minHeight: '90vh', paddingBottom: '80px', direction: 'rtl' }}>
-      
-      {/* Hero */}
+      {/* Hero Header */}
       <div
         style={{
           position: 'relative',
-          background: 'linear-gradient(135deg, #1e1b4b 0%, #1e293b 50%, #0f172a 100%)',
-          borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
-          padding: '60px 20px 48px',
-          boxShadow: '0 20px 40px rgba(0,0,0,0.5)',
+          background: activeTheme.heroGradient || 'linear-gradient(135deg, #1e1b4b 0%, #1e293b 50%, #0f172a 100%)',
+          borderBottom: `1px solid ${activeTheme.border}`,
+          padding: '50px 16px 40px',
+          boxShadow: '0 20px 40px rgba(0,0,0,0.3)',
           textAlign: 'center',
         }}
       >
@@ -190,10 +225,10 @@ export default function ConstitutionHub() {
               gap: '8px',
               backgroundColor: 'rgba(245, 158, 11, 0.15)',
               border: '1px solid #f59e0b',
-              padding: '6px 20px',
+              padding: '6px 18px',
               borderRadius: '30px',
               color: '#fbbf24',
-              fontSize: '14px',
+              fontSize: '13px',
               fontWeight: 'bold',
               marginBottom: '16px',
             }}
@@ -204,10 +239,10 @@ export default function ConstitutionHub() {
 
           <h1
             style={{
-              fontSize: 'clamp(28px, 5vw, 42px)',
+              fontSize: 'clamp(24px, 5vw, 38px)',
               fontWeight: '900',
-              color: '#ffffff',
-              margin: '0 0 16px',
+              color: activeTheme.textMain,
+              margin: '0 0 14px',
             }}
           >
             الدستور، اللوائح، والقرارات الإدارية
@@ -216,48 +251,59 @@ export default function ConstitutionHub() {
           <p
             style={{
               maxWidth: '780px',
-              margin: '0 auto 26px',
-              fontSize: '16px',
+              margin: '0 auto 24px',
+              fontSize: '14px',
               lineHeight: '1.8',
-              color: '#cbd5e1',
+              color: activeTheme.textMuted,
             }}
           >
             المرجع القانوني والتنظيمي المعتمد لعمل رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة، متضمناً الدستور، المراسيم، ومحاضر الاجتماعات الرسمية.
           </p>
 
-          {isAdmin && (
-            <div style={{ display: 'flex', justifyContent: 'center' }}>
-              <button
-                onClick={() => {
-                  setEditingItem(null);
-                  setIsModalOpen(true);
-                }}
-                style={{
-                  display: 'inline-flex',
-                  alignItems: 'center',
-                  gap: '8px',
-                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                  color: '#0b1622',
-                  border: 'none',
-                  padding: '12px 24px',
-                  borderRadius: '12px',
-                  fontWeight: 'bold',
-                  fontSize: '14px',
-                  cursor: 'pointer',
-                  boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
-                }}
-              >
-                <PlusCircle size={18} />
-                <span>+ إضافة مادة أو قرار أو محضر (Admin CMS)</span>
-              </button>
-            </div>
-          )}
+          <div style={{ display: 'flex', justifyContent: 'center' }}>
+            <button
+              onClick={() => {
+                setEditingItem(null);
+                setIsModalOpen(true);
+              }}
+              style={{
+                display: 'inline-flex',
+                alignItems: 'center',
+                gap: '8px',
+                background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                color: '#0b1622',
+                border: 'none',
+                padding: '12px 22px',
+                borderRadius: '12px',
+                fontWeight: 'bold',
+                fontSize: '13.5px',
+                cursor: 'pointer',
+                boxShadow: '0 6px 20px rgba(245, 158, 11, 0.35)',
+              }}
+            >
+              <PlusCircle size={18} />
+              <span>+ إضافة مادة أو قرار أو محضر (Admin CMS)</span>
+            </button>
+          </div>
         </div>
       </div>
 
       {notification && (
-        <div style={{ maxWidth: '1200px', margin: '20px auto 0', padding: '0 20px' }}>
-          <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#34d399', padding: '12px 20px', borderRadius: '12px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 'bold' }}>
+        <div style={{ maxWidth: '1200px', margin: '20px auto 0', padding: '0 16px' }}>
+          <div
+            style={{
+              backgroundColor: 'rgba(34, 197, 94, 0.15)',
+              border: '1px solid #22c55e',
+              color: '#34d399',
+              padding: '12px 18px',
+              borderRadius: '12px',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '8px',
+              fontSize: '13.5px',
+              fontWeight: 'bold',
+            }}
+          >
             <CheckCircle2 size={18} />
             <span>{notification}</span>
           </div>
@@ -265,16 +311,16 @@ export default function ConstitutionHub() {
       )}
 
       {/* Tabs */}
-      <div style={{ maxWidth: '1200px', margin: '30px auto 0', padding: '0 20px' }}>
+      <div style={{ maxWidth: '1200px', margin: '24px auto 0', padding: '0 16px' }}>
         <div
           style={{
             display: 'grid',
-            gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
-            gap: '12px',
-            backgroundColor: '#0f172a',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))',
+            gap: '10px',
+            backgroundColor: activeTheme.bgCard,
             padding: '8px',
-            borderRadius: '18px',
-            border: '1px solid rgba(255, 255, 255, 0.1)',
+            borderRadius: '16px',
+            border: `1px solid ${activeTheme.border}`,
           }}
         >
           {tabs.map((tab) => {
@@ -288,21 +334,22 @@ export default function ConstitutionHub() {
                   display: 'flex',
                   alignItems: 'center',
                   gap: '10px',
-                  padding: '14px 18px',
-                  borderRadius: '12px',
+                  padding: '12px 16px',
+                  borderRadius: '10px',
                   border: isSelected ? '2px solid #f59e0b' : '2px solid transparent',
                   background: isSelected ? 'rgba(245, 158, 11, 0.15)' : 'transparent',
-                  color: isSelected ? '#fbbf24' : '#cbd5e1',
+                  color: isSelected ? '#fbbf24' : activeTheme.textMuted,
                   cursor: 'pointer',
                   fontWeight: isSelected ? 'bold' : '600',
-                  fontSize: '14px',
+                  fontSize: '13.5px',
                   textAlign: 'right',
+                  transition: 'all 0.2s ease',
                 }}
               >
-                <Icon size={20} color={isSelected ? '#f59e0b' : '#94a3b8'} />
+                <Icon size={18} color={isSelected ? '#f59e0b' : activeTheme.accent} />
                 <div>
-                  <div>{tab.label}</div>
-                  <div style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
+                  <div style={{ color: isSelected ? '#fbbf24' : activeTheme.textMain }}>{tab.label}</div>
+                  <div style={{ fontSize: '11px', color: activeTheme.textMuted, fontWeight: 'normal' }}>
                     {tab.count}
                   </div>
                 </div>
@@ -312,52 +359,52 @@ export default function ConstitutionHub() {
         </div>
       </div>
 
-      {/* Content */}
-      <div style={{ maxWidth: '1200px', margin: '30px auto 0', padding: '0 20px' }}>
+      {/* Content Area */}
+      <div style={{ maxWidth: '1200px', margin: '24px auto 0', padding: '0 16px' }}>
         {activeTab === 'constitution' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {articles.map((art) => (
               <div
                 key={art._id}
                 style={{
-                  backgroundColor: '#0f172a',
-                  borderRadius: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  padding: '24px',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                  backgroundColor: activeTheme.bgCard,
+                  borderRadius: '16px',
+                  border: `1px solid ${activeTheme.border}`,
+                  padding: '20px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
-                    <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '4px 12px', borderRadius: '10px', fontSize: '13px', fontWeight: 'bold' }}>
+                    <span style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', padding: '4px 10px', borderRadius: '8px', fontSize: '12px', fontWeight: 'bold' }}>
                       {art.badge || art.num || 'مادة دستورية'}
                     </span>
-                    <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>
+                    <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: activeTheme.textMain, margin: 0 }}>
                       {art.title}
                     </h3>
                   </div>
 
-                  {isAdmin && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <button
-                        onClick={() => {
-                          setEditingItem(art);
-                          setIsModalOpen(true);
-                        }}
-                        style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(art._id, 'constitution')}
-                        style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button
+                      onClick={() => {
+                        setEditingItem(art);
+                        setIsModalOpen(true);
+                      }}
+                      title="تعديل المادة"
+                      style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(art._id, 'constitution')}
+                      title="حذف المادة"
+                      style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
-                <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.85', margin: 0 }}>
+                <p style={{ fontSize: '13.5px', color: activeTheme.textMuted, lineHeight: '1.85', margin: 0 }}>
                   {art.description}
                 </p>
               </div>
@@ -366,108 +413,108 @@ export default function ConstitutionHub() {
         )}
 
         {activeTab === 'decisions' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {decrees.map((d) => (
               <div
                 key={d._id}
                 style={{
-                  backgroundColor: '#0f172a',
-                  borderRadius: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  padding: '24px',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                  backgroundColor: activeTheme.bgCard,
+                  borderRadius: '16px',
+                  border: `1px solid ${activeTheme.border}`,
+                  padding: '20px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px' }}>
-                  <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '4px 12px', borderRadius: '20px', fontSize: '12px', fontWeight: 'bold' }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '10px', flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{ backgroundColor: 'rgba(16, 185, 129, 0.15)', color: '#34d399', padding: '4px 10px', borderRadius: '16px', fontSize: '12px', fontWeight: 'bold' }}>
                     {d.badge || d.num || 'قرار إداري'}
                   </span>
-                  <span style={{ fontSize: '13px', color: '#cbd5e1' }}>{d.date}</span>
+                  <span style={{ fontSize: '12px', color: activeTheme.textMuted }}>{d.date}</span>
                 </div>
-                <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#ffffff', margin: '0 0 8px' }}>
+                <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: activeTheme.textMain, margin: '0 0 8px' }}>
                   {d.title}
                 </h3>
-                <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.7', margin: 0 }}>
+                <p style={{ fontSize: '13.5px', color: activeTheme.textMuted, lineHeight: '1.7', margin: 0 }}>
                   {d.description}
                 </p>
 
-                {isAdmin && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '12px', marginTop: '12px' }}>
-                    <button
-                      onClick={() => {
-                        setEditingItem(d);
-                        setIsModalOpen(true);
-                      }}
-                      style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteItem(d._id, 'decisions')}
-                      style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', borderTop: `1px solid ${activeTheme.border}`, paddingTop: '10px', marginTop: '12px' }}>
+                  <button
+                    onClick={() => {
+                      setEditingItem(d);
+                      setIsModalOpen(true);
+                    }}
+                    title="تعديل القرار"
+                    style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    <Edit size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteItem(d._id, 'decisions')}
+                    title="حذف القرار"
+                    style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
         )}
 
         {activeTab === 'reports' && (
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(320px, 1fr))', gap: '22px' }}>
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 300px), 1fr))', gap: '18px' }}>
             {reports.map((rep) => (
               <div
                 key={rep._id}
                 style={{
-                  backgroundColor: '#0f172a',
-                  borderRadius: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  padding: '24px',
+                  backgroundColor: activeTheme.bgCard,
+                  borderRadius: '16px',
+                  border: `1px solid ${activeTheme.border}`,
+                  padding: '20px',
                   display: 'flex',
                   flexDirection: 'column',
                   justifyContent: 'space-between',
-                  boxShadow: '0 10px 25px rgba(0,0,0,0.3)',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                 }}
               >
                 <div>
-                  <div style={{ fontSize: '12px', color: '#38bdf8', fontWeight: 'bold', marginBottom: '6px' }}>
+                  <div style={{ fontSize: '11.5px', color: '#38bdf8', fontWeight: 'bold', marginBottom: '6px' }}>
                     {rep.author || 'الأمانة العامة'} • {rep.date}
                   </div>
-                  <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#ffffff', margin: '0 0 10px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: activeTheme.textMain, margin: '0 0 10px' }}>
                     {rep.title}
                   </h3>
-                  <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.7', margin: '0 0 14px' }}>
+                  <p style={{ fontSize: '13.5px', color: activeTheme.textMuted, lineHeight: '1.7', margin: '0 0 14px' }}>
                     {rep.description}
                   </p>
                 </div>
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>{rep.fileSize || rep.size || 'PDF'}</span>
-                  <span style={{ fontSize: '13px', color: '#34d399', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
-                    <CheckCircle size={15} />
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', paddingTop: '12px', borderTop: `1px solid ${activeTheme.border}`, flexWrap: 'wrap', gap: '8px' }}>
+                  <span style={{ fontSize: '11.5px', color: activeTheme.textMuted }}>{rep.fileSize || rep.size || 'PDF'}</span>
+                  <span style={{ fontSize: '12px', color: '#34d399', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '4px' }}>
+                    <CheckCircle size={14} />
                     <span>معتمد رسمياً</span>
                   </span>
 
-                  {isAdmin && (
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                      <button
-                        onClick={() => {
-                          setEditingItem(rep);
-                          setIsModalOpen(true);
-                        }}
-                        style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '6px 8px', borderRadius: '8px', cursor: 'pointer' }}
-                      >
-                        <Edit size={14} />
-                      </button>
-                      <button
-                        onClick={() => handleDeleteItem(rep._id, 'reports')}
-                        style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '6px 8px', borderRadius: '8px', cursor: 'pointer' }}
-                      >
-                        <Trash2 size={14} />
-                      </button>
-                    </div>
-                  )}
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                    <button
+                      onClick={() => {
+                        setEditingItem(rep);
+                        setIsModalOpen(true);
+                      }}
+                      title="تعديل التقرير"
+                      style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '6px 8px', borderRadius: '8px', cursor: 'pointer' }}
+                    >
+                      <Edit size={14} />
+                    </button>
+                    <button
+                      onClick={() => handleDeleteItem(rep._id, 'reports')}
+                      title="حذف التقرير"
+                      style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '6px 8px', borderRadius: '8px', cursor: 'pointer' }}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </div>
                 </div>
               </div>
             ))}
@@ -475,47 +522,47 @@ export default function ConstitutionHub() {
         )}
 
         {activeTab === 'minutes' && (
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '18px' }}>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
             {minutes.map((m) => (
               <div
                 key={m._id}
                 style={{
-                  backgroundColor: '#0f172a',
-                  borderRadius: '20px',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  padding: '24px',
-                  boxShadow: '0 8px 24px rgba(0,0,0,0.3)',
+                  backgroundColor: activeTheme.bgCard,
+                  borderRadius: '16px',
+                  border: `1px solid ${activeTheme.border}`,
+                  padding: '20px',
+                  boxShadow: '0 8px 24px rgba(0,0,0,0.15)',
                 }}
               >
-                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
-                  <h3 style={{ fontSize: '17px', fontWeight: 'bold', color: '#ffffff', margin: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px', flexWrap: 'wrap', gap: '8px' }}>
+                  <h3 style={{ fontSize: '16px', fontWeight: 'bold', color: activeTheme.textMain, margin: 0 }}>
                     {m.title}
                   </h3>
-                  <span style={{ fontSize: '12px', color: '#cbd5e1' }}>{m.date}</span>
+                  <span style={{ fontSize: '12px', color: activeTheme.textMuted }}>{m.date}</span>
                 </div>
-                <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.7', margin: 0 }}>
+                <p style={{ fontSize: '13.5px', color: activeTheme.textMuted, lineHeight: '1.7', margin: 0 }}>
                   <strong>جدول الأعمال والقرارات:</strong> {m.description || m.agenda}
                 </p>
 
-                {isAdmin && (
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '12px', marginTop: '12px' }}>
-                    <button
-                      onClick={() => {
-                        setEditingItem(m);
-                        setIsModalOpen(true);
-                      }}
-                      style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                    >
-                      <Edit size={14} />
-                    </button>
-                    <button
-                      onClick={() => handleDeleteItem(m._id, 'minutes')}
-                      style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                    >
-                      <Trash2 size={14} />
-                    </button>
-                  </div>
-                )}
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', borderTop: `1px solid ${activeTheme.border}`, paddingTop: '10px', marginTop: '12px' }}>
+                  <button
+                    onClick={() => {
+                      setEditingItem(m);
+                      setIsModalOpen(true);
+                    }}
+                    title="تعديل المحضر"
+                    style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    <Edit size={14} />
+                  </button>
+                  <button
+                    onClick={() => handleDeleteItem(m._id, 'minutes')}
+                    title="حذف المحضر"
+                    style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '6px 10px', borderRadius: '8px', cursor: 'pointer' }}
+                  >
+                    <Trash2 size={14} />
+                  </button>
+                </div>
               </div>
             ))}
           </div>
@@ -538,3 +585,4 @@ export default function ConstitutionHub() {
     </div>
   );
 }
+

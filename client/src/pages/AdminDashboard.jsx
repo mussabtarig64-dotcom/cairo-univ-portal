@@ -1863,7 +1863,7 @@ export default function AdminDashboard() {
             </div>
 
             {/* شبكة خيارات المناسبات */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px', marginTop: '16px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 180px), 1fr))', gap: '12px', marginTop: '16px' }}>
               {[
                 { id: 'ramadan', label: 'شهر رمضان المبارك', icon: '🌙', desc: 'زينة رمضانية ونفحات مباركة', color: '#f59e0b' },
                 { id: 'eid-fitr', label: 'عيد الفطر المبارك', icon: '🎉', desc: 'بهجة العيد والتهاني المباركة', color: '#ec4899' },
@@ -1909,13 +1909,13 @@ export default function AdminDashboard() {
               <label style={{ display: 'block', color: activeTheme.textMain, fontSize: '13px', fontWeight: 'bold', marginBottom: '6px' }}>
                 ✍️ نص عبارة التهنئة المخصصة في شريط المناسبات (اختياري):
               </label>
-              <div style={{ display: 'flex', gap: '10px' }}>
+              <div style={{ display: 'flex', gap: '10px', flexWrap: 'wrap' }}>
                 <input
                   type="text"
                   placeholder="مثال: رابطة الطلاب السودانيين تهنئكم بحلول الشهر الفضيل..."
                   value={customGreetingInput}
                   onChange={(e) => setCustomGreetingInput(e.target.value)}
-                  style={{ ...inputStyle(activeTheme), flex: 1 }}
+                  style={{ ...inputStyle(activeTheme), flex: 1, minWidth: 'min(100%, 240px)' }}
                 />
                 <button
                   type="button"
@@ -1924,11 +1924,12 @@ export default function AdminDashboard() {
                     background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                     color: '#0b1622',
                     fontWeight: 'bold',
-                    padding: '0 20px',
+                    padding: '12px 20px',
                     borderRadius: '10px',
                     border: 'none',
                     cursor: 'pointer',
                     fontSize: '13px',
+                    whiteSpace: 'nowrap',
                   }}
                 >
                   حفظ العبارة
@@ -1971,7 +1972,7 @@ export default function AdminDashboard() {
               </div>
             )}
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginTop: '20px' }}>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 280px), 1fr))', gap: '16px', marginTop: '20px' }}>
               {Object.values(availableThemes).map((preset) => {
                 const isActive = currentThemeKey === preset.id;
                 return (
