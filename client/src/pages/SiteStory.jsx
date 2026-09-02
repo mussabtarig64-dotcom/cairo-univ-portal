@@ -22,8 +22,8 @@ import {
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
 import mubaashirImg from '../assets/team/mubaashir.jpg';
-import mohammedRabieImg from '../assets/team/mohammed_rabie.jpg';
-import mussabImg from '../assets/team/mussab.jpg';
+import mohammedRabieImg from '../assets/team/mohamed_rabi.jpg';
+import mussabImg from '../assets/team/mussabtarig.jpg';
 
 export default function SiteStory() {
   const { activeTheme } = useTheme();
