@@ -37,6 +37,7 @@ import SocialLinks from './components/SocialLinks';
 import FloatingAIChatWidget from './components/FloatingAIChatWidget';
 import Navbar from './components/Navbar';
 import OccasionBanner from './components/OccasionBanner';
+import SeasonalDecorations from './components/SeasonalDecorations';
 
 function Footer() {
   const { activeTheme } = useTheme();
@@ -45,15 +46,15 @@ function Footer() {
       className="w-full bg-[#09131f] border-t border-white/10 py-10 px-4 sm:px-6 lg:px-8 mt-auto text-slate-300 text-sm"
       dir="rtl"
     >
-      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
+      <div className="w-full max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-2 gap-8 mb-8 items-start">
         {/* معلومات الرابطة */}
         <div>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '14px' }}>
             <div
               className="logo-wrapper rounded-full overflow-hidden"
               style={{
-                width: '42px',
-                height: '42px',
+                width: '46px',
+                height: '46px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 backgroundColor: '#ffffff',
@@ -62,6 +63,7 @@ function Footer() {
                 alignItems: 'center',
                 justifyContent: 'center',
                 border: '2px solid #f59e0b',
+                boxShadow: '0 4px 12px rgba(245, 158, 11, 0.25)',
               }}
             >
               <img
@@ -77,45 +79,27 @@ function Footer() {
               />
             </div>
             <div>
-              <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '15px' }}>
+              <div style={{ color: '#ffffff', fontWeight: '900', fontSize: '16px' }}>
                 رابطة الطلاب السودانيين
               </div>
-              <div style={{ color: '#fbbf24', fontSize: '12px' }}>
+              <div style={{ color: '#fbbf24', fontSize: '13px', fontWeight: 'bold' }}>
                 كلية العلوم - جامعة القاهرة
               </div>
             </div>
           </div>
-          <p style={{ lineHeight: '1.8', margin: 0, color: '#cbd5e1' }}>
-            الهيئة الطلابية الأكاديمية والاجتماعية والثقافية الممثلة لطلاب جمهورية السودان بكلية العلوم جامعة القاهرة.
+          <p style={{ lineHeight: '1.8', margin: 0, color: '#cbd5e1', maxWidth: '520px' }}>
+            الهيئة الطلابية الأكاديمية والاجتماعية والثقافية الممثلة لطلاب جمهورية السودان بكلية العلوم جامعة القاهرة. منصة رقمية متكاملة لخدمة ورعاية الطلاب وتوثيق مسيرتهم.
           </p>
         </div>
 
-        {/* قطاعات المنصة */}
-        <div>
-          <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
-            قطاعات ومراكز الرابطة
-          </h4>
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '8px' }}>
-            <Link to="/academic" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📚 الأكاديمية</Link>
-            <Link to="/sports" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚽ الرياضة</Link>
-            <Link to="/social" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🤝 الاجتماعي</Link>
-            <Link to="/events" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📅 الفعاليات</Link>
-            <Link to="/media" style={{ color: '#cbd5e1', textDecoration: 'none' }}>📢 الإعلام</Link>
-            <Link to="/achievements" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🏆 الإنجازات</Link>
-            <Link to="/administration" style={{ color: '#cbd5e1', textDecoration: 'none' }}>🛡️ الإدارة</Link>
-            <Link to="/constitution" style={{ color: '#cbd5e1', textDecoration: 'none' }}>⚖️ الدستور (أدمن 🔒)</Link>
-            <Link to="/sudan" style={{ color: '#fbbf24', textDecoration: 'none', fontWeight: 'bold' }}>🇸🇩 سوداننا</Link>
-            <Link to="/archive" style={{ color: '#38bdf8', textDecoration: 'none', fontWeight: 'bold' }}>🏛️ أرشيف الرابطة</Link>
-            <Link to="/story" style={{ color: '#f59e0b', textDecoration: 'none', fontWeight: 'bold', gridColumn: 'span 2' }}>✨ قصة الموقع (Site Story)</Link>
+        {/* صفحات التواصل الاجتماعي الرسمية */}
+        <div className="md:flex md:flex-col md:items-start lg:items-end">
+          <div className="w-full max-w-md">
+            <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
+              صفحات وقنوات الرابطة الرسمية
+            </h4>
+            <SocialLinks variant="detailed" />
           </div>
-        </div>
-
-        {/* صفحات التواصل الاجتماعي */}
-        <div>
-          <h4 style={{ color: '#ffffff', marginBottom: '14px', fontSize: '15px', fontWeight: 'bold' }}>
-            صفحات الرابطة الرسمية
-          </h4>
-          <SocialLinks variant="detailed" />
         </div>
       </div>
 
@@ -132,6 +116,7 @@ function MainAppLayout() {
   return (
     <div className="min-h-screen w-full bg-[#0a101d] text-white flex flex-col overflow-x-hidden" dir="rtl">
       <OccasionBanner />
+      <SeasonalDecorations />
       <Navbar />
       <main className="flex-1 w-full max-w-full overflow-x-hidden">
         <Routes>

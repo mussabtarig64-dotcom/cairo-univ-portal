@@ -21,6 +21,9 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
+import mubaashirImg from '../assets/team/mubaashir.jpg';
+import mohammedRabieImg from '../assets/team/mohammed_rabie.jpg';
+import mussabImg from '../assets/team/mussab.jpg';
 
 export default function SiteStory() {
   const { activeTheme } = useTheme();
@@ -34,6 +37,7 @@ export default function SiteStory() {
       roleLabel: 'صاحب الفكرة',
       person: 'مباشر عمر عثمان الطاهر',
       personEn: 'Mubaashir Omer Osman Al-Tahir',
+      image: mubaashirImg,
       icon: Lightbulb,
       color: '#f59e0b',
       bgGlow: 'rgba(245, 158, 11, 0.15)',
@@ -62,6 +66,7 @@ export default function SiteStory() {
       roleLabel: 'المصمم',
       person: 'محمد ربيع محمد عبدالمطلب',
       personEn: 'Mohammed Rabie Mohammed Abdel-Muttalib',
+      image: mohammedRabieImg,
       icon: Palette,
       color: '#ec4899',
       bgGlow: 'rgba(236, 72, 153, 0.15)',
@@ -76,6 +81,7 @@ export default function SiteStory() {
       roleLabel: 'التنفيذ والبرمجة والتطوير',
       person: 'مصعب طارق عوض محمد',
       personEn: 'Mussab Tarig Awad Mohammed',
+      image: mussabImg,
       icon: Code2,
       color: '#10b981',
       bgGlow: 'rgba(16, 185, 129, 0.15)',
@@ -107,6 +113,7 @@ export default function SiteStory() {
       roleLabel: 'Idea Originator',
       person: 'Mubaashir Omer Osman Al-Tahir',
       personAr: 'مباشر عمر عثمان الطاهر',
+      image: mubaashirImg,
       icon: Lightbulb,
       color: '#f59e0b',
       bgGlow: 'rgba(245, 158, 11, 0.15)',
@@ -135,6 +142,7 @@ export default function SiteStory() {
       roleLabel: 'Designer',
       person: 'Mohammed Rabie Mohammed Abdel-Muttalib',
       personAr: 'محمد ربيع محمد عبدالمطلب',
+      image: mohammedRabieImg,
       icon: Palette,
       color: '#ec4899',
       bgGlow: 'rgba(236, 72, 153, 0.15)',
@@ -149,6 +157,7 @@ export default function SiteStory() {
       roleLabel: 'Implementation & Development',
       person: 'Mussab Tarig Awad Mohammed',
       personAr: 'مصعب طارق عوض محمد',
+      image: mussabImg,
       icon: Code2,
       color: '#10b981',
       bgGlow: 'rgba(16, 185, 129, 0.15)',
@@ -402,12 +411,51 @@ export default function SiteStory() {
                         </div>
                       </div>
 
-                      {/* Contributor Pill if present */}
+                      {/* Contributor Pill with Profile Photo */}
                       {item.person && (
-                        <div className="mb-4 inline-flex items-center gap-2 px-3 py-1.5 rounded-xl bg-white/5 border border-white/10 text-xs">
-                          <Users size={14} className="text-amber-400" />
-                          <span className="text-slate-400">{item.roleLabel}:</span>
-                          <span className="font-bold text-amber-300">{item.person}</span>
+                        <div className="mb-4 flex items-center gap-3.5 p-2.5 sm:p-3 rounded-2xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-all">
+                          {item.image ? (
+                            <div className="relative shrink-0">
+                              <div
+                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 shadow-md transition-transform group-hover:scale-105"
+                                style={{
+                                  borderColor: item.color,
+                                  boxShadow: `0 0 14px ${item.bgGlow}`,
+                                }}
+                              >
+                                <img
+                                  src={item.image}
+                                  alt={item.person}
+                                  className="w-full h-full object-cover object-center"
+                                  loading="lazy"
+                                />
+                              </div>
+                            </div>
+                          ) : (
+                            <div
+                              className="w-10 h-10 rounded-full flex items-center justify-center shrink-0 border"
+                              style={{
+                                backgroundColor: item.bgGlow,
+                                borderColor: `${item.color}55`,
+                                color: item.color,
+                              }}
+                            >
+                              <Users size={18} />
+                            </div>
+                          )}
+
+                          <div className="min-w-0 flex-1">
+                            <div className="text-[11px] text-slate-400 font-medium">{item.roleLabel}</div>
+                            <div className="text-sm sm:text-base font-bold text-amber-300">
+                              {item.person}
+                            </div>
+                            {item.personEn && lang === 'ar' && (
+                              <div className="text-[11px] text-slate-400/80">{item.personEn}</div>
+                            )}
+                            {item.personAr && lang === 'en' && (
+                              <div className="text-[11px] text-slate-400/80">{item.personAr}</div>
+                            )}
+                          </div>
                         </div>
                       )}
 
@@ -426,6 +474,130 @@ export default function SiteStory() {
                 </div>
               );
             })}
+          </div>
+        </div>
+
+        {/* 4. Core Team Showcase (فريق صناعة المنصة وصناع الأثر) */}
+        <div className="mb-20">
+          <div className="text-center mb-12">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-amber-500/10 border border-amber-500/30 text-amber-400 text-xs font-bold mb-3">
+              <Users size={14} />
+              <span>
+                {lang === 'ar' ? 'فريق العمل وصناع المنصة' : 'Platform Core Creators'}
+              </span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-extrabold text-white mb-3">
+              {lang === 'ar' ? 'صناع الفكرة والمسيرة الرقمية' : 'The Team Behind The Vision'}
+            </h2>
+            <p className="text-slate-400 text-sm sm:text-base max-w-xl mx-auto">
+              {lang === 'ar'
+                ? 'جهود شبابية متكاملة جمعت بين الرؤية، الإبداع البصري، والهندسة البرمجية'
+                : 'A dedicated student synergy combining vision, creative design, and software engineering.'}
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
+            {/* 1. مباشر عمر عثمان الطاهر (صاحب الفكرة) */}
+            <div className="group relative bg-slate-900/80 border border-amber-500/30 hover:border-amber-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-amber-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col items-center text-center overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+              <div className="relative mb-5">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-amber-500/50 shadow-xl shadow-amber-500/20 group-hover:scale-105 group-hover:border-amber-400 transition-all duration-300">
+                  <img
+                    src={mubaashirImg}
+                    alt="مباشر عمر عثمان الطاهر"
+                    className="w-full h-full object-cover object-center"
+                  />
+                </div>
+                <div className="absolute bottom-0 right-1 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-extrabold shadow">
+                  💡 فكرة
+                </div>
+              </div>
+
+              <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold mb-2">
+                {lang === 'ar' ? 'صاحب الفكرة والمبادرة' : 'Idea & Vision Originator'}
+              </span>
+
+              <h3 className="text-lg sm:text-xl font-extrabold text-white mb-1">
+                {lang === 'ar' ? 'مباشر عمر عثمان الطاهر' : 'Mubaashir Omer Osman Al-Tahir'}
+              </h3>
+              <div className="text-xs text-slate-400 mb-4 font-mono">
+                {lang === 'ar' ? 'Mubaashir Omer Osman' : 'مباشر عمر عثمان الطاهر'}
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-justify sm:text-center mt-auto">
+                {lang === 'ar'
+                  ? 'صاحب المبادرة التأسيسية التي أطلقت شرارة المشروع، وحوّلت الحاجة إلى منصة موحدة تجمع كافة خدمات وأنشطة الرابطة إلى هدف استراتيجي متحقق.'
+                  : 'Originated the foundational initiative that catalyzed the platform project, transforming student needs into an enduring digital ecosystem.'}
+              </p>
+            </div>
+
+            {/* 2. محمد ربيع محمد عبدالمطلب (المصمم) */}
+            <div className="group relative bg-slate-900/80 border border-pink-500/30 hover:border-pink-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-pink-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col items-center text-center overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
+              <div className="relative mb-5">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-pink-500/50 shadow-xl shadow-pink-500/20 group-hover:scale-105 group-hover:border-pink-400 transition-all duration-300">
+                  <img
+                    src={mohammedRabieImg}
+                    alt="محمد ربيع محمد عبدالمطلب"
+                    className="w-full h-full object-cover object-center"
+                  />
+                </div>
+                <div className="absolute bottom-0 right-1 px-2 py-0.5 rounded-full bg-pink-500 text-slate-950 text-[10px] font-extrabold shadow">
+                  🎨 تصميم
+                </div>
+              </div>
+
+              <span className="px-3 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-300 text-xs font-bold mb-2">
+                {lang === 'ar' ? 'المصمم والهوية البصرية' : 'UI/UX & Brand Designer'}
+              </span>
+
+              <h3 className="text-lg sm:text-xl font-extrabold text-white mb-1">
+                {lang === 'ar' ? 'محمد ربيع محمد عبدالمطلب' : 'Mohammed Rabie Mohammed Abdel-Muttalib'}
+              </h3>
+              <div className="text-xs text-slate-400 mb-4 font-mono">
+                {lang === 'ar' ? 'Mohammed Rabie' : 'محمد ربيع محمد عبدالمطلب'}
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-justify sm:text-center mt-auto">
+                {lang === 'ar'
+                  ? 'مهندس الهوية البصرية وتجربة المستخدم، الذي صاغ للمنصة واجهاتها الأنيقة وتوزيعها المتناسق مع الحفاظ على روح وهوية طلاب العلوم جامعة القاهرة.'
+                  : 'Engineered the visual branding and user experience architecture, shaping aesthetic interfaces that reflect the dignified identity of science students.'}
+              </p>
+            </div>
+
+            {/* 3. مصعب طارق عوض محمد (التنفيذ والتطوير) */}
+            <div className="group relative bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col items-center text-center overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
+              <div className="relative mb-5">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-emerald-500/50 shadow-xl shadow-emerald-500/20 group-hover:scale-105 group-hover:border-emerald-400 transition-all duration-300">
+                  <img
+                    src={mussabImg}
+                    alt="مصعب طارق عوض محمد"
+                    className="w-full h-full object-cover object-center"
+                  />
+                </div>
+                <div className="absolute bottom-0 right-1 px-2 py-0.5 rounded-full bg-emerald-500 text-slate-950 text-[10px] font-extrabold shadow">
+                  💻 تطوير
+                </div>
+              </div>
+
+              <span className="px-3 py-1 rounded-full bg-emerald-500/15 border border-emerald-500/30 text-emerald-300 text-xs font-bold mb-2">
+                {lang === 'ar' ? 'التنفيذ والبرمجة والتطوير' : 'Implementation & Fullstack Dev'}
+              </span>
+
+              <h3 className="text-lg sm:text-xl font-extrabold text-white mb-1">
+                {lang === 'ar' ? 'مصعب طارق عوض محمد' : 'Mussab Tarig Awad Mohammed'}
+              </h3>
+              <div className="text-xs text-slate-400 mb-4 font-mono">
+                {lang === 'ar' ? 'Mussab Tarig Awad' : 'مصعب طارق عوض محمد'}
+              </div>
+
+              <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-justify sm:text-center mt-auto">
+                {lang === 'ar'
+                  ? 'المطور والمهندس البرمجي الذي حوّل التصميم والرؤية إلى منصة تفاعلية سريعة، متكاملة الخوادم وقواعد البيانات، ومجهزة بأحدث الأنظمة والذكاء الاصطناعي.'
+                  : 'Engineered the codebase, system architecture, database integrations, and dynamic capabilities, breathing life into a robust modern platform.'}
+              </p>
+            </div>
           </div>
         </div>
 
