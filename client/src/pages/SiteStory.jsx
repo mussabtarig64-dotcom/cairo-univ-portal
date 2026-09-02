@@ -23,7 +23,7 @@ import {
 import logoImg from '../assets/logo.png';
 import mubaashirImg from '../assets/team/mubaashir.jpg';
 import mohammedRabieImg from '../assets/team/mohamed_rabi.jpg';
-import mussabImg from '../assets/team/mussabtarig.jpg';
+import mussabImg from '../assets/team/mussab.jpg';
 
 export default function SiteStory() {
   const { activeTheme } = useTheme();
@@ -535,7 +535,7 @@ export default function SiteStory() {
             <div className="group relative bg-slate-900/80 border border-pink-500/30 hover:border-pink-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-pink-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col items-center text-center overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
               <div className="relative mb-5">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-pink-500/50 shadow-xl shadow-pink-500/20 group-hover:scale-105 group-hover:border-pink-400 transition-all duration-300">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl shadow-white/20 group-hover:scale-105 group-hover:border-white transition-all duration-300">
                   <img
                     src={mohammedRabieImg}
                     alt="محمد ربيع محمد عبدالمطلب"
