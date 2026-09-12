@@ -16,7 +16,10 @@ import {
   Paperclip,
   Link2,
   Eye,
-  RefreshCw
+  RefreshCw,
+  Cloud,
+  CloudUpload,
+  Loader2
 } from 'lucide-react';
 import { createHubContent, updateHubContent, deleteHubContent } from '../utils/cmsApi';
 
@@ -51,10 +54,12 @@ export default function AdminHubCMSModal({
     extraNotes: '',
   });
 
-  const [selectedFile, setSelectedFile] = useState(null); // { name, size, type: 'pdf' | 'image', previewUrl }
+  const [selectedFile, setSelectedFile] = useState(null); // { name, size, type: 'pdf' | 'image' | 'file', previewUrl }
+  const [rawFile, setRawFile] = useState(null); // File object for multipart/form-data
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [uploadStatusText, setUploadStatusText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
 
@@ -83,6 +88,7 @@ export default function AdminHubCMSModal({
       }
 
       setSelectedFile(initialFile);
+      setRawFile(null);
       setFormData({
         title: editingItem.title || '',
         subtitle: editingItem.subtitle || '',
@@ -103,6 +109,7 @@ export default function AdminHubCMSModal({
       });
     } else {
       setSelectedFile(null);
+      setRawFile(null);
       setFormData({
         title: '',
         subtitle: '',
@@ -124,23 +131,18 @@ export default function AdminHubCMSModal({
     }
     setErrorMsg('');
     setSuccessMsg('');
+    setUploadStatusText('');
   }, [editingItem, section, isOpen]);
 
   if (!isOpen) return null;
 
-  // دالة معالجة وتحميل الملفات (PDFs & Images)
+  // دالة معالجة واستلام الملفات بأحجام غير مقيدة للرفع السحابي عبر Cloudinary
   const handleProcessFile = (file) => {
     if (!file) return;
 
-    const validExtensions = ['.pdf', '.jpg', '.jpeg', '.png'];
     const lowerName = file.name.toLowerCase();
-    const isValidExt = validExtensions.some((ext) => lowerName.endsWith(ext));
-    const isValidMime = file.type === 'application/pdf' || file.type.startsWith('image/');
-
-    if (!isValidExt && !isValidMime) {
-      setErrorMsg('صيغة الملف غير مدعومة. يرجى اختيار ملف PDF (.pdf) أو صورة (.jpg, .jpeg, .png)');
-      return;
-    }
+    const isPdf = file.type === 'application/pdf' || lowerName.endsWith('.pdf');
+    const isImage = file.type.startsWith('image/') || lowerName.match(/\.(jpg|jpeg|png|webp|gif)$/i);
 
     setErrorMsg('');
     setIsProcessingFile(true);
@@ -149,90 +151,36 @@ export default function AdminHubCMSModal({
     const sizeInMB = file.size / (1024 * 1024);
     const formattedSize = sizeInMB >= 1 ? `${sizeInMB.toFixed(2)} MB` : `${Math.round(file.size / 1024)} KB`;
 
-    const isPdf = file.type === 'application/pdf' || lowerName.endsWith('.pdf');
-    const isImage = file.type.startsWith('image/') || lowerName.match(/\.(jpg|jpeg|png)$/i);
+    // تعيين الملف الأصلي للرفع السحابي المباشر
+    setRawFile(file);
 
-    if (isPdf) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const dataUrl = e.target.result;
-        setSelectedFile({
-          name: file.name,
-          size: formattedSize,
-          type: 'pdf',
-          previewUrl: null,
-          dataUrl,
-        });
-        setFormData((prev) => ({
-          ...prev,
-          fileUrl: dataUrl,
-          fileSize: formattedSize,
-          fileName: file.name,
-          link: prev.link || file.name,
-        }));
-        setIsProcessingFile(false);
-      };
-      reader.onerror = () => {
-        setErrorMsg('فشل قراءة ملف الـ PDF');
-        setIsProcessingFile(false);
-      };
-      reader.readAsDataURL(file);
-    } else if (isImage) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const img = new Image();
-        img.onload = () => {
-          // ضغط الصورة عبر Canvas لضمان أداء فائق
-          const maxDim = 1200;
-          let w = img.width;
-          let h = img.height;
-          if (w > h && w > maxDim) {
-            h = Math.round((h * maxDim) / w);
-            w = maxDim;
-          } else if (h > maxDim) {
-            w = Math.round((w * maxDim) / h);
-            h = maxDim;
-          }
-          const canvas = document.createElement('canvas');
-          canvas.width = w;
-          canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          const compressedDataUrl = canvas.toDataURL('image/jpeg', 0.8);
-
-          setSelectedFile({
-            name: file.name,
-            size: formattedSize,
-            type: 'image',
-            previewUrl: compressedDataUrl,
-            dataUrl: compressedDataUrl,
-          });
-          setFormData((prev) => ({
-            ...prev,
-            fileUrl: compressedDataUrl,
-            fileSize: formattedSize,
-            fileName: file.name,
-            link: prev.link || file.name,
-          }));
-          setIsProcessingFile(false);
-        };
-        img.onerror = () => {
-          setErrorMsg('فشل معالجة الصورة المحددة');
-          setIsProcessingFile(false);
-        };
-        img.src = e.target.result;
-      };
-      reader.onerror = () => {
-        setErrorMsg('فشل قراءة ملف الصورة');
-        setIsProcessingFile(false);
-      };
-      reader.readAsDataURL(file);
+    let previewUrl = null;
+    if (isImage) {
+      previewUrl = URL.createObjectURL(file);
     }
+
+    setSelectedFile({
+      name: file.name,
+      size: formattedSize,
+      type: isPdf ? 'pdf' : isImage ? 'image' : 'file',
+      previewUrl,
+    });
+
+    setFormData((prev) => ({
+      ...prev,
+      fileName: file.name,
+      fileSize: formattedSize,
+      title: prev.title ? prev.title : file.name.replace(/\.[^/.]+$/, ''),
+      link: prev.link || file.name,
+    }));
+
+    setIsProcessingFile(false);
   };
 
   // إزالة الملف المرفوع
   const handleRemoveFile = () => {
     setSelectedFile(null);
+    setRawFile(null);
     setFormData((prev) => ({
       ...prev,
       fileUrl: '',
@@ -267,44 +215,62 @@ export default function AdminHubCMSModal({
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    if (!formData.title.trim()) {
-      setErrorMsg('يرجى إدخال عنوان المحتوى');
+    if (!formData.title.trim() && !formData.fileName) {
+      setErrorMsg('يرجى إدخال عنوان المحتوى أو اختيار ملف مرفق');
       return;
     }
 
     setIsSubmitting(true);
     setErrorMsg('');
     setSuccessMsg('');
+    setUploadStatusText(rawFile ? '☁️ جاري رفع الملف السحابي إلى Cloudinary...' : 'جاري الحفظ...');
 
     try {
-      const payload = {
-        ...formData,
-        extraData: {
-          fileName: formData.fileName,
-          fileSize: formData.fileSize,
-          extraNotes: formData.extraNotes,
-        },
-      };
+      // بناء FormData لإرسال الملف الحقيقي والبيانات بدقة
+      const fd = new FormData();
+      fd.append('title', formData.title.trim() || formData.fileName);
+      fd.append('subtitle', formData.subtitle || '');
+      fd.append('description', formData.description || '');
+      fd.append('section', formData.section || 'general');
+      fd.append('category', formData.category || 'عام');
+      fd.append('year', formData.year || new Date().getFullYear().toString());
+      fd.append('date', formData.date || new Date().toLocaleDateString('ar-EG'));
+      fd.append('badge', formData.badge || '');
+      fd.append('author', formData.author || 'إدارة الرابطة');
+      fd.append('status', formData.status || 'نشط');
+      fd.append('icon', formData.icon || '📌');
+      fd.append('link', formData.link || '');
+      fd.append('fileName', formData.fileName || (rawFile ? rawFile.name : ''));
+      fd.append('fileSize', formData.fileSize || '');
+      fd.append('extraNotes', formData.extraNotes || '');
 
+      if (rawFile) {
+        fd.append('file', rawFile, rawFile.name);
+      } else if (formData.fileUrl) {
+        fd.append('fileUrl', formData.fileUrl);
+      }
+
+      let result;
       if (editingItem && editingItem._id) {
-        const updated = await updateHubContent(editingItem._id, payload);
-        setSuccessMsg('تم تحديث المحتوى والمرفقات بنجاح في قاعدة البيانات!');
+        result = await updateHubContent(editingItem._id, fd);
+        setSuccessMsg('تم تحديث المحتوى ورفع المرفق السحابي بنجاح!');
         setTimeout(() => {
-          onSaved(updated, 'update');
+          onSaved(result, 'update');
           onClose();
-        }, 800);
+        }, 900);
       } else {
-        const created = await createHubContent(hub, payload);
-        setSuccessMsg('تمت إضافة المحتوى والمرفقات بنجاح إلى قاعدة البيانات (MongoDB Atlas)!');
+        result = await createHubContent(hub, fd);
+        setSuccessMsg('تم حفظ المحتوى ورفع المرفق إلى التخزين السحابي (Cloudinary) بنجاح!');
         setTimeout(() => {
-          onSaved(created, 'create');
+          onSaved(result, 'create');
           onClose();
-        }, 800);
+        }, 900);
       }
     } catch (err) {
-      setErrorMsg(err.message || 'حدث خطأ أثناء حفظ المحتوى');
+      setErrorMsg(err.message || 'حدث خطأ أثناء رفع وحفظ المحتوى');
     } finally {
       setIsSubmitting(false);
+      setUploadStatusText('');
     }
   };
 
@@ -313,8 +279,8 @@ export default function AdminHubCMSModal({
       style={{
         position: 'fixed',
         inset: 0,
-        backgroundColor: 'rgba(0, 0, 0, 0.82)',
-        backdropFilter: 'blur(10px)',
+        backgroundColor: 'rgba(0, 0, 0, 0.85)',
+        backdropFilter: 'blur(12px)',
         zIndex: 100,
         display: 'flex',
         alignItems: 'center',
@@ -333,7 +299,7 @@ export default function AdminHubCMSModal({
           maxWidth: '680px',
           maxHeight: '92vh',
           overflowY: 'auto',
-          boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.85), 0 0 35px rgba(245, 158, 11, 0.1)',
+          boxShadow: '0 25px 60px -12px rgba(0, 0, 0, 0.9), 0 0 40px rgba(245, 158, 11, 0.12)',
           padding: '26px',
           color: '#ffffff',
         }}
@@ -343,14 +309,14 @@ export default function AdminHubCMSModal({
         <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '20px', borderBottom: '1px solid rgba(255, 255, 255, 0.12)', paddingBottom: '14px' }}>
           <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
             <div style={{ padding: '8px', borderRadius: '12px', background: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.3)' }}>
-              <Sparkles size={20} color="#f59e0b" />
+              <CloudUpload size={20} color="#f59e0b" />
             </div>
             <div>
               <h3 style={{ fontSize: '19px', fontWeight: 'bold', margin: 0, color: '#ffffff' }}>
                 {editingItem ? 'تعديل المحتوى (لوحة الإدارة)' : 'إضافة محتوى جديد (CMS - Admin)'}
               </h3>
               <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                إدارة المحتوى المتقدم، رفع مستندات PDF والصور، والربط بقاعدة البيانات
+                رفع المذكرات، نماذج الامتحانات، والمستندات السحابية (Cloudinary Cloud Storage)
               </div>
             </div>
           </div>
@@ -387,6 +353,19 @@ export default function AdminHubCMSModal({
           </div>
         )}
 
+        {/* Cloud Upload Spinner Indicator */}
+        {isSubmitting && (
+          <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24', padding: '14px 18px', borderRadius: '14px', fontSize: '13px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px', animation: 'pulse 1.8s infinite' }}>
+            <Loader2 size={20} className="animate-spin shrink-0" color="#f59e0b" />
+            <div>
+              <div style={{ fontWeight: 'bold' }}>{uploadStatusText || 'جاري الرفع السحابي ومعالجة الطلب...'}</div>
+              <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
+                يتم نقل الملف مباشرة إلى خوادم Cloudinary وتأمين رابط الـ HTTPS الدائم.
+              </div>
+            </div>
+          </div>
+        )}
+
         <form onSubmit={handleSubmit} style={{ display: 'flex', flexDirection: 'column', gap: '16px' }}>
           {/* Section Selector */}
           {sectionsList.length > 0 && (
@@ -416,7 +395,7 @@ export default function AdminHubCMSModal({
             <input
               type="text"
               required
-              placeholder="مثال: مذكرة الكيمياء العامة، بطولة الخماسيات، دستور الرابطة..."
+              placeholder="مثال: مذكرة الكيمياء العضوية، امتحان 2025، جدول المحاضرات..."
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               style={inputStyle}
@@ -431,7 +410,7 @@ export default function AdminHubCMSModal({
               </label>
               <input
                 type="text"
-                placeholder="مثال: قسم الكيمياء، كرة قدم، تراث..."
+                placeholder="مثال: قسم الكيمياء، الفيزياء، الرياضيات..."
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 style={inputStyle}
@@ -440,7 +419,7 @@ export default function AdminHubCMSModal({
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                السنة الأكاديمية / التاريخ:
+                السنة الأكاديمية / الدفعة:
               </label>
               <input
                 type="text"
@@ -459,22 +438,22 @@ export default function AdminHubCMSModal({
             </label>
             <textarea
               rows={3}
-              placeholder="تفاصيل الخبر، محتوى المذكرة، أو تفاصيل المبادرة والنشاط..."
+              placeholder="تفاصيل المحتوى، فصول المذكرة، أو تعليمات الامتحان..."
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               style={{ ...inputStyle, resize: 'vertical' }}
             />
           </div>
 
-          {/* File Upload Zone (Drag & Drop + Browse Button for PDFs & Images) */}
+          {/* File Upload Zone (Drag & Drop + Browse Button for Heavy PDFs & Images) */}
           <div style={{ background: 'rgba(255, 255, 255, 0.03)', borderRadius: '16px', border: '1px solid rgba(255, 255, 255, 0.08)', padding: '16px' }}>
             <label style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', fontSize: '13px', fontWeight: '700', color: '#f59e0b', marginBottom: '10px' }}>
               <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Paperclip size={16} />
-                <span>رفع الملفات المرفقة (مستندات PDF وصور):</span>
+                <Cloud size={16} />
+                <span>رفع الملفات المرفقة والتخزين السحابي (Cloudinary):</span>
               </span>
-              <span style={{ fontSize: '11px', color: '#94a3b8', fontWeight: 'normal' }}>
-                يدعم .pdf, .jpg, .jpeg, .png
+              <span style={{ fontSize: '11px', color: '#38bdf8', fontWeight: 'normal' }}>
+                يدعم ملفات PDF الكبيرة والصور بدون قيود حجم
               </span>
             </label>
 
@@ -487,7 +466,7 @@ export default function AdminHubCMSModal({
                   handleProcessFile(e.target.files[0]);
                 }
               }}
-              accept=".pdf,.jpg,.jpeg,.png,application/pdf,image/jpeg,image/png"
+              accept=".pdf,.jpg,.jpeg,.png,.webp,.doc,.docx,.ppt,.pptx,.zip,application/pdf,image/*"
               style={{ display: 'none' }}
             />
 
@@ -505,8 +484,8 @@ export default function AdminHubCMSModal({
                   textAlign: 'center',
                   cursor: 'pointer',
                   transform: isDragging ? 'scale(1.015)' : 'scale(1)',
-                  transition: 'border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
-                  boxShadow: isDragging ? '0 0 32px rgba(245, 158, 11, 0.35), inset 0 0 20px rgba(245, 158, 11, 0.1)' : 'none',
+                  transition: 'all 0.25s ease',
+                  boxShadow: isDragging ? '0 0 32px rgba(245, 158, 11, 0.35)' : 'none',
                 }}
               >
                 <div
@@ -524,13 +503,13 @@ export default function AdminHubCMSModal({
                     transition: 'all 0.25s ease',
                   }}
                 >
-                  <Upload size={24} />
+                  <CloudUpload size={24} />
                 </div>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff', marginBottom: '4px' }}>
-                  {isDragging ? '⚡ أفلت الملف هنا الآن للرفع الفوري!' : 'اسحب وأفلت الملف هنا، أو انقر للاستعراض'}
+                  {isDragging ? '⚡ أفلت الملف هنا الآن للرفع السحابي!' : 'اسحب وأفلت الملف هنا، أو انقر للاستعراض'}
                 </div>
                 <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>
-                  يمكنك رفع مذكرات دراسية أو وثائق (PDF) أو صور ملصقات وإعلانات (JPG, PNG)
+                  يمكنك رفع مذكرات دراسية كاملة، ملفات PDF، نماذج امتحانات، أو صور فائقة الدقة
                 </div>
                 <button
                   type="button"
@@ -558,7 +537,7 @@ export default function AdminHubCMSModal({
                 </button>
               </div>
             ) : (
-              /* Clear UI Indicator of Selected File with Success Animation */
+              /* Selected File Indicator */
               <div
                 style={{
                   backgroundColor: 'rgba(15, 23, 42, 0.85)',
@@ -569,8 +548,7 @@ export default function AdminHubCMSModal({
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '12px',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(245, 158, 11, 0.1)',
-                  animation: 'popInSuccess 0.28s cubic-bezier(0.34, 1.4, 0.64, 1) forwards',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35)',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
@@ -582,9 +560,7 @@ export default function AdminHubCMSModal({
                         borderRadius: '10px',
                         overflow: 'hidden',
                         border: '1px solid rgba(245, 158, 11, 0.4)',
-                        boxShadow: '0 0 12px rgba(245, 158, 11, 0.2)',
-                        shrink: 0,
-                        animation: 'checkmarkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                        flexShrink: 0,
                       }}
                     >
                       <img src={selectedFile.previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
@@ -601,9 +577,7 @@ export default function AdminHubCMSModal({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: '0 0 12px rgba(239, 68, 68, 0.25)',
-                        shrink: 0,
-                        animation: 'checkmarkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                        flexShrink: 0,
                       }}
                     >
                       <FileText size={24} />
@@ -620,8 +594,7 @@ export default function AdminHubCMSModal({
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        shrink: 0,
-                        animation: 'checkmarkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                        flexShrink: 0,
                       }}
                     >
                       <Paperclip size={24} />
@@ -642,11 +615,10 @@ export default function AdminHubCMSModal({
                           display: 'inline-flex',
                           alignItems: 'center',
                           gap: '4px',
-                          animation: 'checkmarkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                         }}
                       >
                         <CheckCircle2 size={11} />
-                        <span>{selectedFile.type === 'pdf' ? 'PDF تم إرفاقه بنجاح' : 'صورة تم إرفاقها بنجاح'}</span>
+                        <span>{selectedFile.type === 'pdf' ? 'مستند PDF جاهز للرفع السحابي' : 'ملف جاهز للرفع السحابي'}</span>
                       </span>
                       {selectedFile.size && (
                         <span style={{ fontSize: '11px', color: '#94a3b8' }}>({selectedFile.size})</span>
@@ -658,7 +630,7 @@ export default function AdminHubCMSModal({
                   </div>
                 </div>
 
-                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', shrink: 0 }}>
+                <div style={{ display: 'flex', alignItems: 'center', gap: '8px', flexShrink: 0 }}>
                   <button
                     type="button"
                     onClick={() => fileInputRef.current && fileInputRef.current.click()}
@@ -713,7 +685,7 @@ export default function AdminHubCMSModal({
               </label>
               <input
                 type="text"
-                placeholder="مثال: جارية الآن، معتمد، متميز..."
+                placeholder="مثال: ملزمة جديدة، امتحان معتمد، شامل..."
                 value={formData.badge}
                 onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
                 style={inputStyle}
@@ -740,6 +712,7 @@ export default function AdminHubCMSModal({
             <button
               type="button"
               onClick={onClose}
+              disabled={isSubmitting}
               style={{
                 backgroundColor: 'rgba(255, 255, 255, 0.08)',
                 border: '1px solid rgba(255, 255, 255, 0.15)',
@@ -748,7 +721,7 @@ export default function AdminHubCMSModal({
                 borderRadius: '10px',
                 fontSize: '14px',
                 fontWeight: '600',
-                cursor: 'pointer',
+                cursor: isSubmitting ? 'not-allowed' : 'pointer',
               }}
             >
               إلغاء
@@ -773,16 +746,17 @@ export default function AdminHubCMSModal({
                 opacity: isSubmitting || isProcessingFile ? 0.7 : 1,
               }}
             >
-              <Save size={16} />
-              <span>
-                {isProcessingFile
-                  ? 'جاري معالجة الملف...'
-                  : isSubmitting
-                  ? 'جاري الحفظ...'
-                  : editingItem
-                  ? 'تحديث المحتوى'
-                  : 'حفظ ونشر'}
-              </span>
+              {isSubmitting ? (
+                <>
+                  <Loader2 size={16} className="animate-spin" />
+                  <span>{rawFile ? 'جاري الرفع السحابي...' : 'جاري الحفظ...'}</span>
+                </>
+              ) : (
+                <>
+                  <Save size={16} />
+                  <span>{editingItem ? 'تحديث المحتوى' : 'حفظ ونشر'}</span>
+                </>
+              )}
             </button>
           </div>
         </form>

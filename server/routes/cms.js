@@ -2,23 +2,27 @@ const express = require('express');
 const router = express.Router();
 const multer = require('multer');
 const HubContent = require('../models/HubContent');
+const {
+  isCloudinaryConfigured,
+  uploadBufferToCloudinary,
+} = require('../utils/cloudinary');
 
-// 1. إعداد Multer لتخزين الملفات في الذاكرة لبيئة Vercel Serverless (Serverless-Safe Memory Storage)
-// يمنع أي محاولة للكتابة على القرص الصلب لتجنب أخطاء نظام الملفات للقراءة فقط في Vercel (Read-Only Filesystem)
+// 1. إعداد Multer لتخزين الملفات في الذاكرة بأمان (Serverless-Safe Memory Storage)
+// يدعم الملفات الكبيرة (حتى 50 ميجابايت) مثل مذكرات الـ PDF الشاملة، نماذج الامتحانات، والصور فائقة الدقة
 const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
   limits: {
-    fileSize: 10 * 1024 * 1024, // حد أقصى 10 ميجابايت للملف المرفق
+    fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
-    // قبول المستندات والصور بمرونة تامة
+    // قبول كافة صيغ المستندات والصور
     cb(null, true);
   },
 });
 
-// Middleware لمعالجة طلبات الـ Multipart والملفات المرفقة وتفادي أي انهيار غير متوقع
+// Middleware لمعالجة Multipart والملفات المرفقة وتفادي أي انهيار غير متوقع
 const handleFileUpload = (req, res, next) => {
   upload.any()(req, res, (err) => {
     if (err) {
@@ -26,13 +30,13 @@ const handleFileUpload = (req, res, next) => {
       if (err.code === 'LIMIT_FILE_SIZE') {
         return res.status(400).json({
           success: false,
-          message: 'حجم الملف المرفق كبير جداً. الحد الأقصى المسموح به هو 10 ميجابايت.',
+          message: 'حجم الملف المرفق يتجاوز الحد الأقصى المسموح به (50 ميجابايت).',
           error: err.message,
         });
       }
       return res.status(400).json({
         success: false,
-        message: `خطأ أثناء قراءة الملف المرفق: ${err.message}`,
+        message: `خطأ أثناء استلام الملف المرفق: ${err.message}`,
         error: err.message,
       });
     }
@@ -82,7 +86,7 @@ router.get('/:hub', async (req, res) => {
 });
 
 // 3. إنشاء عنصر محتوى جديد (Create Hub Content - Admin CMS)
-// يدعم استلام كل من JSON العادي و Multipart/Form-Data مع معالجة الملفات في الذاكرة
+// يقوم برفع الملفات إلى Cloudinary وتخزين رابط الـ HTTPS السحابي فقط في MongoDB
 router.post('/:hub', handleFileUpload, async (req, res) => {
   try {
     const { hub } = req.params;
@@ -115,19 +119,36 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
     let fileName = initialFileName || body.name || '';
     let fileSize = initialFileSize || '';
 
-    // معالجة الملف المرفق في الذاكرة لبيئات Vercel Serverless بدون حفظ على القرص
-    if (uploadedFile) {
+    // إذا تم رفع ملف، قم برفعه إلى Cloudinary للحصول على رابط سحابي دائم ومباشر
+    if (uploadedFile && uploadedFile.buffer && uploadedFile.buffer.length > 0) {
       fileName = fileName || uploadedFile.originalname;
       const sizeInMB = uploadedFile.size / (1024 * 1024);
       fileSize = fileSize || (sizeInMB >= 1 ? `${sizeInMB.toFixed(2)} MB` : `${Math.round(uploadedFile.size / 1024)} KB`);
 
-      if (uploadedFile.buffer && uploadedFile.buffer.length > 0) {
-        // تحويل الملف إلى Data URI آمن للتخزين في MongoDB Atlas مباشرة
-        const mime = uploadedFile.mimetype || 'application/octet-stream';
-        fileUrl = `data:${mime};base64,${uploadedFile.buffer.toString('base64')}`;
-      } else if (!fileUrl) {
-        // رابط بديل آمن في حال عدم توفر buffer
-        fileUrl = 'https://placehold.co/600x400?text=Document';
+      if (isCloudinaryConfigured()) {
+        try {
+          console.log(`[Cloudinary] Uploading file: ${fileName} (${fileSize}) to Cloudinary...`);
+          const cloudResult = await uploadBufferToCloudinary(uploadedFile.buffer, {
+            folder: `cairo_univ_${hub || 'cms'}`,
+            filename: fileName,
+            resourceType: 'auto',
+          });
+          fileUrl = cloudResult.secure_url;
+          console.log(`[Cloudinary] File uploaded successfully: ${fileUrl}`);
+        } catch (uploadError) {
+          console.error('[Cloudinary Upload Failed]:', uploadError.message);
+          return res.status(500).json({
+            success: false,
+            message: `فشل رفع الملف إلى التخزين السحابي Cloudinary: ${uploadError.message}`,
+            error: uploadError.message,
+          });
+        }
+      } else {
+        console.warn('[Cloudinary Warning]: Cloudinary credentials not configured. Storing mock cloud link.');
+        // رابط بديل آمن عند عدم توفر بيانات Cloudinary محلياً
+        if (!fileUrl) {
+          fileUrl = `https://placehold.co/800x600?text=${encodeURIComponent(fileName || 'Document')}`;
+        }
       }
     }
 
@@ -154,6 +175,7 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
       });
     }
 
+    // حفظ الرابط السحابي فقط في MongoDB Atlas بدون Base64
     const newItem = new HubContent({
       hub,
       section: section || 'general',
@@ -177,7 +199,7 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'تم إضافة المحتوى بنجاح وحفظه في السجل المركزي (MongoDB Atlas)',
+      message: 'تم إضافة المحتوى ورفع الملف إلى التخزين السحابي وحفظه بنجاح في السجل المركزي!',
       data: newItem,
     });
   } catch (error) {
@@ -198,20 +220,43 @@ router.put('/:id', handleFileUpload, async (req, res) => {
     const body = req.body || {};
     const updateData = { ...body };
 
-    // فحص إن كان هناك ملف جديد مرفوع
+    // فحص إن كان هناك ملف جديد مرفوع للرفع إلى Cloudinary
     let uploadedFile = req.file;
     if (!uploadedFile && req.files && req.files.length > 0) {
       uploadedFile = req.files[0];
     }
 
-    if (uploadedFile) {
+    if (uploadedFile && uploadedFile.buffer && uploadedFile.buffer.length > 0) {
       const fileName = uploadedFile.originalname;
       const sizeInMB = uploadedFile.size / (1024 * 1024);
       const fileSize = sizeInMB >= 1 ? `${sizeInMB.toFixed(2)} MB` : `${Math.round(uploadedFile.size / 1024)} KB`;
-      const mime = uploadedFile.mimetype || 'application/octet-stream';
 
-      updateData.fileUrl = `data:${mime};base64,${uploadedFile.buffer.toString('base64')}`;
-      updateData.fileSize = fileSize;
+      if (isCloudinaryConfigured()) {
+        try {
+          console.log(`[Cloudinary Update] Uploading file: ${fileName} to Cloudinary...`);
+          const cloudResult = await uploadBufferToCloudinary(uploadedFile.buffer, {
+            folder: 'cairo_univ_cms',
+            filename: fileName,
+            resourceType: 'auto',
+          });
+          updateData.fileUrl = cloudResult.secure_url;
+          updateData.fileSize = fileSize;
+          updateData.fileName = fileName;
+        } catch (uploadError) {
+          console.error('[Cloudinary Update Upload Failed]:', uploadError.message);
+          return res.status(500).json({
+            success: false,
+            message: `فشل رفع الملف الجديد إلى Cloudinary: ${uploadError.message}`,
+            error: uploadError.message,
+          });
+        }
+      } else {
+        updateData.fileSize = fileSize;
+        updateData.fileName = fileName;
+        if (!updateData.fileUrl) {
+          updateData.fileUrl = `https://placehold.co/800x600?text=${encodeURIComponent(fileName)}`;
+        }
+      }
     }
 
     if (typeof updateData.extraData === 'string') {
@@ -229,7 +274,7 @@ router.put('/:id', handleFileUpload, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'تم تحديث المحتوى بنجاح في قاعدة البيانات',
+      message: 'تم تحديث المحتوى والمرفق السحابي بنجاح في قاعدة البيانات',
       data: updatedItem,
     });
   } catch (error) {

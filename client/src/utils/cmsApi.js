@@ -17,14 +17,22 @@ export const fetchHubContent = async (hub, params = {}) => {
 export const createHubContent = async (hub, contentData) => {
   const url = `${API_BASE}/cms/${hub}`;
   const token = localStorage.getItem('token');
+  const isFormData = contentData instanceof FormData;
+
+  const headers = {};
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: token ? `Bearer ${token}` : '',
-    },
-    body: JSON.stringify(contentData),
+    headers,
+    body: isFormData ? contentData : JSON.stringify(contentData),
   });
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to create content');
   return data.data;
@@ -33,14 +41,22 @@ export const createHubContent = async (hub, contentData) => {
 export const updateHubContent = async (id, updateData) => {
   const url = `${API_BASE}/cms/${id}`;
   const token = localStorage.getItem('token');
+  const isFormData = updateData instanceof FormData;
+
+  const headers = {};
+  if (!isFormData) {
+    headers['Content-Type'] = 'application/json';
+  }
+  if (token) {
+    headers['Authorization'] = `Bearer ${token}`;
+  }
+
   const res = await fetch(url, {
     method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: token ? `Bearer ${token}` : '',
-    },
-    body: JSON.stringify(updateData),
+    headers,
+    body: isFormData ? updateData : JSON.stringify(updateData),
   });
+
   const data = await res.json();
   if (!res.ok) throw new Error(data.message || 'Failed to update content');
   return data.data;
