@@ -25,6 +25,7 @@ import {
   CheckCircle2
 } from 'lucide-react';
 import AdminHubCMSModal from '../components/AdminHubCMSModal';
+import AcademicMajorsGuide from '../components/AcademicMajorsGuide';
 import { fetchHubContent, deleteHubContent } from '../utils/cmsApi';
 
 const ACADEMIC_LEVELS = [
@@ -250,6 +251,7 @@ export default function AcademicLibrary() {
   const tabs = [
     { id: 'notes', label: 'مذكرات ومراجع', icon: BookOpen, count: 'ملخصات ومعامل' },
     { id: 'exams', label: 'امتحانات سابقة', icon: FileText, count: 'نماذج وحلول' },
+    { id: 'majors', label: 'دليل التخصصات', icon: Compass, count: 'شروط ومجالات العمل' },
     { id: 'groups', label: 'مجموعات دراسة', icon: Users, count: 'حلقات مذاكرة' },
     { id: 'grants', label: 'منح وتدريب', icon: Award, count: 'فرص أكاديمية' },
     { id: 'calendar', label: 'التقويم وجدول الامتحانات', icon: Calendar, count: 'مواعيد الكلية' },
@@ -632,7 +634,12 @@ export default function AcademicLibrary() {
         </>
       )}
 
-      {/* 3. مجموعات الدراسة */}
+      {/* 3. دليل التخصصات والأقسام */}
+      {activeTab === 'majors' && (
+        <AcademicMajorsGuide />
+      )}
+
+      {/* 4. مجموعات الدراسة */}
       {activeTab === 'groups' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '22px' }}>
           {studyGroups.map((grp) => (
