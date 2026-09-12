@@ -17,7 +17,8 @@ import {
   HelpCircle,
   Volume2,
   Languages,
-  GraduationCap
+  GraduationCap,
+  Trash2
 } from 'lucide-react';
 
 const SUGGESTED_PROMPTS = [
@@ -43,6 +44,9 @@ const SUGGESTED_PROMPTS = [
   },
 ];
 
+const STORAGE_PAGE_MESSAGES_KEY = 'cairo_univ_smart_advisor_page_messages';
+const STORAGE_PAGE_DRAFT_KEY = 'cairo_univ_smart_advisor_page_draft';
+
 export default function AIChat() {
   const { activeTheme } = useTheme();
   const { user } = useAuth();
@@ -51,13 +55,56 @@ export default function AIChat() {
   const studentDept = user?.department || 'كلية العلوم';
   const studentLevel = user?.academicLevel || user?.academicYear || 'المرحلة الجامعية';
 
-  const [prompt, setPrompt] = useState('');
-  const [messages, setMessages] = useState([
-    {
-      sender: 'ai',
-      text: `مرحباً بيك يا دكتورنا **${studentName}** في كلية العلوم جامعة القاهرة! 🌿🇸🇩\nأنا رفيقك ومستشارك الأكاديمي والذكي من **رابطة الطلاب السودانيين (SSA-FS-CU)**.\n\nمعاك خطوة بخطوة في استفسارات تخصصك (**${studentDept}**)، المعامل، نظام الساعات المعتمدة، الإقامة والسكن في القاهرة، أو أي دعم دراسي تحتاجه باللغتين العربية والإنجليزية.\n\nكيف أقدر أساعدك اليوم؟ أبشر بالخير!`,
-    },
-  ]);
+  const getDefaultMessage = () => ({
+    sender: 'ai',
+    text: `مرحباً بيك يا دكتورنا **${studentName}** في كلية العلوم جامعة القاهرة! 🌿🇸🇩\nأنا رفيقك ومستشارك الأكاديمي والذكي من **رابطة الطلاب السودانيين (SSA-FS-CU)**.\n\nمعاك خطوة بخطوة في استفسارات تخصصك (**${studentDept}**)، المعامل، نظام الساعات المعتمدة، الإقامة والسكن في القاهرة، أو أي دعم دراسي تحتاجه باللغتين العربية والإنجليزية.\n\nكيف أقدر أساعدك اليوم؟ أبشر بالخير!`,
+  });
+
+  const [prompt, setPrompt] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_PAGE_DRAFT_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_PAGE_MESSAGES_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading AI chat messages from localStorage:', e);
+    }
+    return [getDefaultMessage()];
+  });
+
+  // مزامنة سجل الرسائل مع localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_PAGE_MESSAGES_KEY, JSON.stringify(messages));
+    } catch (e) {
+      console.error('Error saving messages to localStorage:', e);
+    }
+  }, [messages]);
+
+  // مزامنة مسودة السؤال مع localStorage
+  useEffect(() => {
+    try {
+      if (prompt) {
+        localStorage.setItem(STORAGE_PAGE_DRAFT_KEY, prompt);
+      } else {
+        localStorage.removeItem(STORAGE_PAGE_DRAFT_KEY);
+      }
+    } catch (e) {
+      console.error('Error saving prompt draft to localStorage:', e);
+    }
+  }, [prompt]);
+
   const [loading, setLoading] = useState(false);
   const [copiedIndex, setCopiedIndex] = useState(null);
   const messagesEndRef = useRef(null);
@@ -114,13 +161,21 @@ export default function AIChat() {
   };
 
   const handleClear = () => {
-    if (window.confirm('هل تود بدء جلسة استشارية جديدة ومسح المحادثة السابقة؟')) {
-      setMessages([
+    if (window.confirm('هل تود مسح سجل المحادثة بالكامل وحذف البيانات المحفوظة؟')) {
+      const resetMsg = [
         {
           sender: 'ai',
           text: `أهلاً بك من جديد يا **${studentName}**! مستعد للإجابة على أي سؤال دراسي أو توجيه أكاديمي تحتاجه في ${studentDept} 🏛️`,
         },
-      ]);
+      ];
+      setMessages(resetMsg);
+      setPrompt('');
+      try {
+        localStorage.removeItem(STORAGE_PAGE_MESSAGES_KEY);
+        localStorage.removeItem(STORAGE_PAGE_DRAFT_KEY);
+      } catch (e) {
+        console.error('Error clearing localStorage:', e);
+      }
     }
   };
 
@@ -195,23 +250,35 @@ export default function AIChat() {
         </div>
 
         <button
+          type="button"
           onClick={handleClear}
+          title="مسح المحادثة وحذف كافة البيانات المحفوظة"
+          aria-label="مسح المحادثة وحذف كافة البيانات المحفوظة"
           style={{
             display: 'flex',
             alignItems: 'center',
             gap: '6px',
-            background: 'rgba(255,255,255,0.06)',
-            border: `1px solid ${activeTheme.border}`,
-            color: activeTheme.textMuted,
+            background: 'rgba(239, 68, 68, 0.12)',
+            border: '1px solid rgba(239, 68, 68, 0.3)',
+            color: '#fca5a5',
             padding: '8px 14px',
             borderRadius: '8px',
             cursor: 'pointer',
             fontSize: '12px',
+            fontWeight: '600',
             transition: 'all 0.2s',
           }}
+          onMouseEnter={(e) => {
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.25)';
+            e.currentTarget.style.color = '#ef4444';
+          }}
+          onMouseLeave={(e) => {
+            e.currentTarget.style.background = 'rgba(239, 68, 68, 0.12)';
+            e.currentTarget.style.color = '#fca5a5';
+          }}
         >
-          <RefreshCw size={13} />
-          <span>محادثة جديدة</span>
+          <Trash2 size={14} />
+          <span>مسح المحادثة وحذف البيانات</span>
         </button>
       </div>
 

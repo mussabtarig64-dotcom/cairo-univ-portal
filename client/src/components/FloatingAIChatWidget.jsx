@@ -13,28 +13,74 @@ import {
   HelpCircle,
   ChevronDown,
   User,
-  GraduationCap
+  GraduationCap,
+  Trash2
 } from 'lucide-react';
+
+const STORAGE_MESSAGES_KEY = 'cairo_univ_smart_advisor_messages';
+const STORAGE_DRAFT_KEY = 'cairo_univ_smart_advisor_draft';
 
 export default function FloatingAIChatWidget() {
   const { activeTheme } = useTheme();
   const { user } = useAuth();
 
   const [isOpen, setIsOpen] = useState(false);
-  const [inputMsg, setInputMsg] = useState('');
   const [loading, setLoading] = useState(false);
   const [kbQuestions, setKbQuestions] = useState([]);
   const chatScrollRef = useRef(null);
 
   const studentName = user?.fullName || user?.name || 'طالب كلية العلوم';
 
-  const [messages, setMessages] = useState([
-    {
-      sender: 'assistant',
-      text: `مرحباً بك يا دكتورنا **${studentName}**! 👋\nأنا المستشار الأكاديمي والرفيق الذكي لرابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة.\nكيف يمكنني مساعدتك اليوم في الدراسة، المذكرات، السكن، أو إجراءات الإقامة؟`,
-      time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
-    },
-  ]);
+  const getDefaultMessage = () => ({
+    sender: 'assistant',
+    text: `مرحباً بك يا دكتورنا **${studentName}**! 👋\nأنا المستشار الأكاديمي والرفيق الذكي لرابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة.\nكيف يمكنني مساعدتك اليوم في الدراسة، المذكرات، السكن، أو إجراءات الإقامة؟`,
+    time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
+  });
+
+  const [messages, setMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem(STORAGE_MESSAGES_KEY);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          return parsed;
+        }
+      }
+    } catch (e) {
+      console.error('Error loading smart advisor messages from localStorage:', e);
+    }
+    return [getDefaultMessage()];
+  });
+
+  const [inputMsg, setInputMsg] = useState(() => {
+    try {
+      return localStorage.getItem(STORAGE_DRAFT_KEY) || '';
+    } catch {
+      return '';
+    }
+  });
+
+  // مزامنة سجل الرسائل مع localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_MESSAGES_KEY, JSON.stringify(messages));
+    } catch (e) {
+      console.error('Error saving smart advisor messages to localStorage:', e);
+    }
+  }, [messages]);
+
+  // مزامنة مسودة الإدخال مع localStorage
+  useEffect(() => {
+    try {
+      if (inputMsg) {
+        localStorage.setItem(STORAGE_DRAFT_KEY, inputMsg);
+      } else {
+        localStorage.removeItem(STORAGE_DRAFT_KEY);
+      }
+    } catch (e) {
+      console.error('Error saving draft to localStorage:', e);
+    }
+  }, [inputMsg]);
 
   useEffect(() => {
     // جلب أهم الأسئلة من قاعدة المعرفة التي أضافتها الإدارة
@@ -53,6 +99,20 @@ export default function FloatingAIChatWidget() {
       chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
     }
   }, [messages, isOpen]);
+
+  const handleClearChat = () => {
+    if (window.confirm('هل تود مسح المحادثة وحذف كافة البيانات المحفوظة للمستشار الذكي؟')) {
+      const resetMsg = [getDefaultMessage()];
+      setMessages(resetMsg);
+      setInputMsg('');
+      try {
+        localStorage.removeItem(STORAGE_MESSAGES_KEY);
+        localStorage.removeItem(STORAGE_DRAFT_KEY);
+      } catch (e) {
+        console.error('Error clearing localStorage:', e);
+      }
+    }
+  };
 
   const handleSend = async (textToSend) => {
     const query = textToSend || inputMsg;
@@ -163,23 +223,58 @@ export default function FloatingAIChatWidget() {
               </div>
             </div>
 
-            <button
-              onClick={() => setIsOpen(false)}
-              style={{
-                background: 'rgba(255,255,255,0.1)',
-                border: 'none',
-                color: '#ffffff',
-                borderRadius: '50%',
-                width: '30px',
-                height: '30px',
-                cursor: 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'center',
-              }}
-            >
-              <X size={18} />
-            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+              <button
+                type="button"
+                onClick={handleClearChat}
+                title="مسح المحادثة وحذف البيانات"
+                aria-label="مسح المحادثة وحذف البيانات"
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid rgba(239, 68, 68, 0.35)',
+                  color: '#fca5a5',
+                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  transition: 'all 0.2s ease',
+                }}
+                onMouseEnter={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+                  e.currentTarget.style.color = '#ef4444';
+                }}
+                onMouseLeave={(e) => {
+                  e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
+                  e.currentTarget.style.color = '#fca5a5';
+                }}
+              >
+                <Trash2 size={15} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setIsOpen(false)}
+                title="إغلاق"
+                aria-label="إغلاق"
+                style={{
+                  background: 'rgba(255,255,255,0.1)',
+                  border: 'none',
+                  color: '#ffffff',
+                  borderRadius: '50%',
+                  width: '30px',
+                  height: '30px',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
+              >
+                <X size={18} />
+              </button>
+            </div>
           </div>
 
           {/* محتوى الرسائل Chat Body */}
