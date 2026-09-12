@@ -369,9 +369,17 @@ export default function SiteStory() {
                   {/* Content Card */}
                   <div className="w-full md:w-1/2">
                     <div
-                      className="group relative bg-slate-900/80 border border-white/10 hover:border-amber-500/40 rounded-2xl p-6 sm:p-7 backdrop-blur-md transition-all duration-300 hover:shadow-2xl hover:-translate-y-1 overflow-hidden"
+                      className="group relative bg-slate-900/80 border border-white/10 rounded-2xl p-6 sm:p-7 backdrop-blur-md transition-all duration-300 ease-out hover:-translate-y-1.5 overflow-hidden"
                       style={{
-                        boxShadow: `0 8px 30px rgba(0,0,0,0.3)`
+                        boxShadow: `0 8px 30px rgba(0,0,0,0.35)`
+                      }}
+                      onMouseEnter={(e) => {
+                        e.currentTarget.style.borderColor = `${item.color}88`;
+                        e.currentTarget.style.boxShadow = `0 18px 40px -10px rgba(0,0,0,0.6), 0 0 28px ${item.bgGlow}`;
+                      }}
+                      onMouseLeave={(e) => {
+                        e.currentTarget.style.borderColor = 'rgba(255, 255, 255, 0.1)';
+                        e.currentTarget.style.boxShadow = '0 8px 30px rgba(0,0,0,0.35)';
                       }}
                     >
                       {/* Top Accent bar */}
@@ -413,11 +421,11 @@ export default function SiteStory() {
 
                       {/* Contributor Pill with Profile Photo */}
                       {item.person && (
-                        <div className="mb-4 flex items-center gap-3.5 p-2.5 sm:p-3 rounded-2xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-all">
+                        <div className="mb-4 flex items-center gap-3.5 p-2.5 sm:p-3 rounded-2xl bg-white/5 border border-white/10 hover:border-amber-500/30 transition-all duration-200">
                           {item.image ? (
                             <div className="relative shrink-0">
                               <div
-                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 shadow-md transition-transform group-hover:scale-105"
+                                className="w-12 h-12 sm:w-14 sm:h-14 rounded-full overflow-hidden border-2 shadow-md transition-transform duration-300 group-hover:scale-105"
                                 style={{
                                   borderColor: item.color,
                                   boxShadow: `0 0 14px ${item.bgGlow}`,
@@ -498,10 +506,10 @@ export default function SiteStory() {
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
             {/* 1. مباشر عمر عثمان الطاهر (صاحب الفكرة) */}
-            <div className="group relative bg-slate-900/80 border border-amber-500/30 hover:border-amber-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-amber-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col items-center text-center overflow-hidden">
+            <div className="group relative bg-slate-900/80 border border-amber-500/30 hover:border-amber-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-[0_20px_45px_-12px_rgba(245,158,11,0.35),0_0_28px_rgba(245,158,11,0.18)] transition-all duration-300 ease-out hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
               <div className="relative mb-5">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-amber-500/50 shadow-xl shadow-amber-500/20 group-hover:scale-105 group-hover:border-amber-400 transition-all duration-300">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-amber-500/50 shadow-xl shadow-amber-500/20 group-hover:scale-105 group-hover:border-amber-400 group-hover:shadow-[0_0_24px_rgba(245,158,11,0.4)] transition-all duration-300">
                   <img
                     src={mubaashirImg}
                     alt="مباشر عمر عثمان الطاهر"
@@ -532,10 +540,10 @@ export default function SiteStory() {
             </div>
 
             {/* 2. محمد ربيع محمد عبدالمطلب (المصمم) */}
-            <div className="group relative bg-slate-900/80 border border-pink-500/30 hover:border-pink-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-pink-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col items-center text-center overflow-hidden">
+            <div className="group relative bg-slate-900/80 border border-pink-500/30 hover:border-pink-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-[0_20px_45px_-12px_rgba(236,72,153,0.35),0_0_28px_rgba(236,72,153,0.18)] transition-all duration-300 ease-out hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
               <div className="relative mb-5">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-white shadow-xl shadow-white/20 group-hover:scale-105 group-hover:border-white transition-all duration-300">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-pink-500/50 shadow-xl shadow-pink-500/20 group-hover:scale-105 group-hover:border-pink-400 group-hover:shadow-[0_0_24px_rgba(236,72,153,0.4)] transition-all duration-300">
                   <img
                     src={mohammedRabieImg}
                     alt="محمد ربيع محمد عبدالمطلب"
@@ -566,10 +574,10 @@ export default function SiteStory() {
             </div>
 
             {/* 3. مصعب طارق عوض محمد (التنفيذ والتطوير) */}
-            <div className="group relative bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-emerald-500/10 transition-all duration-300 hover:-translate-y-1.5 flex flex-col items-center text-center overflow-hidden">
+            <div className="group relative bg-slate-900/80 border border-emerald-500/30 hover:border-emerald-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-[0_20px_45px_-12px_rgba(16,185,129,0.35),0_0_28px_rgba(16,185,129,0.18)] transition-all duration-300 ease-out hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
               <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-emerald-500 to-transparent" />
               <div className="relative mb-5">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-emerald-500/50 shadow-xl shadow-emerald-500/20 group-hover:scale-105 group-hover:border-emerald-400 transition-all duration-300">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-emerald-500/50 shadow-xl shadow-emerald-500/20 group-hover:scale-105 group-hover:border-emerald-400 group-hover:shadow-[0_0_24px_rgba(16,185,129,0.4)] transition-all duration-300">
                   <img
                     src={mussabImg}
                     alt="مصعب طارق عوض محمد"

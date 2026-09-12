@@ -498,21 +498,36 @@ export default function AdminHubCMSModal({
                 onDrop={handleDrop}
                 onClick={() => fileInputRef.current && fileInputRef.current.click()}
                 style={{
-                  border: isDragging ? '2px dashed #f59e0b' : '2px dashed rgba(255, 255, 255, 0.2)',
-                  backgroundColor: isDragging ? 'rgba(245, 158, 11, 0.12)' : 'rgba(15, 23, 42, 0.6)',
+                  border: isDragging ? '2px dashed #f59e0b' : '2px dashed rgba(255, 255, 255, 0.22)',
+                  backgroundColor: isDragging ? 'rgba(245, 158, 11, 0.16)' : 'rgba(15, 23, 42, 0.6)',
                   borderRadius: '14px',
-                  padding: '24px 16px',
+                  padding: '26px 16px',
                   textAlign: 'center',
                   cursor: 'pointer',
-                  transition: 'all 0.25s ease',
-                  boxShadow: isDragging ? '0 0 24px rgba(245, 158, 11, 0.25)' : 'none',
+                  transform: isDragging ? 'scale(1.015)' : 'scale(1)',
+                  transition: 'border-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), background-color 0.25s cubic-bezier(0.4, 0, 0.2, 1), box-shadow 0.25s cubic-bezier(0.4, 0, 0.2, 1), transform 0.25s cubic-bezier(0.4, 0, 0.2, 1)',
+                  boxShadow: isDragging ? '0 0 32px rgba(245, 158, 11, 0.35), inset 0 0 20px rgba(245, 158, 11, 0.1)' : 'none',
                 }}
               >
-                <div style={{ display: 'inline-flex', alignItems: 'center', justifyContent: 'center', width: '48px', height: '48px', borderRadius: '50%', background: 'rgba(245, 158, 11, 0.15)', color: '#f59e0b', marginBottom: '10px' }}>
+                <div
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    width: '50px',
+                    height: '50px',
+                    borderRadius: '50%',
+                    background: isDragging ? 'rgba(245, 158, 11, 0.3)' : 'rgba(245, 158, 11, 0.15)',
+                    color: '#f59e0b',
+                    marginBottom: '10px',
+                    transform: isDragging ? 'scale(1.1) translateY(-2px)' : 'scale(1)',
+                    transition: 'all 0.25s ease',
+                  }}
+                >
                   <Upload size={24} />
                 </div>
                 <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff', marginBottom: '4px' }}>
-                  اسحب وأفلت الملف هنا، أو انقر للاستعراض
+                  {isDragging ? '⚡ أفلت الملف هنا الآن للرفع الفوري!' : 'اسحب وأفلت الملف هنا، أو انقر للاستعراض'}
                 </div>
                 <div style={{ fontSize: '12px', color: '#94a3b8', marginBottom: '12px' }}>
                   يمكنك رفع مذكرات دراسية أو وثائق (PDF) أو صور ملصقات وإعلانات (JPG, PNG)
@@ -543,31 +558,72 @@ export default function AdminHubCMSModal({
                 </button>
               </div>
             ) : (
-              /* Clear UI Indicator of Selected File */
+              /* Clear UI Indicator of Selected File with Success Animation */
               <div
                 style={{
-                  backgroundColor: 'rgba(15, 23, 42, 0.8)',
-                  border: '1px solid rgba(245, 158, 11, 0.4)',
+                  backgroundColor: 'rgba(15, 23, 42, 0.85)',
+                  border: '1px solid rgba(245, 158, 11, 0.45)',
                   borderRadius: '14px',
                   padding: '14px 16px',
                   display: 'flex',
                   alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: '12px',
-                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.3)',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.35), 0 0 16px rgba(245, 158, 11, 0.1)',
+                  animation: 'popInSuccess 0.28s cubic-bezier(0.34, 1.4, 0.64, 1) forwards',
                 }}
               >
                 <div style={{ display: 'flex', alignItems: 'center', gap: '12px', minWidth: 0 }}>
                   {selectedFile.type === 'image' && selectedFile.previewUrl ? (
-                    <div style={{ width: '48px', height: '48px', borderRadius: '10px', overflow: 'hidden', border: '1px solid rgba(255, 255, 255, 0.2)', shrink: 0 }}>
-                      <img src={selectedFile.previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectCover: 'cover' }} />
+                    <div
+                      style={{
+                        width: '48px',
+                        height: '48px',
+                        borderRadius: '10px',
+                        overflow: 'hidden',
+                        border: '1px solid rgba(245, 158, 11, 0.4)',
+                        boxShadow: '0 0 12px rgba(245, 158, 11, 0.2)',
+                        shrink: 0,
+                        animation: 'checkmarkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      }}
+                    >
+                      <img src={selectedFile.previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
                     </div>
                   ) : selectedFile.type === 'pdf' ? (
-                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(239, 68, 68, 0.2)', border: '1px solid rgba(239, 68, 68, 0.4)', color: '#f87171', display: 'flex', alignItems: 'center', justifyContent: 'center', shrink: 0 }}>
+                    <div
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '10px',
+                        background: 'rgba(239, 68, 68, 0.2)',
+                        border: '1px solid rgba(239, 68, 68, 0.4)',
+                        color: '#f87171',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        boxShadow: '0 0 12px rgba(239, 68, 68, 0.25)',
+                        shrink: 0,
+                        animation: 'checkmarkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      }}
+                    >
                       <FileText size={24} />
                     </div>
                   ) : (
-                    <div style={{ width: '44px', height: '44px', borderRadius: '10px', background: 'rgba(56, 189, 248, 0.2)', border: '1px solid rgba(56, 189, 248, 0.4)', color: '#38bdf8', display: 'flex', alignItems: 'center', justifyContent: 'center', shrink: 0 }}>
+                    <div
+                      style={{
+                        width: '44px',
+                        height: '44px',
+                        borderRadius: '10px',
+                        background: 'rgba(56, 189, 248, 0.2)',
+                        border: '1px solid rgba(56, 189, 248, 0.4)',
+                        color: '#38bdf8',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        shrink: 0,
+                        animation: 'checkmarkPop 0.35s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
+                      }}
+                    >
                       <Paperclip size={24} />
                     </div>
                   )}
@@ -578,20 +634,25 @@ export default function AdminHubCMSModal({
                         style={{
                           fontSize: '10px',
                           fontWeight: 'bold',
-                          padding: '2px 6px',
+                          padding: '2px 8px',
                           borderRadius: '6px',
-                          background: selectedFile.type === 'pdf' ? 'rgba(239, 68, 68, 0.2)' : 'rgba(16, 185, 129, 0.2)',
-                          color: selectedFile.type === 'pdf' ? '#f87171' : '#34d399',
-                          border: `1px solid ${selectedFile.type === 'pdf' ? 'rgba(239, 68, 68, 0.4)' : 'rgba(16, 185, 129, 0.4)'}`,
+                          background: selectedFile.type === 'pdf' ? 'rgba(239, 68, 68, 0.25)' : 'rgba(16, 185, 129, 0.25)',
+                          color: selectedFile.type === 'pdf' ? '#fca5a5' : '#86efac',
+                          border: `1px solid ${selectedFile.type === 'pdf' ? 'rgba(239, 68, 68, 0.45)' : 'rgba(16, 185, 129, 0.45)'}`,
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          animation: 'checkmarkPop 0.3s cubic-bezier(0.34, 1.56, 0.64, 1) forwards',
                         }}
                       >
-                        {selectedFile.type === 'pdf' ? '📄 PDF جاهز' : '🖼️ صورة جاهزة'}
+                        <CheckCircle2 size={11} />
+                        <span>{selectedFile.type === 'pdf' ? 'PDF تم إرفاقه بنجاح' : 'صورة تم إرفاقها بنجاح'}</span>
                       </span>
                       {selectedFile.size && (
                         <span style={{ fontSize: '11px', color: '#94a3b8' }}>({selectedFile.size})</span>
                       )}
                     </div>
-                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '2px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: '#ffffff', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis', marginTop: '3px' }}>
                       {selectedFile.name}
                     </div>
                   </div>

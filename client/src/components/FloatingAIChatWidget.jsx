@@ -343,6 +343,64 @@ export default function FloatingAIChatWidget() {
               </div>
             )}
 
+            {/* مؤشر جاري الكتابة والتفكير */}
+            {loading && (
+              <div
+                style={{
+                  alignSelf: 'flex-end',
+                  maxWidth: '85%',
+                  padding: '10px 14px',
+                  borderRadius: '14px 14px 14px 2px',
+                  backgroundColor: '#0f172a',
+                  border: '1px solid rgba(245, 158, 11, 0.45)',
+                  boxShadow: '0 4px 16px rgba(245, 158, 11, 0.18)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '10px',
+                  animation: 'popInSuccess 0.25s ease-out',
+                }}
+              >
+                <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
+                  <div
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f59e0b',
+                      boxShadow: '0 0 8px rgba(245, 158, 11, 0.8)',
+                      animation: 'pulseDot 1.2s infinite ease-in-out',
+                      animationDelay: '0s',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f59e0b',
+                      boxShadow: '0 0 8px rgba(245, 158, 11, 0.8)',
+                      animation: 'pulseDot 1.2s infinite ease-in-out',
+                      animationDelay: '0.2s',
+                    }}
+                  />
+                  <div
+                    style={{
+                      width: '6px',
+                      height: '6px',
+                      borderRadius: '50%',
+                      backgroundColor: '#f59e0b',
+                      boxShadow: '0 0 8px rgba(245, 158, 11, 0.8)',
+                      animation: 'pulseDot 1.2s infinite ease-in-out',
+                      animationDelay: '0.4s',
+                    }}
+                  />
+                </div>
+                <span style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 'bold' }}>
+                  المستشار الذكي يكتب الإجابة...
+                </span>
+              </div>
+            )}
+
             <div ref={chatScrollRef} />
           </div>
 
@@ -420,7 +478,7 @@ export default function FloatingAIChatWidget() {
           fontWeight: '900',
           cursor: 'pointer',
           boxShadow: '0 8px 25px rgba(245, 158, 11, 0.45)',
-          transition: 'transform 0.2s ease',
+          transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
         }}
       >
         <Bot size={18} />
@@ -428,14 +486,29 @@ export default function FloatingAIChatWidget() {
       </button>
 
       <style>{`
-        @keyframes fadeInUp {
-          from {
+        @keyframes springPopIn {
+          0% {
             opacity: 0;
-            transform: translateY(20px);
+            transform: scale(0.86) translateY(24px);
           }
-          to {
+          70% {
             opacity: 1;
-            transform: translateY(0);
+            transform: scale(1.02) translateY(-4px);
+          }
+          100% {
+            opacity: 1;
+            transform: scale(1) translateY(0);
+          }
+        }
+
+        @keyframes pulseDot {
+          0%, 80%, 100% {
+            opacity: 0.3;
+            transform: scale(0.75);
+          }
+          40% {
+            opacity: 1;
+            transform: scale(1.25);
           }
         }
 
@@ -454,16 +527,18 @@ export default function FloatingAIChatWidget() {
             left: 0;
             width: 380px;
             height: 520px;
+            transform-origin: bottom left;
+            animation: springPopIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
           }
         }
 
         /* Mobile Positioning: bottom-2 left-2 (8px), scale-75, z-index 20 */
         @media (max-width: 640px) {
           .floating-ai-container {
-            bottom: 8px !important; /* bottom-2 */
-            left: 8px !important;   /* left-2 */
-            z-index: 20 !important; /* z-20 */
-            transform: scale(0.75); /* scale-75 */
+            bottom: 8px !important;
+            left: 8px !important;
+            z-index: 20 !important;
+            transform: scale(0.75);
             transform-origin: bottom left;
           }
           .floating-ai-btn {
@@ -481,6 +556,8 @@ export default function FloatingAIChatWidget() {
             height: 440px;
             max-height: calc(100vh - 80px);
             z-index: 35 !important;
+            transform-origin: bottom left;
+            animation: springPopIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
           }
         }
       `}</style>
