@@ -2,20 +2,11 @@ import React, { useState } from 'react';
 import {
   Sparkles,
   BookOpen,
-  GraduationCap,
-  CheckCircle2,
   ChevronLeft,
   X,
-  Layers,
   Briefcase,
-  Award,
   Compass,
   Search,
-  ArrowUpRight,
-  Clock,
-  Check,
-  Building,
-  Activity,
   FileCheck
 } from 'lucide-react';
 

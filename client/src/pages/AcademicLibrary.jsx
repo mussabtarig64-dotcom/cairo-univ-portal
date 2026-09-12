@@ -22,7 +22,8 @@ import {
   PlusCircle,
   Edit,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Compass
 } from 'lucide-react';
 import AdminHubCMSModal from '../components/AdminHubCMSModal';
 import AcademicMajorsGuide from '../components/AcademicMajorsGuide';
