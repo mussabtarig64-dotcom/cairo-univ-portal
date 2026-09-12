@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
 import AcademicCalendar from '../components/AcademicCalendar';
@@ -230,11 +231,38 @@ const DEFAULT_GRANTS = [
   },
 ];
 
-export default function AcademicLibrary() {
+export default function AcademicLibrary({ defaultTab }) {
   const { activeTheme } = useTheme();
   const { isAdmin } = useAuth();
+  const location = useLocation();
 
-  const [activeTab, setActiveTab] = useState('notes'); // 'notes' | 'exams' | 'groups' | 'grants' | 'calendar'
+  const getInitialTab = () => {
+    if (defaultTab) return defaultTab;
+    if (location.pathname === '/majors' || location.pathname === '/academic-majors') return 'majors';
+    const params = new URLSearchParams(location.search);
+    const tabParam = params.get('tab');
+    if (tabParam && ['notes', 'exams', 'majors', 'groups', 'grants', 'calendar'].includes(tabParam)) {
+      return tabParam;
+    }
+    return 'notes';
+  };
+
+  const [activeTab, setActiveTab] = useState(getInitialTab);
+
+  useEffect(() => {
+    if (defaultTab) {
+      setActiveTab(defaultTab);
+    } else if (location.pathname === '/majors' || location.pathname === '/academic-majors') {
+      setActiveTab('majors');
+    } else {
+      const params = new URLSearchParams(location.search);
+      const tabParam = params.get('tab');
+      if (tabParam && ['notes', 'exams', 'majors', 'groups', 'grants', 'calendar'].includes(tabParam)) {
+        setActiveTab(tabParam);
+      }
+    }
+  }, [location.pathname, location.search, defaultTab]);
+
   const [resources, setResources] = useState(DEFAULT_RESOURCES);
   const [studyGroups, setStudyGroups] = useState(DEFAULT_GROUPS);
   const [grantsList, setGrantsList] = useState(DEFAULT_GRANTS);

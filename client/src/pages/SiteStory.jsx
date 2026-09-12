@@ -21,7 +21,7 @@ import {
   ChevronLeft
 } from 'lucide-react';
 import logoImg from '../assets/logo.png';
-import mubaashirImg from '../assets/team/mubaashir.jpg';
+import mubasherImg from '../assets/team/mubaashir.jpg';
 import mohammedRabieImg from '../assets/team/mohamed_rabi.jpg';
 import mussabImg from '../assets/team/mussab.jpg';
 
@@ -35,12 +35,12 @@ export default function SiteStory() {
       title: 'البداية | الفكرة',
       subtitle: 'The Beginning | The Idea',
       roleLabel: 'صاحب الفكرة',
-      person: 'مباشر عمر عثمان الطاهر',
-      personEn: 'Mubaashir Omer Osman Al-Tahir',
-      image: mubaashirImg,
+      person: 'مبشر عمر عثمان الطاهر',
+      personEn: 'Mubasher Omer Osman Al-Tahir',
+      image: mubasherImg,
       icon: Lightbulb,
-      color: '#f59e0b',
-      bgGlow: 'rgba(245, 158, 11, 0.15)',
+      color: '#ec4899',
+      bgGlow: 'rgba(236, 72, 153, 0.15)',
       description:
         'بدأت فكرة إنشاء الموقع من الحاجة إلى وجود منصة إلكترونية رسمية تجمع وجود الرابطة في مكان واحد، وتكون مرجعاً للطلاب، ووسيلة للتعريف بأنشطتها وخدماتها ومبادراتها. لم تكن الفكرة مجرد إنشاء موقع، بل كانت رؤية لتأسيس مساحة رقمية تمثل الرابطة وتستمر في خدمة الطلاب وتوثيق ما يُقدّم لهم.',
       keyTakeaway: 'رؤية رقمية موحدة لخدمة طلاب العلوم وتوثيق أثر الرابطة المستدام.'
@@ -68,8 +68,8 @@ export default function SiteStory() {
       personEn: 'Mohammed Rabie Mohammed Abdel-Muttalib',
       image: mohammedRabieImg,
       icon: Palette,
-      color: '#ec4899',
-      bgGlow: 'rgba(236, 72, 153, 0.15)',
+      color: '#f59e0b',
+      bgGlow: 'rgba(245, 158, 11, 0.15)',
       description:
         'في هذه المرحلة، تحولت الرؤية إلى واجهة استخدام وهوية بصرية. تم العمل على تصميم يجمع بين البساطة والوضوح وسهولة الاستخدام، مع الحفاظ على طابع يعكس هوية الرابطة ومكانتها. كان الهدف ألا يكون الموقع مجرد شكل جميل، بل منصة عملية وواضحة وسهلة في الوصول إلى المعلومة.',
       keyTakeaway: 'بناء هوية بصرية أنيقة، تجربة مستخدم سلسلة، وتصميم يليق بعراقة الكلية.'
@@ -111,12 +111,12 @@ export default function SiteStory() {
       title: 'The Beginning | The Idea',
       subtitle: 'البداية | الفكرة',
       roleLabel: 'Idea Originator',
-      person: 'Mubaashir Omer Osman Al-Tahir',
-      personAr: 'مباشر عمر عثمان الطاهر',
-      image: mubaashirImg,
+      person: 'Mubasher Omer Osman Al-Tahir',
+      personAr: 'مبشر عمر عثمان الطاهر',
+      image: mubasherImg,
       icon: Lightbulb,
-      color: '#f59e0b',
-      bgGlow: 'rgba(245, 158, 11, 0.15)',
+      color: '#ec4899',
+      bgGlow: 'rgba(236, 72, 153, 0.15)',
       description:
         "The idea of creating the website started from the need for an official electronic platform that brings together the association's presence in one space, serves as a reference for students, and acts as a medium to introduce the association's activities, services, and initiatives. The idea was not just to build a website, but a vision to establish a digital space representing the association that continues to serve students and document what is offered to them.",
       keyTakeaway: 'A unified digital vision to serve science students and sustain the legacy of student initiatives.'
@@ -144,8 +144,8 @@ export default function SiteStory() {
       personAr: 'محمد ربيع محمد عبدالمطلب',
       image: mohammedRabieImg,
       icon: Palette,
-      color: '#ec4899',
-      bgGlow: 'rgba(236, 72, 153, 0.15)',
+      color: '#f59e0b',
+      bgGlow: 'rgba(245, 158, 11, 0.15)',
       description:
         'In this stage, the vision turned into a user interface and visual identity. The design was crafted to combine simplicity, clarity, and ease of use, while preserving the character that reflects the association\'s identity and standing. The goal was not only for the site to look beautiful, but also to be practical, clear, and easy to navigate for information.',
       keyTakeaway: 'Crafting clean UI aesthetics, intuitive UX pathways, and dignified visual branding.'
@@ -505,31 +505,31 @@ export default function SiteStory() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 sm:gap-8">
-            {/* 1. مباشر عمر عثمان الطاهر (صاحب الفكرة) */}
-            <div className="group relative bg-slate-900/80 border border-amber-500/30 hover:border-amber-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-[0_20px_45px_-12px_rgba(245,158,11,0.35),0_0_28px_rgba(245,158,11,0.18)] transition-all duration-300 ease-out hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
+            {/* 1. مبشر عمر عثمان الطاهر (صاحب الفكرة) */}
+            <div className="group relative bg-slate-900/80 border border-pink-500/30 hover:border-pink-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-[0_20px_45px_-12px_rgba(236,72,153,0.35),0_0_28px_rgba(236,72,153,0.18)] transition-all duration-300 ease-out hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
               <div className="relative mb-5">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-amber-500/50 shadow-xl shadow-amber-500/20 group-hover:scale-105 group-hover:border-amber-400 group-hover:shadow-[0_0_24px_rgba(245,158,11,0.4)] transition-all duration-300">
+                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-pink-500/50 shadow-xl shadow-pink-500/20 group-hover:scale-105 group-hover:border-pink-400 group-hover:shadow-[0_0_24px_rgba(236,72,153,0.4)] transition-all duration-300">
                   <img
-                    src={mubaashirImg}
-                    alt="مباشر عمر عثمان الطاهر"
+                    src={mubasherImg}
+                    alt="مبشر عمر عثمان الطاهر"
                     className="w-full h-full object-cover object-center"
                   />
                 </div>
-                <div className="absolute bottom-0 right-1 px-2 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-extrabold shadow">
+                <div className="absolute bottom-0 right-1 px-2 py-0.5 rounded-full bg-pink-500 text-slate-950 text-[10px] font-extrabold shadow">
                   💡 فكرة
                 </div>
               </div>
 
-              <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold mb-2">
+              <span className="px-3 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-300 text-xs font-bold mb-2">
                 {lang === 'ar' ? 'صاحب الفكرة والمبادرة' : 'Idea & Vision Originator'}
               </span>
 
               <h3 className="text-lg sm:text-xl font-extrabold text-white mb-1">
-                {lang === 'ar' ? 'مباشر عمر عثمان الطاهر' : 'Mubaashir Omer Osman Al-Tahir'}
+                {lang === 'ar' ? 'مبشر عمر عثمان الطاهر' : 'Mubasher Omer Osman Al-Tahir'}
               </h3>
               <div className="text-xs text-slate-400 mb-4 font-mono">
-                {lang === 'ar' ? 'Mubaashir Omer Osman' : 'مباشر عمر عثمان الطاهر'}
+                {lang === 'ar' ? 'Mubasher Omer Osman' : 'مبشر عمر عثمان الطاهر'}
               </div>
 
               <p className="text-xs sm:text-sm text-slate-300 leading-relaxed text-justify sm:text-center mt-auto">
@@ -540,22 +540,22 @@ export default function SiteStory() {
             </div>
 
             {/* 2. محمد ربيع محمد عبدالمطلب (المصمم) */}
-            <div className="group relative bg-slate-900/80 border border-pink-500/30 hover:border-pink-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-[0_20px_45px_-12px_rgba(236,72,153,0.35),0_0_28px_rgba(236,72,153,0.18)] transition-all duration-300 ease-out hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
-              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-pink-500 to-transparent" />
+            <div className="group relative bg-slate-900/80 border border-amber-500/30 hover:border-amber-400 rounded-3xl p-6 backdrop-blur-xl shadow-xl hover:shadow-[0_20px_45px_-12px_rgba(245,158,11,0.35),0_0_28px_rgba(245,158,11,0.18)] transition-all duration-300 ease-out hover:-translate-y-2 flex flex-col items-center text-center overflow-hidden">
+              <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-amber-500 to-transparent" />
               <div className="relative mb-5">
-                <div className="w-28 h-28 sm:w-32 sm:h-32 rounded-full overflow-hidden border-4 border-pink-500/50 shadow-xl shadow-pink-500/20 group-hover:scale-105 group-hover:border-pink-400 group-hover:shadow-[0_0_24px_rgba(236,72,153,0.4)] transition-all duration-300">
+                <div className="w-32 h-32 sm:w-36 sm:h-36 rounded-full overflow-hidden border-4 border-amber-500/50 shadow-xl shadow-amber-500/25 group-hover:scale-105 group-hover:border-amber-400 group-hover:shadow-[0_0_26px_rgba(245,158,11,0.45)] transition-all duration-300 flex items-center justify-center">
                   <img
                     src={mohammedRabieImg}
                     alt="محمد ربيع محمد عبدالمطلب"
-                    className="w-full h-full object-cover object-center"
+                    className="w-full h-full object-cover object-center scale-105 group-hover:scale-110 transition-transform duration-300"
                   />
                 </div>
-                <div className="absolute bottom-0 right-1 px-2 py-0.5 rounded-full bg-pink-500 text-slate-950 text-[10px] font-extrabold shadow">
+                <div className="absolute bottom-0 right-1 px-2.5 py-0.5 rounded-full bg-amber-500 text-slate-950 text-[10px] font-extrabold shadow">
                   🎨 تصميم
                 </div>
               </div>
 
-              <span className="px-3 py-1 rounded-full bg-pink-500/15 border border-pink-500/30 text-pink-300 text-xs font-bold mb-2">
+              <span className="px-3 py-1 rounded-full bg-amber-500/15 border border-amber-500/30 text-amber-300 text-xs font-bold mb-2">
                 {lang === 'ar' ? 'المصمم والهوية البصرية' : 'UI/UX & Brand Designer'}
               </span>
 

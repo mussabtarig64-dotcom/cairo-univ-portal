@@ -29,7 +29,8 @@ import {
   Grid,
   Sun,
   Moon,
-  History
+  History,
+  Compass
 } from 'lucide-react';
 import NotificationCenter from './NotificationCenter';
 
@@ -74,6 +75,7 @@ export default function Navbar() {
     { path: '/', label: 'الرئيسية', icon: HomeIcon, desc: 'الأخبار، الإعلانات، والفعاليات' },
     { path: '/story', label: 'قصة الموقع', icon: History, desc: 'من فكرة على ورق… إلى منصة على أرض الواقع', badge: 'مميز' },
     { path: '/academic', label: 'الأكاديمية', icon: BookOpen, desc: 'مذكرات، امتحانات، ومجموعات دراسة' },
+    { path: '/majors', label: 'دليل التخصصات', icon: Compass, desc: 'تفاصيل الأقسام ومجالات العمل' },
     { path: '/sports', label: 'الرياضة', icon: Trophy, desc: 'البطولات، الفرق، النتائج والترتيب', badge: 'دوري 2026' },
     { path: '/social', label: 'الاجتماعي', icon: HeartHandshake, desc: 'المبادرات، التطوع، ونظام الأسر' },
     { path: '/events', label: 'الفعاليات', icon: Calendar, desc: 'التسجيل، التقويم، والتغطيات' },

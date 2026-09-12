@@ -125,6 +125,8 @@ function MainAppLayout() {
           <Route path="/site-story" element={<SiteStory />} />
           <Route path="/academic" element={<AcademicLibrary />} />
           <Route path="/library" element={<AcademicLibrary />} />
+          <Route path="/majors" element={<AcademicLibrary defaultTab="majors" />} />
+          <Route path="/academic-majors" element={<AcademicLibrary defaultTab="majors" />} />
           <Route path="/sports" element={<SportsHub />} />
           <Route path="/sudan" element={<SudanPortal />} />
           <Route path="/social" element={<SocialHub />} />
