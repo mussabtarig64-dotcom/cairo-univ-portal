@@ -463,29 +463,81 @@ export default function FloatingAIChatWidget() {
         </div>
       )}
 
-      {/* 2. زر التفعيل العائم Floating Trigger Button */}
+      {/* 2. زر التفعيل العائم Floating 3D Trigger Button */}
       <button
         onClick={() => setIsOpen(!isOpen)}
         className="floating-ai-btn"
+        title="المستشار الأكاديمي والرفيق الذكي (AI)"
         style={{
           display: 'flex',
           alignItems: 'center',
-          gap: '8px',
-          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+          gap: '9px',
+          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 50%, #b45309 100%)',
           color: '#0b1622',
-          border: 'none',
+          border: '1.5px solid rgba(255, 255, 255, 0.35)',
           borderRadius: '30px',
           fontWeight: '900',
           cursor: 'pointer',
-          boxShadow: '0 8px 25px rgba(245, 158, 11, 0.45)',
-          transition: 'transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1)',
+          boxShadow: '0 10px 28px rgba(245, 158, 11, 0.5), 0 0 20px rgba(56, 189, 248, 0.3)',
+          transformStyle: 'preserve-3d',
         }}
       >
-        <Bot size={18} />
-        <span className="floating-ai-label">المستشار الذكي 🤖</span>
+        <div style={{ position: 'relative', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <Bot size={19} />
+          {/* Animated Glowing Pulse Orb */}
+          <span
+            style={{
+              position: 'absolute',
+              top: '-2px',
+              right: '-2px',
+              width: '7px',
+              height: '7px',
+              backgroundColor: '#22c55e',
+              borderRadius: '50%',
+              boxShadow: '0 0 8px #22c55e',
+              animation: 'pulseDot 1.6s infinite',
+            }}
+          />
+        </div>
+        <span className="floating-ai-label" style={{ letterSpacing: '0.3px' }}>المستشار الذكي 🤖</span>
       </button>
 
       <style>{`
+        @keyframes float3DAdvisor {
+          0% {
+            transform: translateY(0px) rotate(0deg) translateZ(0px);
+            box-shadow: 0 10px 28px rgba(245, 158, 11, 0.5), 0 0 20px rgba(56, 189, 248, 0.25);
+          }
+          25% {
+            transform: translateY(-7px) rotate(2deg) translateZ(10px);
+            box-shadow: 0 16px 36px rgba(245, 158, 11, 0.65), 0 0 30px rgba(56, 189, 248, 0.45);
+          }
+          50% {
+            transform: translateY(-13px) rotate(0deg) translateZ(18px);
+            box-shadow: 0 22px 45px rgba(245, 158, 11, 0.75), 0 0 40px rgba(245, 158, 11, 0.5);
+          }
+          75% {
+            transform: translateY(-6px) rotate(-2deg) translateZ(10px);
+            box-shadow: 0 16px 36px rgba(245, 158, 11, 0.65), 0 0 30px rgba(56, 189, 248, 0.45);
+          }
+          100% {
+            transform: translateY(0px) rotate(0deg) translateZ(0px);
+            box-shadow: 0 10px 28px rgba(245, 158, 11, 0.5), 0 0 20px rgba(56, 189, 248, 0.25);
+          }
+        }
+
+        .floating-ai-btn {
+          animation: float3DAdvisor 3.6s ease-in-out infinite;
+          transition: transform 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.28s cubic-bezier(0.34, 1.56, 0.64, 1), border-color 0.28s ease !important;
+        }
+
+        .floating-ai-btn:hover {
+          animation-play-state: paused;
+          transform: scale(1.09) translateY(-6px) rotate(0deg) !important;
+          box-shadow: 0 0 35px rgba(245, 158, 11, 0.9), 0 0 65px rgba(56, 189, 248, 0.6), inset 0 0 16px rgba(255, 255, 255, 0.4) !important;
+          border-color: rgba(255, 255, 255, 0.8) !important;
+        }
+
         @keyframes springPopIn {
           0% {
             opacity: 0;
@@ -508,7 +560,7 @@ export default function FloatingAIChatWidget() {
           }
           40% {
             opacity: 1;
-            transform: scale(1.25);
+            transform: scale(1.35);
           }
         }
 
@@ -519,14 +571,14 @@ export default function FloatingAIChatWidget() {
             left: 24px;
           }
           .floating-ai-btn {
-            padding: 12px 18px;
-            font-size: 13px;
+            padding: 13px 20px;
+            font-size: 14px;
           }
           .floating-ai-window {
-            bottom: 65px;
+            bottom: 72px;
             left: 0;
-            width: 380px;
-            height: 520px;
+            width: 390px;
+            height: 530px;
             transform-origin: bottom left;
             animation: springPopIn 0.3s cubic-bezier(0.34, 1.4, 0.64, 1) forwards;
           }
@@ -535,25 +587,23 @@ export default function FloatingAIChatWidget() {
         /* Mobile Positioning: bottom-2 left-2 (8px), scale-75, z-index 20 */
         @media (max-width: 640px) {
           .floating-ai-container {
-            bottom: 8px !important;
-            left: 8px !important;
+            bottom: 12px !important;
+            left: 12px !important;
             z-index: 20 !important;
-            transform: scale(0.75);
             transform-origin: bottom left;
           }
           .floating-ai-btn {
-            padding: 8px 12px;
-            font-size: 11px;
-            box-shadow: 0 4px 15px rgba(245, 158, 11, 0.35);
+            padding: 9px 14px;
+            font-size: 12px;
           }
           .floating-ai-label {
             font-size: 11px;
           }
           .floating-ai-window {
-            bottom: 50px;
+            bottom: 54px;
             left: 0;
-            width: calc(100vw - 20px);
-            height: 440px;
+            width: calc(100vw - 24px);
+            height: 450px;
             max-height: calc(100vh - 80px);
             z-index: 35 !important;
             transform-origin: bottom left;

@@ -10,14 +10,18 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@tsparticles/react": "^4.4.0",
+    "@tsparticles/slim": "^4.4.0",
     "axios": "^1.19.0",
     "dotenv": "^17.4.2",
     "lucide-react": "^1.31.0",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-markdown": "^10.1.0",
+    "react-parallax-tilt": "^1.7.342",
     "react-router-dom": "^7.18.2",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "tsparticles": "^4.4.0"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

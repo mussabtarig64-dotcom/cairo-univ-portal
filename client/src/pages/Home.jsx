@@ -27,6 +27,7 @@ import {
 import { Link } from 'react-router-dom';
 import teamImg from '../assets/team.jpg';
 import SocialLinks from '../components/SocialLinks';
+import ScienceParticles from '../components/ScienceParticles';
 
 export default function Home() {
   const { activeTheme } = useTheme();
@@ -153,6 +154,9 @@ export default function Home() {
             overflow: 'hidden',
           }}
         >
+          {/* Science-Themed 3D Particles Background */}
+          <ScienceParticles />
+
           {/* تأثير توهج خلفي */}
           <div
             style={{
@@ -165,10 +169,12 @@ export default function Home() {
               filter: 'blur(110px)',
               opacity: 0.25,
               pointerEvents: 'none',
+              zIndex: 1,
             }}
           />
 
-          {/* شارة الهوية السودانية للرابطة */}
+          <div style={{ position: 'relative', zIndex: 2 }}>
+            {/* شارة الهوية السودانية للرابطة */}
           <div style={{ textAlign: 'center', marginBottom: '24px' }}>
             <span
               style={{
@@ -299,6 +305,7 @@ export default function Home() {
                 <div style={{ fontSize: '12px', color: activeTheme.textMuted }}>مستقبل علمي مشرق في كلية العلوم</div>
               </div>
             </div>
+          </div>
           </div>
         </div>
       </section>
