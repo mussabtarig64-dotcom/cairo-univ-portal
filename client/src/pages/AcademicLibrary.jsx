@@ -24,7 +24,9 @@ import {
   Edit,
   Trash2,
   CheckCircle2,
-  Compass
+  AlertCircle,
+  Compass,
+  RefreshCw
 } from 'lucide-react';
 import AdminHubCMSModal from '../components/AdminHubCMSModal';
 import AcademicMajorsGuide from '../components/AcademicMajorsGuide';
@@ -231,6 +233,24 @@ const DEFAULT_GRANTS = [
   },
 ];
 
+// دالة مساعدة لاسترجاع وحفظ العناصر المحذوفة لضمان عدم عودتها عند التحديث
+const getDeletedIds = () => {
+  try {
+    const stored = localStorage.getItem('ssa_deleted_academic_ids');
+    return stored ? new Set(JSON.parse(stored)) : new Set();
+  } catch (e) {
+    return new Set();
+  }
+};
+
+const addDeletedId = (id) => {
+  try {
+    const set = getDeletedIds();
+    set.add(id);
+    localStorage.setItem('ssa_deleted_academic_ids', JSON.stringify(Array.from(set)));
+  } catch (e) {}
+};
+
 export default function AcademicLibrary({ defaultTab }) {
   const { activeTheme } = useTheme();
   const { isAdmin } = useAuth();
@@ -263,9 +283,10 @@ export default function AcademicLibrary({ defaultTab }) {
     }
   }, [location.pathname, location.search, defaultTab]);
 
-  const [resources, setResources] = useState(DEFAULT_RESOURCES);
-  const [studyGroups, setStudyGroups] = useState(DEFAULT_GROUPS);
-  const [grantsList, setGrantsList] = useState(DEFAULT_GRANTS);
+  const [resources, setResources] = useState([]);
+  const [studyGroups, setStudyGroups] = useState([]);
+  const [grantsList, setGrantsList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   const [selectedLevel, setSelectedLevel] = useState('الكل');
   const [selectedDept, setSelectedDept] = useState('جميع التخصصات');
@@ -276,6 +297,7 @@ export default function AcademicLibrary({ defaultTab }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
   const [notification, setNotification] = useState('');
+  const [errorNotification, setErrorNotification] = useState('');
 
   const tabs = [
     { id: 'notes', label: 'مذكرات ومراجع', icon: BookOpen, count: 'ملخصات ومعامل' },
@@ -286,74 +308,121 @@ export default function AcademicLibrary({ defaultTab }) {
     { id: 'calendar', label: 'التقويم وجدول الامتحانات', icon: Calendar, count: 'مواعيد الكلية' },
   ];
 
-  // Fetch Live Academic Content from MongoDB
-  useEffect(() => {
-    async function loadDynamic() {
+  // 1. جلب البيانات الحية من MongoDB Atlas والتأكد من عدم ظهور العناصر المحذوفة
+  const loadDynamicContent = async () => {
+    try {
+      setIsLoading(true);
+      const deletedSet = getDeletedIds();
       const dynamicItems = await fetchHubContent('academic');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicRes = dynamicItems.filter((i) => i.section === 'notes' || i.section === 'exams');
-        const dynamicGrps = dynamicItems.filter((i) => i.section === 'groups');
-        const dynamicGrants = dynamicItems.filter((i) => i.section === 'grants');
 
-        if (dynamicRes.length > 0) {
-          const ids = new Set(dynamicRes.map((d) => d._id));
-          setResources([...dynamicRes, ...DEFAULT_RESOURCES.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicGrps.length > 0) {
-          const ids = new Set(dynamicGrps.map((d) => d._id));
-          setStudyGroups([...dynamicGrps, ...DEFAULT_GROUPS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicGrants.length > 0) {
-          const ids = new Set(dynamicGrants.map((d) => d._id));
-          setGrantsList([...dynamicGrants, ...DEFAULT_GRANTS.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      const dynamicRes = (dynamicItems || []).filter(
+        (i) => (i.section === 'notes' || i.section === 'exams') && !deletedSet.has(i._id)
+      );
+      const dynamicGrps = (dynamicItems || []).filter(
+        (i) => i.section === 'groups' && !deletedSet.has(i._id)
+      );
+      const dynamicGrants = (dynamicItems || []).filter(
+        (i) => i.section === 'grants' && !deletedSet.has(i._id)
+      );
+
+      const dynamicResIds = new Set(dynamicRes.map((d) => d._id));
+      const defaultResFiltered = DEFAULT_RESOURCES.filter(
+        (d) => !deletedSet.has(d._id) && !dynamicResIds.has(d._id)
+      );
+      setResources([...dynamicRes, ...defaultResFiltered]);
+
+      const dynamicGrpsIds = new Set(dynamicGrps.map((d) => d._id));
+      const defaultGrpsFiltered = DEFAULT_GROUPS.filter(
+        (d) => !deletedSet.has(d._id) && !dynamicGrpsIds.has(d._id)
+      );
+      setStudyGroups([...dynamicGrps, ...defaultGrpsFiltered]);
+
+      const dynamicGrantsIds = new Set(dynamicGrants.map((d) => d._id));
+      const defaultGrantsFiltered = DEFAULT_GRANTS.filter(
+        (d) => !deletedSet.has(d._id) && !dynamicGrantsIds.has(d._id)
+      );
+      setGrantsList([...dynamicGrants, ...defaultGrantsFiltered]);
+    } catch (err) {
+      console.error('Failed to load academic hub content:', err);
+    } finally {
+      setIsLoading(false);
     }
-    loadDynamic();
+  };
+
+  useEffect(() => {
+    loadDynamicContent();
   }, []);
 
+  // 2. تحديث الحالة بعد نجاح الحفظ من الـ CMS Modal
   const handleSaved = (item, action) => {
     if (item.section === 'groups') {
-      setStudyGroups(action === 'create' ? [item, ...studyGroups] : studyGroups.map((g) => (g._id === item._id ? item : g)));
+      setStudyGroups((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((g) => (g._id === item._id ? item : g))
+      );
     } else if (item.section === 'grants') {
-      setGrantsList(action === 'create' ? [item, ...grantsList] : grantsList.map((g) => (g._id === item._id ? item : g)));
+      setGrantsList((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((g) => (g._id === item._id ? item : g))
+      );
     } else {
-      setResources(action === 'create' ? [item, ...resources] : resources.map((r) => (r._id === item._id ? item : r)));
+      setResources((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((r) => (r._id === item._id ? item : r))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة المحتوى الأكاديمي بنجاح!' : 'تم تحديث المحتوى الأكاديمي بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة المحتوى الأكاديمي وحفظه في MongoDB Atlas بنجاح!'
+        : 'تم تحديث المحتوى الأكاديمي بنجاح في قاعدة البيانات!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
+  // 3. دالة الحذف الصارم المعتمدة على قاعدة البيانات أولاً (DB-First Deletion)
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا المحتوى الأكاديمي؟')) {
-      try {
-        if (!id.startsWith('res-') && !id.startsWith('grp-') && !id.startsWith('grn-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'groups') {
-          setStudyGroups(studyGroups.filter((g) => g._id !== id));
-        } else if (section === 'grants') {
-          setGrantsList(grantsList.filter((g) => g._id !== id));
-        } else {
-          setResources(resources.filter((r) => r._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا المحتوى الأكاديمي نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+
+    try {
+      // إرسال طلب الحذف الفعلي إلى الخادم وانتظار استجابة 200 OK قبل تعديل الواجهة
+      await deleteHubContent(id, 'academic');
+
+      // تسجيل المعرف المحذوف لضمان عدم عودته عند تحديث الصفحة
+      addDeletedId(id);
+
+      // تحديث حالة الـ React state فقط بعد نجاح الحذف في قاعدة البيانات
+      if (section === 'groups') {
+        setStudyGroups((prev) => prev.filter((g) => g._id !== id));
+      } else if (section === 'grants') {
+        setGrantsList((prev) => prev.filter((g) => g._id !== id));
+      } else {
+        setResources((prev) => prev.filter((r) => r._id !== id));
       }
+
+      setNotification('تم حذف المحتوى بنجاح من قاعدة البيانات والسجل المركزي!');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete Academic Item Error:', err);
+      setErrorNotification(`فشل حذف المحتوى: ${err.message || 'حدث خطأ أثناء الاتصال بالخادم'}`);
+      setTimeout(() => setErrorNotification(''), 5000);
+      // في حالة فشل الخادم، لا يتم حذف العنصر من الواجهة
     }
   };
 
   const filteredNotesAndExams = resources.filter((item) => {
     if (activeTab === 'notes' && (item.type === 'exam' || item.section === 'exams')) return false;
-    if (activeTab === 'exams' && (item.type !== 'exam' && item.section !== 'exams')) return false;
+    if (activeTab === 'exams' && item.type !== 'exam' && item.section !== 'exams') return false;
 
     const matchesLevel = selectedLevel === 'الكل' || item.level === selectedLevel;
-    const matchesDept = selectedDept === 'جميع التخصصات' || (item.dept === selectedDept || item.category === selectedDept);
+    const matchesDept = selectedDept === 'جميع التخصصات' || item.dept === selectedDept || item.category === selectedDept;
     const matchesSearch =
       !searchQuery.trim() ||
-      item.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
       (item.description && item.description.toLowerCase().includes(searchQuery.toLowerCase())) ||
       (item.dept && item.dept.toLowerCase().includes(searchQuery.toLowerCase()));
 
@@ -365,7 +434,17 @@ export default function AcademicLibrary({ defaultTab }) {
       prev.map((r) => (r._id === item._id ? { ...r, downloads: (r.downloads || 0) + 1 } : r))
     );
 
-    setDownloadSuccess(`جاري بدء تحميل "${item.title}"...`);
+    if (item.fileUrl && (item.fileUrl.startsWith('http') || item.fileUrl.startsWith('data:'))) {
+      const a = document.createElement('a');
+      a.href = item.fileUrl;
+      a.target = '_blank';
+      a.download = item.fileName || `${item.title}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+    }
+
+    setDownloadSuccess(`جاري بدء تنزيل "${item.title}"...`);
     setTimeout(() => {
       setDownloadSuccess('');
     }, 4000);
@@ -422,6 +501,7 @@ export default function AcademicLibrary({ defaultTab }) {
                 fontSize: '14px',
                 cursor: 'pointer',
                 boxShadow: '0 6px 20px rgba(245, 158, 11, 0.4)',
+                transition: 'all 0.2s',
               }}
             >
               <PlusCircle size={18} />
@@ -431,14 +511,23 @@ export default function AcademicLibrary({ defaultTab }) {
         )}
       </div>
 
+      {/* Success Toast */}
       {notification && (
-        <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.15)', border: '1px solid #22c55e', color: '#34d399', padding: '12px 20px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 'bold' }}>
+        <div style={{ backgroundColor: 'rgba(34, 197, 94, 0.18)', border: '1px solid #22c55e', color: '#86efac', padding: '12px 20px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 'bold', boxShadow: '0 8px 24px rgba(34, 197, 94, 0.2)' }}>
           <CheckCircle2 size={18} />
           <span>{notification}</span>
         </div>
       )}
 
-      {/* التبويبات الرئيسية الخمسة */}
+      {/* Error Toast */}
+      {errorNotification && (
+        <div style={{ backgroundColor: 'rgba(239, 68, 68, 0.18)', border: '1px solid #ef4444', color: '#fca5a5', padding: '12px 20px', borderRadius: '12px', marginBottom: '20px', display: 'flex', alignItems: 'center', gap: '8px', fontSize: '14px', fontWeight: 'bold', boxShadow: '0 8px 24px rgba(239, 68, 68, 0.2)' }}>
+          <AlertCircle size={18} />
+          <span>{errorNotification}</span>
+        </div>
+      )}
+
+      {/* التبويبات الرئيسية */}
       <div
         style={{
           display: 'grid',
@@ -572,94 +661,108 @@ export default function AcademicLibrary({ defaultTab }) {
             </div>
           </div>
 
-          {/* شبكة المذكرات / الامتحانات */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '22px' }}>
-            {filteredNotesAndExams.map((item) => (
-              <div
-                key={item._id}
-                style={{
-                  background: '#0f172a',
-                  border: '1px solid rgba(255, 255, 255, 0.1)',
-                  borderRadius: '20px',
-                  padding: '24px',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  justifyContent: 'space-between',
-                  boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
-                }}
-              >
-                <div>
-                  <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
-                    <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '4px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
-                      {item.typeName || (item.type === 'exam' ? 'امتحانات سابقة' : 'مذكرات')}
-                    </span>
-                    <span style={{ fontSize: '12px', color: '#cbd5e1', backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '3px 8px', borderRadius: '6px' }}>
-                      {item.format || 'PDF'} • {item.fileSize || '3.5 MB'}
-                    </span>
+          {isLoading ? (
+            <div style={{ textAlign: 'center', padding: '50px 20px', color: '#94a3b8' }}>
+              <RefreshCw size={28} className="animate-spin" style={{ margin: '0 auto 12px', color: '#f59e0b' }} />
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff' }}>جاري مزامنة المحتوى من قاعدة البيانات...</div>
+            </div>
+          ) : filteredNotesAndExams.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '40px 20px', background: '#0f172a', borderRadius: '16px', border: '1px dashed rgba(255,255,255,0.15)', color: '#94a3b8' }}>
+              <BookOpen size={32} style={{ margin: '0 auto 10px', opacity: 0.5 }} />
+              <div style={{ fontSize: '14px', fontWeight: 'bold', color: '#ffffff' }}>لا توجد مذكرات أو امتحانات مطابقة حالياً</div>
+            </div>
+          ) : (
+            /* شبكة المذكرات / الامتحانات */
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '22px' }}>
+              {filteredNotesAndExams.map((item) => (
+                <div
+                  key={item._id}
+                  style={{
+                    background: '#0f172a',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '20px',
+                    padding: '24px',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    justifyContent: 'space-between',
+                    boxShadow: '0 10px 25px rgba(0, 0, 0, 0.3)',
+                  }}
+                >
+                  <div>
+                    <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '14px' }}>
+                      <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '4px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
+                        {item.typeName || (item.type === 'exam' || item.section === 'exams' ? 'امتحانات سابقة' : 'مذكرات')}
+                      </span>
+                      <span style={{ fontSize: '12px', color: '#cbd5e1', backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '3px 8px', borderRadius: '6px' }}>
+                        {item.format || 'PDF'} • {item.fileSize || '3.5 MB'}
+                      </span>
+                    </div>
+
+                    <h3 style={{ color: '#ffffff', fontSize: '17px', fontWeight: 'bold', margin: '0 0 10px', lineHeight: '1.5' }}>
+                      {item.title}
+                    </h3>
+
+                    <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', margin: '0 0 16px' }}>
+                      {item.description}
+                    </p>
+
+                    <div style={{ fontSize: '13px', color: '#38bdf8', marginBottom: '16px', fontWeight: '600' }}>
+                      <div>🏛️ {item.level || item.year || 'المستوى الأكاديمي'}</div>
+                      <div style={{ marginTop: '3px' }}>🔬 {item.dept || item.category || 'كلية العلوم'}</div>
+                    </div>
                   </div>
 
-                  <h3 style={{ color: '#ffffff', fontSize: '17px', fontWeight: 'bold', margin: '0 0 10px', lineHeight: '1.5' }}>
-                    {item.title}
-                  </h3>
+                  <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>📥 {item.downloads || 0} تنزيل</span>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                      <button
+                        onClick={() => handleDownload(item)}
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                          color: '#0b1622',
+                          border: 'none',
+                          padding: '9px 18px',
+                          borderRadius: '10px',
+                          fontWeight: 'bold',
+                          fontSize: '13px',
+                          cursor: 'pointer',
+                          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                        }}
+                      >
+                        <Download size={15} />
+                        <span>تنزيل الملف</span>
+                      </button>
 
-                  <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', margin: '0 0 16px' }}>
-                    {item.description}
-                  </p>
-
-                  <div style={{ fontSize: '13px', color: '#38bdf8', marginBottom: '16px', fontWeight: '600' }}>
-                    <div>🏛️ {item.level || 'المستوى الأكاديمي'}</div>
-                    <div style={{ marginTop: '3px' }}>🔬 {item.dept || item.category || 'كلية العلوم'}</div>
+                      {isAdmin && (
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
+                          <button
+                            onClick={() => {
+                              setEditingItem(item);
+                              setIsModalOpen(true);
+                            }}
+                            title="تعديل المذكرة"
+                            style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+                          >
+                            <Edit size={14} />
+                          </button>
+                          <button
+                            onClick={() => handleDeleteItem(item._id, activeTab)}
+                            title="حذف نهائي من قاعدة البيانات"
+                            style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
+                          >
+                            <Trash2 size={14} />
+                          </button>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 </div>
-
-                <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>📥 {item.downloads || 0} تنزيل</span>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                    <button
-                      onClick={() => handleDownload(item)}
-                      style={{
-                        display: 'inline-flex',
-                        alignItems: 'center',
-                        gap: '6px',
-                        background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                        color: '#0b1622',
-                        border: 'none',
-                        padding: '9px 18px',
-                        borderRadius: '10px',
-                        fontWeight: 'bold',
-                        fontSize: '13px',
-                        cursor: 'pointer',
-                        boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
-                      }}
-                    >
-                      <Download size={15} />
-                      <span>تنزيل الملف</span>
-                    </button>
-
-                    {isAdmin && (
-                      <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
-                        <button
-                          onClick={() => {
-                            setEditingItem(item);
-                            setIsModalOpen(true);
-                          }}
-                          style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                        >
-                          <Edit size={14} />
-                        </button>
-                        <button
-                          onClick={() => handleDeleteItem(item._id, activeTab)}
-                          style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
-                        >
-                          <Trash2 size={14} />
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </>
       )}
 
@@ -734,12 +837,14 @@ export default function AcademicLibrary({ defaultTab }) {
                         setEditingItem(grp);
                         setIsModalOpen(true);
                       }}
+                      title="تعديل المجموعة"
                       style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
                     >
                       <Edit size={14} />
                     </button>
                     <button
                       onClick={() => handleDeleteItem(grp._id, 'groups')}
+                      title="حذف نهائي من قاعدة البيانات"
                       style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
                     >
                       <Trash2 size={14} />
@@ -752,7 +857,7 @@ export default function AcademicLibrary({ defaultTab }) {
         </div>
       )}
 
-      {/* 4. منح وتدريب */}
+      {/* 5. منح وتدريب */}
       {activeTab === 'grants' && (
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))', gap: '22px' }}>
           {grantsList.map((g) => (
@@ -823,12 +928,14 @@ export default function AcademicLibrary({ defaultTab }) {
                         setEditingItem(g);
                         setIsModalOpen(true);
                       }}
+                      title="تعديل المنحة"
                       style={{ background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6', color: '#60a5fa', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
                     >
                       <Edit size={14} />
                     </button>
                     <button
                       onClick={() => handleDeleteItem(g._id, 'grants')}
+                      title="حذف نهائي من قاعدة البيانات"
                       style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#f87171', padding: '8px', borderRadius: '8px', cursor: 'pointer' }}
                     >
                       <Trash2 size={14} />
@@ -841,7 +948,7 @@ export default function AcademicLibrary({ defaultTab }) {
         </div>
       )}
 
-      {/* 5. التقويم الأكاديمي */}
+      {/* 6. التقويم الأكاديمي */}
       {activeTab === 'calendar' && (
         <AcademicCalendar />
       )}

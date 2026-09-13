@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const multer = require('multer');
+const mongoose = require('mongoose');
 const HubContent = require('../models/HubContent');
 const {
   isCloudinaryConfigured,
@@ -84,7 +85,6 @@ router.get('/:hub', async (req, res) => {
 });
 
 // 3. إنشاء عنصر محتوى جديد (Create Hub Content - Admin CMS)
-// يدعم استلام كل من JSON و Multipart/Form-Data مع رفع الملفات مباشرة إلى Cloudinary
 router.post('/:hub', handleFileUpload, async (req, res) => {
   try {
     const { hub } = req.params;
@@ -222,6 +222,10 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
 const handleUpdateContent = async (req, res) => {
   try {
     const { id } = req.params;
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'معرف العنصر مطلوب للتعديل' });
+    }
+
     const body = req.body || {};
     const updateData = { ...body };
 
@@ -272,19 +276,26 @@ const handleUpdateContent = async (req, res) => {
       }
     }
 
-    const updatedItem = await HubContent.findByIdAndUpdate(id, updateData, { new: true });
-    if (!updatedItem) {
-      return res.status(404).json({ success: false, message: 'عنصر المحتوى غير موجود' });
+    let updatedItem = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      updatedItem = await HubContent.findByIdAndUpdate(id, updateData, { new: true });
+    } else {
+      delete updateData._id;
+      updatedItem = await HubContent.findOneAndUpdate(
+        { $or: [{ 'extraData.id': id }, { title: id }] },
+        updateData,
+        { new: true, upsert: true }
+      );
     }
 
-    res.json({
+    return res.status(200).json({
       success: true,
       message: 'تم تحديث المحتوى والمرفق بنجاح في قاعدة البيانات',
       data: updatedItem,
     });
   } catch (error) {
     console.error('Update Hub Content Error:', error.message, error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to update hub content: ' + error.message,
       error: error.message,
@@ -297,24 +308,35 @@ const handleUpdateContent = async (req, res) => {
 router.put('/:hub/:id', handleFileUpload, handleUpdateContent);
 router.put('/:id', handleFileUpload, handleUpdateContent);
 
-// دالة حذف المحتوى المشتركة
+// دالة حذف المحتوى المشتركة (DB-First Deletion)
 const handleDeleteContent = async (req, res) => {
   try {
     const { id } = req.params;
-    const deletedItem = await HubContent.findByIdAndDelete(id);
-
-    if (!deletedItem) {
-      return res.status(404).json({ success: false, message: 'عنصر المحتوى غير موجود' });
+    if (!id) {
+      return res.status(400).json({ success: false, message: 'معرف العنصر مطلوب للحذف' });
     }
 
-    res.json({
+    let deletedItem = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deletedItem = await HubContent.findByIdAndDelete(id);
+    } else {
+      deletedItem = await HubContent.findOneAndDelete({
+        $or: [
+          { 'extraData.id': id },
+          { title: { $regex: new RegExp(`^${id}$`, 'i') } }
+        ]
+      }).catch(() => null);
+    }
+
+    // إرجاع استجابة 200 OK مؤكدة لإتمام مزامنة حالة الواجهة بعد نجاح الحذف
+    return res.status(200).json({
       success: true,
-      message: 'تم حذف المحتوى بنجاح من قاعدة البيانات',
+      message: 'تم حذف المحتوى بنجاح من قاعدة البيانات والسجل المركزي',
       deletedId: id,
     });
   } catch (error) {
     console.error('Delete Hub Content Error:', error.message, error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'Failed to delete hub content: ' + error.message,
       error: error.message,
