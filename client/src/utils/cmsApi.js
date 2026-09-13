@@ -38,8 +38,8 @@ export const createHubContent = async (hub, contentData) => {
   return data.data;
 };
 
-export const updateHubContent = async (id, updateData) => {
-  const url = `${API_BASE}/cms/${id}`;
+export const updateHubContent = async (id, updateData, hub = null) => {
+  const url = hub ? `${API_BASE}/cms/${hub}/${id}` : `${API_BASE}/cms/${id}`;
   const token = localStorage.getItem('token');
   const isFormData = updateData instanceof FormData;
 
@@ -62,8 +62,8 @@ export const updateHubContent = async (id, updateData) => {
   return data.data;
 };
 
-export const deleteHubContent = async (id) => {
-  const url = `${API_BASE}/cms/${id}`;
+export const deleteHubContent = async (id, hub = null) => {
+  const url = hub ? `${API_BASE}/cms/${hub}/${id}` : `${API_BASE}/cms/${id}`;
   const token = localStorage.getItem('token');
   const res = await fetch(url, {
     method: 'DELETE',

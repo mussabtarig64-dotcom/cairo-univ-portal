@@ -8,7 +8,6 @@ const {
 } = require('../utils/cloudinary');
 
 // 1. إعداد Multer لتخزين الملفات في الذاكرة بأمان (Serverless-Safe Memory Storage)
-// يدعم الملفات الكبيرة (حتى 50 ميجابايت) مثل مذكرات الـ PDF الشاملة، نماذج الامتحانات، والصور فائقة الدقة
 const storage = multer.memoryStorage();
 
 const upload = multer({
@@ -17,7 +16,6 @@ const upload = multer({
     fileSize: 50 * 1024 * 1024, // 50MB limit
   },
   fileFilter: (req, file, cb) => {
-    // قبول كافة صيغ المستندات والصور
     cb(null, true);
   },
 });
@@ -86,7 +84,7 @@ router.get('/:hub', async (req, res) => {
 });
 
 // 3. إنشاء عنصر محتوى جديد (Create Hub Content - Admin CMS)
-// يقوم برفع الملفات إلى Cloudinary وتخزين رابط الـ HTTPS السحابي فقط في MongoDB
+// يدعم استلام كل من JSON و Multipart/Form-Data مع رفع الملفات مباشرة إلى Cloudinary
 router.post('/:hub', handleFileUpload, async (req, res) => {
   try {
     const { hub } = req.params;
@@ -100,6 +98,10 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
       category,
       year,
       date,
+      endDate,
+      dept,
+      catColor,
+      catLabel,
       badge,
       author,
       status,
@@ -145,7 +147,6 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
         }
       } else {
         console.warn('[Cloudinary Warning]: Cloudinary credentials not configured. Storing mock cloud link.');
-        // رابط بديل آمن عند عدم توفر بيانات Cloudinary محلياً
         if (!fileUrl) {
           fileUrl = `https://placehold.co/800x600?text=${encodeURIComponent(fileName || 'Document')}`;
         }
@@ -165,6 +166,10 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
     if (body.extraNotes) extraData.extraNotes = body.extraNotes;
     if (fileName) extraData.fileName = fileName;
     if (fileSize) extraData.fileSize = fileSize;
+    if (endDate) extraData.endDate = endDate;
+    if (dept) extraData.dept = dept;
+    if (catColor) extraData.catColor = catColor;
+    if (catLabel) extraData.catLabel = catLabel;
 
     // التحقق من وجود العنوان أو استخدام اسم الملف كعنوان افتراضي
     const finalTitle = (title && title.trim()) ? title.trim() : (fileName ? fileName.replace(/\.[^/.]+$/, '') : '');
@@ -185,7 +190,7 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
       category: category || 'عام',
       year: year || new Date().getFullYear().toString(),
       date: date || new Date().toLocaleDateString('ar-EG'),
-      badge: badge || '',
+      badge: badge || catLabel || '',
       author: author || 'إدارة الرابطة',
       status: status || 'نشط',
       icon: icon || '📌',
@@ -199,7 +204,7 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
 
     res.status(201).json({
       success: true,
-      message: 'تم إضافة المحتوى ورفع الملف إلى التخزين السحابي وحفظه بنجاح في السجل المركزي!',
+      message: 'تم إضافة المحتوى وحفظه بنجاح في السجل المركزي (MongoDB Atlas)!',
       data: newItem,
     });
   } catch (error) {
@@ -213,8 +218,8 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
   }
 });
 
-// 4. تعديل عنصر محتوى موجود (Update Hub Content - Admin CMS)
-router.put('/:id', handleFileUpload, async (req, res) => {
+// دالة تعديل المحتوى المشتركة
+const handleUpdateContent = async (req, res) => {
   try {
     const { id } = req.params;
     const body = req.body || {};
@@ -274,7 +279,7 @@ router.put('/:id', handleFileUpload, async (req, res) => {
 
     res.json({
       success: true,
-      message: 'تم تحديث المحتوى والمرفق السحابي بنجاح في قاعدة البيانات',
+      message: 'تم تحديث المحتوى والمرفق بنجاح في قاعدة البيانات',
       data: updatedItem,
     });
   } catch (error) {
@@ -286,10 +291,14 @@ router.put('/:id', handleFileUpload, async (req, res) => {
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
-});
+};
 
-// 5. حذف عنصر محتوى (Delete Hub Content - Admin CMS)
-router.delete('/:id', async (req, res) => {
+// 4. تعديل عنصر محتوى موجود (يدعم كلاً من /:id و /:hub/:id)
+router.put('/:hub/:id', handleFileUpload, handleUpdateContent);
+router.put('/:id', handleFileUpload, handleUpdateContent);
+
+// دالة حذف المحتوى المشتركة
+const handleDeleteContent = async (req, res) => {
   try {
     const { id } = req.params;
     const deletedItem = await HubContent.findByIdAndDelete(id);
@@ -312,6 +321,10 @@ router.delete('/:id', async (req, res) => {
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
-});
+};
+
+// 5. حذف عنصر محتوى (يدعم كلاً من /:id و /:hub/:id)
+router.delete('/:hub/:id', handleDeleteContent);
+router.delete('/:id', handleDeleteContent);
 
 module.exports = router;
