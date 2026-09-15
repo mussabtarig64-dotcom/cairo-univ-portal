@@ -37,32 +37,27 @@ const DEFAULT_SEED_PROMPTS = [
   },
 ];
 
-// 1. GET /api/advisor-prompts - جلب جميع الأسئلة المقترحة وقاعدة معرفة المستشار الذكي
+// 1. GET /api/advisor-prompts - جلب جميع الأسئلة المقترحة وقاعدة معرفة المستشار الذكي من MongoDB
 router.get('/', async (req, res) => {
   try {
     res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
     res.setHeader('Pragma', 'no-cache');
     res.setHeader('Expires', '0');
-    res.setHeader('Surrogate-Control', 'no-store');
 
     let prompts = await AdvisorPrompt.find().sort({ createdAt: -1 });
 
-    // إذا كانت قاعدة البيانات فارغة تماماً، ننشئ أسئلة تمهيدية أولية ونحفظها في MongoDB
+    // إذا كانت قاعدة البيانات فارغة، ننشئ أسئلة تمهيدية أولية ونحفظها في MongoDB
     if (!prompts || prompts.length === 0) {
       try {
         prompts = await AdvisorPrompt.insertMany(DEFAULT_SEED_PROMPTS);
       } catch (seedErr) {
-        console.warn('Seed advisor prompts warning:', seedErr.message);
-        prompts = await AdvisorPrompt.find();
+        console.warn('Seed advisor prompts note:', seedErr.message);
+        prompts = await AdvisorPrompt.find().sort({ createdAt: -1 });
       }
     }
 
-    res.status(200).json({
-      success: true,
-      count: prompts.length,
-      prompts: prompts || [],
-      items: prompts || [],
-    });
+    // إرجاع مصفوفة صريحة مع دعم الحقول المساعدة
+    res.status(200).json(prompts || []);
   } catch (error) {
     console.error('Get Advisor Prompts Error:', error.message);
     res.status(500).json({
@@ -73,7 +68,7 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. POST /api/advisor-prompts - إضافة سؤال جديد وحفظه في قاعدة البيانات
+// 2. POST /api/advisor-prompts - حفظ سؤال جديد في MongoDB وإرجاع المستند المحفوظ
 router.post('/', async (req, res) => {
   try {
     const rawQuestion = req.body.question || req.body.prompt || req.body.text;
@@ -100,14 +95,10 @@ router.post('/', async (req, res) => {
       isActive,
     });
 
-    await newPrompt.save();
+    const savedDoc = await newPrompt.save();
+    console.log(`✅ [MongoDB] Saved AdvisorPrompt: ${savedDoc._id} - "${savedDoc.prompt}"`);
 
-    res.status(201).json({
-      success: true,
-      message: 'تم حفظ السؤال في قاعدة البيانات بنجاح',
-      prompt: newPrompt,
-      item: newPrompt,
-    });
+    res.status(201).json(savedDoc);
   } catch (error) {
     console.error('Create Advisor Prompt Error:', error.message);
     res.status(500).json({
@@ -118,7 +109,7 @@ router.post('/', async (req, res) => {
   }
 });
 
-// 3. PUT /api/advisor-prompts/:id - تعديل سؤال موجود
+// 3. PUT /api/advisor-prompts/:id - تعديل سؤال في MongoDB
 router.put('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -147,12 +138,7 @@ router.put('/:id', async (req, res) => {
       return res.status(404).json({ success: false, message: 'السؤال غير موجود' });
     }
 
-    res.status(200).json({
-      success: true,
-      message: 'تم تحديث السؤال بنجاح',
-      prompt: updated,
-      item: updated,
-    });
+    res.status(200).json(updated);
   } catch (error) {
     console.error('Update Advisor Prompt Error:', error.message);
     res.status(500).json({
@@ -163,7 +149,7 @@ router.put('/:id', async (req, res) => {
   }
 });
 
-// 4. PATCH /api/advisor-prompts/:id/toggle - تغيير حالة التفعيل
+// 4. PATCH /api/advisor-prompts/:id/toggle - تبديل حالة التفعيل في MongoDB
 router.patch('/:id/toggle', async (req, res) => {
   try {
     const item = await AdvisorPrompt.findById(req.params.id);
@@ -175,13 +161,7 @@ router.patch('/:id/toggle', async (req, res) => {
     item.updatedAt = new Date();
     await item.save();
 
-    res.status(200).json({
-      success: true,
-      message: 'تم تغيير حالة التفعيل بنجاح',
-      isActive: item.isActive,
-      prompt: item,
-      item,
-    });
+    res.status(200).json(item);
   } catch (error) {
     console.error('Toggle Advisor Prompt Error:', error.message);
     res.status(500).json({
@@ -192,7 +172,7 @@ router.patch('/:id/toggle', async (req, res) => {
   }
 });
 
-// 5. DELETE /api/advisor-prompts/:id - حذف سؤال محدد من قاعدة البيانات
+// 5. DELETE /api/advisor-prompts/:id - حذف سؤال من MongoDB
 router.delete('/:id', async (req, res) => {
   try {
     const { id } = req.params;
@@ -213,6 +193,7 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
+    console.log(`🗑️ [MongoDB] Deleted AdvisorPrompt: ${id}`);
     res.status(200).json({
       success: true,
       message: 'تم حذف السؤال من قاعدة البيانات بنجاح',
