@@ -14,6 +14,7 @@ const aiRoutes = require('./routes/ai');
 const paymentsRoutes = require('./routes/payments');
 const cmsRoutes = require('./routes/cms');
 const notificationsRoutes = require('./routes/notifications');
+const advisorPromptsRoutes = require('./routes/advisorPrompts');
 
 const app = express();
 const server = http.createServer(app);
@@ -110,6 +111,9 @@ app.use('/cms', cmsRoutes);
 
 app.use('/api/notifications', notificationsRoutes);
 app.use('/notifications', notificationsRoutes);
+
+app.use('/api/advisor-prompts', advisorPromptsRoutes);
+app.use('/advisor-prompts', advisorPromptsRoutes);
 
 // مسار فحص صحة الخادم وقاعدة البيانات (Health Check)
 app.get('/api/health', async (req, res) => {

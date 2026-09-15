@@ -14,7 +14,10 @@ import {
   ChevronDown,
   User,
   GraduationCap,
-  Trash2
+  Trash2,
+  Plus,
+  CheckCircle2,
+  AlertCircle
 } from 'lucide-react';
 
 const STORAGE_MESSAGES_KEY = 'cairo_univ_smart_advisor_messages';
@@ -22,14 +25,27 @@ const STORAGE_DRAFT_KEY = 'cairo_univ_smart_advisor_draft';
 
 export default function FloatingAIChatWidget() {
   const { activeTheme } = useTheme();
-  const { user } = useAuth();
+  const { user, isAdmin } = useAuth();
+  const isUserAdmin = Boolean(isAdmin || user?.role === 'admin');
 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [kbQuestions, setKbQuestions] = useState([]);
+  const [advisorPrompts, setAdvisorPrompts] = useState([]);
+  const [showAddPrompt, setShowAddPrompt] = useState(false);
+  const [newPromptText, setNewPromptText] = useState('');
+  const [isAddingPrompt, setIsAddingPrompt] = useState(false);
+  const [deletingPromptId, setDeletingPromptId] = useState(null);
+  const [toast, setToast] = useState(null);
   const chatScrollRef = useRef(null);
 
   const studentName = user?.fullName || user?.name || 'طالب كلية العلوم';
+
+  const showToast = (message, type = 'error') => {
+    setToast({ message, type });
+    setTimeout(() => {
+      setToast((current) => (current?.message === message ? null : current));
+    }, 4000);
+  };
 
   const getDefaultMessage = () => ({
     sender: 'assistant',
@@ -82,17 +98,81 @@ export default function FloatingAIChatWidget() {
     }
   }, [inputMsg]);
 
+  // 1. جلب الأسئلة والمحفزات السريعة ديناميكياً من قاعدة بيانات MongoDB عند التحميل
   useEffect(() => {
-    // جلب أهم الأسئلة من قاعدة المعرفة التي أضافتها الإدارة
-    axios
-      .get(`${API_BASE}/ai/knowledge`)
-      .then((res) => {
-        if (res.data && res.data.items) {
-          setKbQuestions(res.data.items.slice(0, 5));
+    let isMounted = true;
+    const fetchAdvisorPrompts = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/advisor-prompts`);
+        if (isMounted && res.data && Array.isArray(res.data.prompts)) {
+          setAdvisorPrompts(res.data.prompts);
         }
-      })
-      .catch(() => {});
+      } catch (err) {
+        console.error('Error fetching advisor prompts:', err);
+      }
+    };
+
+    fetchAdvisorPrompts();
+    return () => {
+      isMounted = false;
+    };
   }, []);
+
+  // 2. منطق DB-First لإضافة سؤال سريع جديد (Admin Only)
+  const handleAddPrompt = async (e) => {
+    e?.preventDefault();
+    const text = newPromptText.trim();
+    if (!text || isAddingPrompt) return;
+
+    try {
+      setIsAddingPrompt(true);
+      const res = await axios.post(`${API_BASE}/advisor-prompts`, {
+        prompt: text,
+      });
+
+      // التحقق الصارم من استجابة الخادم 200/201 قبل تحديث الواجهة
+      if ((res.status === 200 || res.status === 201) && res.data?.success) {
+        const createdPrompt = res.data.prompt;
+        if (createdPrompt) {
+          setAdvisorPrompts((prev) => [...prev, createdPrompt]);
+        }
+        setNewPromptText('');
+        setShowAddPrompt(false);
+        showToast('تمت إضافة السؤال بنجاح وحفظه في قاعدة البيانات', 'success');
+      } else {
+        throw new Error(res.data?.message || 'تعذر حفظ السؤال');
+      }
+    } catch (err) {
+      console.error('Failed to add advisor prompt:', err);
+      showToast(err.response?.data?.message || 'فشل إضافة السؤال، يرجى المحاولة مرة أخرى', 'error');
+    } finally {
+      setIsAddingPrompt(false);
+    }
+  };
+
+  // 3. منطق DB-First لحذف سؤال سريع من قاعدة البيانات (Admin Only)
+  const handleDeletePrompt = async (e, promptId) => {
+    e.stopPropagation();
+    if (!promptId || deletingPromptId === promptId) return;
+
+    try {
+      setDeletingPromptId(promptId);
+      const res = await axios.delete(`${API_BASE}/advisor-prompts/${promptId}`);
+
+      // التحقق الصارم من نجاح الخادم 200 OK قبل إزالة العنصر محلياً
+      if (res.status === 200 && res.data?.success) {
+        setAdvisorPrompts((prev) => prev.filter((p) => (p._id || p.id) !== promptId));
+        showToast('تم حذف السؤال بنجاح من قاعدة البيانات', 'success');
+      } else {
+        throw new Error(res.data?.message || 'تعذر حذف السؤال');
+      }
+    } catch (err) {
+      console.error('Failed to delete advisor prompt:', err);
+      showToast(err.response?.data?.message || 'فشل حذف السؤال من قاعدة البيانات', 'error');
+    } finally {
+      setDeletingPromptId(null);
+    }
+  };
 
   useEffect(() => {
     if (isOpen) {
@@ -277,6 +357,46 @@ export default function FloatingAIChatWidget() {
             </div>
           </div>
 
+          {/* تنبيهات العمليات والـ Toasts */}
+          {toast && (
+            <div
+              style={{
+                padding: '8px 14px',
+                margin: '8px 12px 0',
+                borderRadius: '8px',
+                fontSize: '11px',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '8px',
+                backgroundColor: toast.type === 'success' ? 'rgba(16, 185, 129, 0.18)' : 'rgba(239, 68, 68, 0.18)',
+                border: `1px solid ${toast.type === 'success' ? '#10b981' : '#ef4444'}`,
+                color: toast.type === 'success' ? '#34d399' : '#fca5a5',
+                zIndex: 50,
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                {toast.type === 'success' ? <CheckCircle2 size={14} /> : <AlertCircle size={14} />}
+                <span>{toast.message}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setToast(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: 'inherit',
+                  cursor: 'pointer',
+                  padding: 0,
+                  display: 'flex',
+                  alignItems: 'center',
+                }}
+              >
+                <X size={12} />
+              </button>
+            </div>
+          )}
+
           {/* محتوى الرسائل Chat Body */}
           <div
             style={{
@@ -313,32 +433,183 @@ export default function FloatingAIChatWidget() {
               </div>
             ))}
 
-            {/* اقتراحات الأسئلة الشائعة السريعة */}
-            {messages.length < 3 && kbQuestions.length > 0 && (
+            {/* اقتراحات الأسئلة الشائعة السريعة المقترنة بقاعدة البيانات */}
+            {messages.length < 3 && (advisorPrompts.length > 0 || isUserAdmin) && (
               <div style={{ marginTop: '8px' }}>
-                <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 'bold', marginBottom: '6px' }}>
-                  💡 أسئلة يمكنك الاستفسار عنها فوراً:
-                </div>
-                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {kbQuestions.map((q) => (
+                <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
+                  <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
+                    <span>💡 أسئلة يمكنك الاستفسار عنها فوراً:</span>
+                  </div>
+
+                  {/* زر إضافة سؤال جديد متاح حصرياً للأدمن */}
+                  {isUserAdmin && (
                     <button
-                      key={q._id}
-                      onClick={() => handleSend(q.question)}
+                      type="button"
+                      onClick={() => setShowAddPrompt(!showAddPrompt)}
+                      title="إضافة سؤال جديد للأدمن"
                       style={{
-                        padding: '8px 12px',
-                        borderRadius: '8px',
-                        background: '#1e293b',
-                        border: '1px solid #334155',
-                        color: '#cbd5e1',
-                        fontSize: '12px',
-                        textAlign: 'right',
+                        background: showAddPrompt ? 'rgba(239, 68, 68, 0.15)' : 'rgba(245, 158, 11, 0.15)',
+                        border: `1px solid ${showAddPrompt ? 'rgba(239, 68, 68, 0.35)' : 'rgba(245, 158, 11, 0.35)'}`,
+                        color: showAddPrompt ? '#fca5a5' : '#fbbf24',
+                        borderRadius: '6px',
+                        padding: '2px 8px',
+                        fontSize: '11px',
                         cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '4px',
+                        fontWeight: 'bold',
                         transition: 'all 0.2s',
                       }}
                     >
-                      {q.question}
+                      {showAddPrompt ? <X size={12} /> : <Plus size={12} />}
+                      <span>{showAddPrompt ? 'إلغاء' : 'إضافة سؤال'}</span>
                     </button>
-                  ))}
+                  )}
+                </div>
+
+                {/* نموذج إضافة سؤال جديد في قاعدة البيانات للأدمن */}
+                {isUserAdmin && showAddPrompt && (
+                  <form
+                    onSubmit={handleAddPrompt}
+                    style={{
+                      marginBottom: '10px',
+                      padding: '10px',
+                      background: '#131e32',
+                      border: '1px dashed #f59e0b',
+                      borderRadius: '10px',
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '8px',
+                    }}
+                  >
+                    <input
+                      type="text"
+                      placeholder="اكتب السؤال المقترح الجديد لحفظه بقاعدة البيانات..."
+                      value={newPromptText}
+                      onChange={(e) => setNewPromptText(e.target.value)}
+                      disabled={isAddingPrompt}
+                      autoFocus
+                      style={{
+                        padding: '8px 10px',
+                        borderRadius: '6px',
+                        background: '#0f172a',
+                        border: '1px solid #334155',
+                        color: '#ffffff',
+                        fontSize: '12px',
+                        outline: 'none',
+                        direction: 'rtl',
+                        textAlign: 'right',
+                      }}
+                    />
+                    <div style={{ display: 'flex', justifyContent: 'flex-end', gap: '6px' }}>
+                      <button
+                        type="submit"
+                        disabled={isAddingPrompt || !newPromptText.trim()}
+                        style={{
+                          padding: '5px 12px',
+                          borderRadius: '6px',
+                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                          color: '#0b1622',
+                          fontWeight: 'bold',
+                          border: 'none',
+                          fontSize: '11px',
+                          cursor: isAddingPrompt || !newPromptText.trim() ? 'not-allowed' : 'pointer',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                        }}
+                      >
+                        {isAddingPrompt ? <RefreshCw size={12} className="animate-spin" /> : <Plus size={12} />}
+                        <span>حفظ في قاعدة البيانات</span>
+                      </button>
+                    </div>
+                  </form>
+                )}
+
+                {/* قائمة فقاعات الأسئلة */}
+                <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
+                  {advisorPrompts.map((q) => {
+                    const promptId = q._id || q.id;
+                    const promptText = q.prompt || q.question || q.text;
+                    const isDeleting = deletingPromptId === promptId;
+
+                    return (
+                      <div
+                        key={promptId || promptText}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'space-between',
+                          gap: '8px',
+                          padding: '8px 12px',
+                          borderRadius: '8px',
+                          background: '#1e293b',
+                          border: '1px solid #334155',
+                          transition: 'all 0.2s',
+                          opacity: isDeleting ? 0.4 : 1,
+                        }}
+                      >
+                        <button
+                          type="button"
+                          onClick={() => handleSend(promptText)}
+                          disabled={isDeleting}
+                          style={{
+                            flex: 1,
+                            background: 'transparent',
+                            border: 'none',
+                            color: '#cbd5e1',
+                            fontSize: '12px',
+                            textAlign: 'right',
+                            cursor: 'pointer',
+                            padding: 0,
+                            lineHeight: '1.4',
+                          }}
+                          onMouseEnter={(e) => (e.currentTarget.style.color = '#fbbf24')}
+                          onMouseLeave={(e) => (e.currentTarget.style.color = '#cbd5e1')}
+                        >
+                          {promptText}
+                        </button>
+
+                        {/* زر الحذف متاح حصرياً للأدمن بشرط وجود معرف بالسيرفر */}
+                        {isUserAdmin && promptId && (
+                          <button
+                            type="button"
+                            onClick={(e) => handleDeletePrompt(e, promptId)}
+                            disabled={isDeleting}
+                            title="حذف هذا السؤال من قاعدة البيانات (أدمن)"
+                            aria-label="حذف السؤال"
+                            style={{
+                              background: 'rgba(239, 68, 68, 0.1)',
+                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              color: '#f87171',
+                              borderRadius: '5px',
+                              width: '24px',
+                              height: '24px',
+                              cursor: isDeleting ? 'not-allowed' : 'pointer',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              flexShrink: 0,
+                              transition: 'all 0.2s ease',
+                            }}
+                            onMouseEnter={(e) => {
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
+                              e.currentTarget.style.color = '#ef4444';
+                              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                            }}
+                            onMouseLeave={(e) => {
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                              e.currentTarget.style.color = '#f87171';
+                              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                            }}
+                          >
+                            {isDeleting ? <RefreshCw size={11} className="animate-spin" /> : <Trash2 size={12} />}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
                 </div>
               </div>
             )}
