@@ -79,6 +79,28 @@ export default function AdminDashboard() {
   const [newKbKeywords, setNewKbKeywords] = useState('');
   const [editingKbId, setEditingKbId] = useState(null);
 
+  // جلب مباشر وموثوق لأسئلة المستشار الأكاديمي وقاعدة المعرفة عند التحميل
+  useEffect(() => {
+    let isMounted = true;
+    const fetchAdvisorPromptsDirect = async () => {
+      try {
+        const res = await axios.get(`${API_BASE}/advisor-prompts`);
+        if (isMounted && res.data && (Array.isArray(res.data.prompts) || Array.isArray(res.data.items))) {
+          const list = res.data.prompts || res.data.items || [];
+          console.log(`🤖 [AdminDashboard] Mounted & Loaded ${list.length} advisor prompts from MongoDB`);
+          setKbItems(list);
+        }
+      } catch (err) {
+        console.error('❌ [AdminDashboard] Error fetching initial advisor prompts:', err);
+      }
+    };
+
+    fetchAdvisorPromptsDirect();
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
   useEffect(() => {
     loadDashboardData();
     // إعادة التحميل الدوري كل 10 ثوانٍ لضمان ظهور الاستمارات الجديدة تلقائياً
@@ -88,9 +110,19 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // إعادة التحميل عند تغيير التبويب
+  // إعادة التحميل عند تغيير التبويب ومزامنة فورية عند فتح تبويب المستشار الذكي
   useEffect(() => {
     loadDashboardData();
+    if (activeTab === 'kb') {
+      axios
+        .get(`${API_BASE}/advisor-prompts`)
+        .then((res) => {
+          if (res.data && (Array.isArray(res.data.prompts) || Array.isArray(res.data.items))) {
+            setKbItems(res.data.prompts || res.data.items || []);
+          }
+        })
+        .catch((err) => console.error('Error fetching KB items on tab switch:', err));
+    }
   }, [activeTab]);
 
   const loadDashboardData = async () => {
@@ -142,8 +174,15 @@ export default function AdminDashboard() {
         console.warn('⚠️ [AdminDashboard] statsRes note:', statsRes.reason?.message);
       }
 
-      if (kbRes.status === 'fulfilled' && (kbRes.value.data?.prompts || kbRes.value.data?.items)) {
-        setKbItems(kbRes.value.data.prompts || kbRes.value.data.items);
+      if (kbRes.status === 'fulfilled') {
+        const data = kbRes.value.data;
+        if (data && (Array.isArray(data.prompts) || Array.isArray(data.items))) {
+          const list = data.prompts || data.items || [];
+          console.log(`🤖 [AdminDashboard] kbRes success: loaded ${list.length} prompts`);
+          setKbItems(list);
+        }
+      } else {
+        console.error('❌ [AdminDashboard] kbRes failed:', kbRes.reason);
       }
 
       let all = [];
