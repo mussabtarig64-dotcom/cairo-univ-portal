@@ -26,7 +26,7 @@ const STORAGE_DRAFT_KEY = 'cairo_univ_smart_advisor_draft';
 export default function FloatingAIChatWidget() {
   const { activeTheme } = useTheme();
   const { user, isAdmin } = useAuth();
-  const isUserAdmin = Boolean(isAdmin || user?.role === 'admin');
+  const isUserAdmin = Boolean(isAdmin || user?.role === 'admin' || user?.email === 'admin@ssa.com');
 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
@@ -168,16 +168,22 @@ export default function FloatingAIChatWidget() {
   };
 
   // 3. منطق DB-First لحذف سؤال سريع من قاعدة البيانات (Admin Only)
-  const handleDeletePrompt = async (e, promptId) => {
-    e.stopPropagation();
+  const handleDeletePrompt = async (id) => {
+    const promptId = typeof id === 'object' && id !== null ? (id._id || id.id) : id;
     if (!promptId || deletingPromptId === promptId) return;
 
     try {
       setDeletingPromptId(promptId);
-      const res = await axios.delete(`${API_BASE}/advisor-prompts/${promptId}`);
+      const res = await axios.delete(`${API_BASE}/advisor-prompts/${promptId}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
 
-      if (res.status === 200) {
-        setAdvisorPrompts((prev) => prev.filter((p) => (p._id || p.id) !== promptId));
+      if (res.status === 200 || res.status === 204 || res.data?.success) {
+        setAdvisorPrompts((prev) => prev.filter((p) => (p._id || p.id || p) !== promptId));
         window.dispatchEvent(new CustomEvent('advisor_prompts_updated'));
         showToast('تم حذف السؤال بنجاح من قاعدة البيانات', 'success');
       } else {
@@ -451,7 +457,7 @@ export default function FloatingAIChatWidget() {
             ))}
 
             {/* اقتراحات الأسئلة الشائعة السريعة المقترنة بقاعدة البيانات */}
-            {messages.length < 3 && (advisorPrompts.length > 0 || isUserAdmin) && (
+            {(advisorPrompts.length > 0 || isUserAdmin || isAdmin) && (
               <div style={{ marginTop: '8px' }}>
                 <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '8px' }}>
                   <div style={{ fontSize: '11px', color: '#fbbf24', fontWeight: 'bold', display: 'flex', alignItems: 'center', gap: '5px' }}>
@@ -459,7 +465,7 @@ export default function FloatingAIChatWidget() {
                   </div>
 
                   {/* زر إضافة سؤال جديد متاح حصرياً للأدمن */}
-                  {isUserAdmin && (
+                  {(isAdmin || isUserAdmin) && (
                     <button
                       type="button"
                       onClick={() => setShowAddPrompt(!showAddPrompt)}
@@ -486,7 +492,7 @@ export default function FloatingAIChatWidget() {
                 </div>
 
                 {/* نموذج إضافة سؤال جديد في قاعدة البيانات للأدمن */}
-                {isUserAdmin && showAddPrompt && (
+                {(isAdmin || isUserAdmin) && showAddPrompt && (
                   <form
                     onSubmit={handleAddPrompt}
                     style={{
@@ -546,14 +552,14 @@ export default function FloatingAIChatWidget() {
 
                 {/* قائمة فقاعات الأسئلة */}
                 <div style={{ display: 'flex', flexDirection: 'column', gap: '6px' }}>
-                  {advisorPrompts.map((q) => {
-                    const promptId = q._id || q.id;
-                    const promptText = q.prompt || q.question || q.text;
+                  {advisorPrompts.map((q, idx) => {
+                    const promptId = q._id || q.id || (typeof q === 'string' ? q : `prompt-${idx}`);
+                    const promptText = q.prompt || q.question || q.text || (typeof q === 'string' ? q : '');
                     const isDeleting = deletingPromptId === promptId;
 
                     return (
                       <div
-                        key={promptId || promptText}
+                        key={promptId || idx}
                         style={{
                           display: 'flex',
                           alignItems: 'center',
@@ -588,21 +594,25 @@ export default function FloatingAIChatWidget() {
                           {promptText}
                         </button>
 
-                        {/* زر الحذف متاح حصرياً للأدمن بشرط وجود معرف بالسيرفر */}
-                        {isUserAdmin && promptId && (
+                        {/* زر الحذف متاح حصرياً للأدمن مباشرة بجانب كل فقاعة سؤال */}
+                        {(isAdmin || isUserAdmin) && (
                           <button
                             type="button"
-                            onClick={(e) => handleDeletePrompt(e, promptId)}
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              e.preventDefault();
+                              handleDeletePrompt(promptId);
+                            }}
                             disabled={isDeleting}
                             title="حذف هذا السؤال من قاعدة البيانات (أدمن)"
                             aria-label="حذف السؤال"
                             style={{
-                              background: 'rgba(239, 68, 68, 0.1)',
-                              border: '1px solid rgba(239, 68, 68, 0.25)',
+                              background: 'rgba(239, 68, 68, 0.15)',
+                              border: '1px solid rgba(239, 68, 68, 0.35)',
                               color: '#f87171',
-                              borderRadius: '5px',
-                              width: '24px',
-                              height: '24px',
+                              borderRadius: '6px',
+                              width: '28px',
+                              height: '28px',
                               cursor: isDeleting ? 'not-allowed' : 'pointer',
                               display: 'flex',
                               alignItems: 'center',
@@ -611,17 +621,19 @@ export default function FloatingAIChatWidget() {
                               transition: 'all 0.2s ease',
                             }}
                             onMouseEnter={(e) => {
-                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.3)';
-                              e.currentTarget.style.color = '#ef4444';
-                              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.5)';
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.35)';
+                              e.currentTarget.style.color = '#ffffff';
+                              e.currentTarget.style.borderColor = '#ef4444';
+                              e.currentTarget.style.transform = 'scale(1.1)';
                             }}
                             onMouseLeave={(e) => {
-                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.1)';
+                              e.currentTarget.style.background = 'rgba(239, 68, 68, 0.15)';
                               e.currentTarget.style.color = '#f87171';
-                              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.25)';
+                              e.currentTarget.style.borderColor = 'rgba(239, 68, 68, 0.35)';
+                              e.currentTarget.style.transform = 'scale(1)';
                             }}
                           >
-                            {isDeleting ? <RefreshCw size={11} className="animate-spin" /> : <Trash2 size={12} />}
+                            {isDeleting ? <RefreshCw size={12} className="animate-spin" /> : <Trash2 size={13} />}
                           </button>
                         )}
                       </div>

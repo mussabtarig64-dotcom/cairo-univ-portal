@@ -308,40 +308,19 @@ export default function AcademicLibrary({ defaultTab }) {
     { id: 'calendar', label: 'التقويم وجدول الامتحانات', icon: Calendar, count: 'مواعيد الكلية' },
   ];
 
-  // 1. جلب البيانات الحية من MongoDB Atlas والتأكد من عدم ظهور العناصر المحذوفة
+  // 1. جلب البيانات الحية مباشرة ونقياً من MongoDB Atlas
   const loadDynamicContent = async () => {
     try {
       setIsLoading(true);
-      const deletedSet = getDeletedIds();
       const dynamicItems = await fetchHubContent('academic');
 
-      const dynamicRes = (dynamicItems || []).filter(
-        (i) => (i.section === 'notes' || i.section === 'exams') && !deletedSet.has(i._id)
+      setResources(
+        (dynamicItems || []).filter(
+          (i) => i.section === 'notes' || i.section === 'exams' || (!i.section && i.type !== 'group' && i.type !== 'grant')
+        )
       );
-      const dynamicGrps = (dynamicItems || []).filter(
-        (i) => i.section === 'groups' && !deletedSet.has(i._id)
-      );
-      const dynamicGrants = (dynamicItems || []).filter(
-        (i) => i.section === 'grants' && !deletedSet.has(i._id)
-      );
-
-      const dynamicResIds = new Set(dynamicRes.map((d) => d._id));
-      const defaultResFiltered = DEFAULT_RESOURCES.filter(
-        (d) => !deletedSet.has(d._id) && !dynamicResIds.has(d._id)
-      );
-      setResources([...dynamicRes, ...defaultResFiltered]);
-
-      const dynamicGrpsIds = new Set(dynamicGrps.map((d) => d._id));
-      const defaultGrpsFiltered = DEFAULT_GROUPS.filter(
-        (d) => !deletedSet.has(d._id) && !dynamicGrpsIds.has(d._id)
-      );
-      setStudyGroups([...dynamicGrps, ...defaultGrpsFiltered]);
-
-      const dynamicGrantsIds = new Set(dynamicGrants.map((d) => d._id));
-      const defaultGrantsFiltered = DEFAULT_GRANTS.filter(
-        (d) => !deletedSet.has(d._id) && !dynamicGrantsIds.has(d._id)
-      );
-      setGrantsList([...dynamicGrants, ...defaultGrantsFiltered]);
+      setStudyGroups((dynamicItems || []).filter((i) => i.section === 'groups'));
+      setGrantsList((dynamicItems || []).filter((i) => i.section === 'grants'));
     } catch (err) {
       console.error('Failed to load academic hub content:', err);
     } finally {
@@ -359,19 +338,19 @@ export default function AcademicLibrary({ defaultTab }) {
       setStudyGroups((prev) =>
         action === 'create'
           ? [item, ...prev]
-          : prev.map((g) => (g._id === item._id ? item : g))
+          : prev.map((g) => ((g._id || g.id) === (item._id || item.id) ? item : g))
       );
     } else if (item.section === 'grants') {
       setGrantsList((prev) =>
         action === 'create'
           ? [item, ...prev]
-          : prev.map((g) => (g._id === item._id ? item : g))
+          : prev.map((g) => ((g._id || g.id) === (item._id || item.id) ? item : g))
       );
     } else {
       setResources((prev) =>
         action === 'create'
           ? [item, ...prev]
-          : prev.map((r) => (r._id === item._id ? item : r))
+          : prev.map((r) => ((r._id || r.id) === (item._id || item.id) ? item : r))
       );
     }
     setNotification(
@@ -392,16 +371,13 @@ export default function AcademicLibrary({ defaultTab }) {
       // إرسال طلب الحذف الفعلي إلى الخادم وانتظار استجابة 200 OK قبل تعديل الواجهة
       await deleteHubContent(id, 'academic');
 
-      // تسجيل المعرف المحذوف لضمان عدم عودته عند تحديث الصفحة
-      addDeletedId(id);
-
       // تحديث حالة الـ React state فقط بعد نجاح الحذف في قاعدة البيانات
       if (section === 'groups') {
-        setStudyGroups((prev) => prev.filter((g) => g._id !== id));
+        setStudyGroups((prev) => prev.filter((g) => (g._id || g.id) !== id));
       } else if (section === 'grants') {
-        setGrantsList((prev) => prev.filter((g) => g._id !== id));
+        setGrantsList((prev) => prev.filter((g) => (g._id || g.id) !== id));
       } else {
-        setResources((prev) => prev.filter((r) => r._id !== id));
+        setResources((prev) => prev.filter((r) => (r._id || r.id) !== id));
       }
 
       setNotification('تم حذف المحتوى بنجاح من قاعدة البيانات والسجل المركزي!');

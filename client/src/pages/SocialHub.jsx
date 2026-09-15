@@ -141,9 +141,10 @@ export default function SocialHub() {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('initiatives');
 
-  const [initiatives, setInitiatives] = useState(DEFAULT_INITIATIVES);
-  const [volunteerTeams, setVolunteerTeams] = useState(DEFAULT_VOLUNTEERS);
-  const [studentFamilies, setStudentFamilies] = useState(DEFAULT_FAMILIES);
+  const [initiatives, setInitiatives] = useState([]);
+  const [volunteerTeams, setVolunteerTeams] = useState([]);
+  const [studentFamilies, setStudentFamilies] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -157,62 +158,71 @@ export default function SocialHub() {
     { id: 'families', label: 'نظام الأسر الطلابية', icon: Home, desc: 'أسر الأقسام والولايات' },
   ];
 
-  // Fetch Live Data from MongoDB
-  useEffect(() => {
-    async function loadDynamic() {
+  // Fetch Live Data purely from MongoDB
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('social');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicInits = dynamicItems.filter((i) => i.section === 'initiatives');
-        const dynamicVols = dynamicItems.filter((i) => i.section === 'volunteer');
-        const dynamicFams = dynamicItems.filter((i) => i.section === 'families');
-
-        if (dynamicInits.length > 0) {
-          const ids = new Set(dynamicInits.map((d) => d._id));
-          setInitiatives([...dynamicInits, ...DEFAULT_INITIATIVES.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicVols.length > 0) {
-          const ids = new Set(dynamicVols.map((d) => d._id));
-          setVolunteerTeams([...dynamicVols, ...DEFAULT_VOLUNTEERS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicFams.length > 0) {
-          const ids = new Set(dynamicFams.map((d) => d._id));
-          setStudentFamilies([...dynamicFams, ...DEFAULT_FAMILIES.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setInitiatives((dynamicItems || []).filter((i) => i.section === 'initiatives' || !i.section));
+      setVolunteerTeams((dynamicItems || []).filter((i) => i.section === 'volunteer'));
+      setStudentFamilies((dynamicItems || []).filter((i) => i.section === 'families'));
+    } catch (err) {
+      console.error('Failed to load social hub content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'volunteer') {
-      setVolunteerTeams(action === 'create' ? [item, ...volunteerTeams] : volunteerTeams.map((v) => (v._id === item._id ? item : v)));
+      setVolunteerTeams((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((v) => ((v._id || v.id) === (item._id || item.id) ? item : v))
+      );
     } else if (item.section === 'families') {
-      setStudentFamilies(action === 'create' ? [item, ...studentFamilies] : studentFamilies.map((f) => (f._id === item._id ? item : f)));
+      setStudentFamilies((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((f) => ((f._id || f.id) === (item._id || item.id) ? item : f))
+      );
     } else {
-      setInitiatives(action === 'create' ? [item, ...initiatives] : initiatives.map((i) => (i._id === item._id ? item : i)));
+      setInitiatives((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((i) => ((i._id || i.id) === (item._id || item.id) ? item : i))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة المبادرة بنجاح!' : 'تم تحديث البيانات بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة المبادرة وحفظها في قاعدة البيانات بنجاح!'
+        : 'تم تحديث البيانات بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر؟')) {
-      try {
-        if (!id.startsWith('soc-') && !id.startsWith('vol-') && !id.startsWith('fam-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'volunteer') {
-          setVolunteerTeams(volunteerTeams.filter((v) => v._id !== id));
-        } else if (section === 'families') {
-          setStudentFamilies(studentFamilies.filter((f) => f._id !== id));
-        } else {
-          setInitiatives(initiatives.filter((i) => i._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'social');
+      if (section === 'volunteer') {
+        setVolunteerTeams((prev) => prev.filter((v) => (v._id || v.id) !== id));
+      } else if (section === 'families') {
+        setStudentFamilies((prev) => prev.filter((f) => (f._id || f.id) !== id));
+      } else {
+        setInitiatives((prev) => prev.filter((i) => (i._id || i.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete social item error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

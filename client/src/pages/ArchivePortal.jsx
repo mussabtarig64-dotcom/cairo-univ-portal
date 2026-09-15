@@ -120,7 +120,8 @@ export default function ArchivePortal() {
   const { activeTheme } = useTheme();
   const { isAdmin } = useAuth();
 
-  const [items, setItems] = useState(DEFAULT_ARCHIVE_ITEMS);
+  const [items, setItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [selectedCategory, setSelectedCategory] = useState('الكل');
   const [selectedYear, setSelectedYear] = useState('الكل');
   const [searchQuery, setSearchQuery] = useState('');
@@ -130,41 +131,47 @@ export default function ArchivePortal() {
   const [editingItem, setEditingItem] = useState(null);
   const [notification, setNotification] = useState('');
 
-  // جلب المحتوى الحي من السجل المركزي (MongoDB)
-  useEffect(() => {
-    async function loadDynamicContent() {
+  // جلب المحتوى الحي مباشرة من السجل المركزي (MongoDB)
+  const loadDynamicContent = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('archive');
-      if (dynamicItems && dynamicItems.length > 0) {
-        // الدمج مع الافتراضي لتجنب التكرار
-        const customIds = new Set(dynamicItems.map((d) => d._id));
-        const filteredDefault = DEFAULT_ARCHIVE_ITEMS.filter((def) => !customIds.has(def._id));
-        setItems([...dynamicItems, ...filteredDefault]);
-      }
+      setItems(dynamicItems || []);
+    } catch (err) {
+      console.error('Failed to load archive content:', err);
+      setItems([]);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamicContent();
   }, []);
 
   const handleSaved = (savedItem, action) => {
     if (action === 'create') {
-      setItems([savedItem, ...items]);
-      showNotification('تمت إضافة الوثيقة إلى الأرشيف التاريخي بنجاح!');
+      setItems((prev) => [savedItem, ...prev]);
+      showNotification('تمت إضافة الوثيقة وحفظها في قاعدة البيانات بنجاح!');
     } else {
-      setItems(items.map((i) => (i._id === savedItem._id ? savedItem : i)));
+      setItems((prev) =>
+        prev.map((i) => ((i._id || i.id) === (savedItem._id || savedItem.id) ? savedItem : i))
+      );
       showNotification('تم تحديث بيانات الوثيقة بنجاح!');
     }
   };
 
   const handleDelete = async (id) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر من الأرشيف؟')) {
-      try {
-        if (!id.startsWith('arch-')) {
-          await deleteHubContent(id);
-        }
-        setItems(items.filter((i) => i._id !== id));
-        showNotification('تم حذف العنصر من الأرشيف.');
-      } catch (err) {
-        alert('فشل في حذف العنصر: ' + err.message);
-      }
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر نهائياً من الأرشيف؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'archive');
+      setItems((prev) => prev.filter((i) => (i._id || i.id) !== id));
+      showNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+    } catch (err) {
+      console.error('Delete archive error:', err);
+      alert('فشل في حذف العنصر من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

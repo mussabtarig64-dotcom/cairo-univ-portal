@@ -101,9 +101,10 @@ export default function MediaHub() {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('news');
 
-  const [newsList, setNewsList] = useState(DEFAULT_NEWS);
-  const [statements, setStatements] = useState(DEFAULT_STATEMENTS);
-  const [announcements, setAnnouncements] = useState(DEFAULT_ANNOUNCEMENTS);
+  const [newsList, setNewsList] = useState([]);
+  const [statements, setStatements] = useState([]);
+  const [announcements, setAnnouncements] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -116,61 +117,70 @@ export default function MediaHub() {
     { id: 'announcements', label: 'الإعلانات والتنبيهات', icon: Bell, count: 'إعلانات الطلاب' },
   ];
 
-  useEffect(() => {
-    async function loadDynamic() {
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('media');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicNews = dynamicItems.filter((i) => i.section === 'news');
-        const dynamicStmts = dynamicItems.filter((i) => i.section === 'statements');
-        const dynamicAnns = dynamicItems.filter((i) => i.section === 'announcements');
-
-        if (dynamicNews.length > 0) {
-          const ids = new Set(dynamicNews.map((d) => d._id));
-          setNewsList([...dynamicNews, ...DEFAULT_NEWS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicStmts.length > 0) {
-          const ids = new Set(dynamicStmts.map((d) => d._id));
-          setStatements([...dynamicStmts, ...DEFAULT_STATEMENTS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicAnns.length > 0) {
-          const ids = new Set(dynamicAnns.map((d) => d._id));
-          setAnnouncements([...dynamicAnns, ...DEFAULT_ANNOUNCEMENTS.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setNewsList((dynamicItems || []).filter((i) => i.section === 'news' || !i.section));
+      setStatements((dynamicItems || []).filter((i) => i.section === 'statements'));
+      setAnnouncements((dynamicItems || []).filter((i) => i.section === 'announcements'));
+    } catch (err) {
+      console.error('Failed to load media hub content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'statements') {
-      setStatements(action === 'create' ? [item, ...statements] : statements.map((s) => (s._id === item._id ? item : s)));
+      setStatements((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((s) => ((s._id || s.id) === (item._id || item.id) ? item : s))
+      );
     } else if (item.section === 'announcements') {
-      setAnnouncements(action === 'create' ? [item, ...announcements] : announcements.map((a) => (a._id === item._id ? item : a)));
+      setAnnouncements((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((a) => ((a._id || a.id) === (item._id || item.id) ? item : a))
+      );
     } else {
-      setNewsList(action === 'create' ? [item, ...newsList] : newsList.map((n) => (n._id === item._id ? item : n)));
+      setNewsList((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((n) => ((n._id || n.id) === (item._id || item.id) ? item : n))
+      );
     }
-    setNotification(action === 'create' ? 'تم نشر المحتوى الإعلامي بنجاح!' : 'تم تحديث المحتوى الإعلامي بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تم نشر المحتوى وحفظه في قاعدة البيانات بنجاح!'
+        : 'تم تحديث المحتوى الإعلامي بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر الإعلامي؟')) {
-      try {
-        if (!id.startsWith('n-') && !id.startsWith('stmt-') && !id.startsWith('ann-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'statements') {
-          setStatements(statements.filter((s) => s._id !== id));
-        } else if (section === 'announcements') {
-          setAnnouncements(announcements.filter((a) => a._id !== id));
-        } else {
-          setNewsList(newsList.filter((n) => n._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر الإعلامي نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'media');
+      if (section === 'statements') {
+        setStatements((prev) => prev.filter((s) => (s._id || s.id) !== id));
+      } else if (section === 'announcements') {
+        setAnnouncements((prev) => prev.filter((a) => (a._id || a.id) !== id));
+      } else {
+        setNewsList((prev) => prev.filter((n) => (n._id || n.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete media error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

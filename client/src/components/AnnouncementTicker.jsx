@@ -14,25 +14,26 @@ export default function AnnouncementTicker() {
   ]);
 
   useEffect(() => {
-    // محاولة جلب الإعلانات النشطة من السيرفر أو التخزين المحلي
+    // جلب الإعلانات النشطة مباشرة من قاعدة البيانات
     axios
-      .get(`${API_BASE}/admin/announcements`)
+      .get(`${API_BASE}/admin/announcements`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        params: { _t: Date.now() }
+      })
       .then((res) => {
-        if (res.data && res.data.length > 0) {
+        if (res.data && Array.isArray(res.data) && res.data.length > 0) {
           const titles = res.data.map((a) => `📢 ${a.title}: ${a.content}`);
           setAnnouncements(titles);
+        } else if (res.data && Array.isArray(res.data) && res.data.length === 0) {
+          setAnnouncements(['📢 مرحباً بكم في البوابة الرسمية لرابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة']);
         }
       })
-      .catch(() => {
-        const saved = localStorage.getItem('ssa_announcements');
-        if (saved) {
-          try {
-            const list = JSON.parse(saved);
-            if (list.length > 0) {
-              setAnnouncements(list.map((a) => `📢 ${a.title || a.content}`));
-            }
-          } catch (e) {}
-        }
+      .catch((err) => {
+        console.error('Announcements ticker load note:', err.message);
       });
   }, []);
 

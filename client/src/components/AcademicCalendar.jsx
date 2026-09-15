@@ -142,15 +142,10 @@ export default function AcademicCalendar() {
     try {
       setLoading(true);
       const data = await fetchHubContent('academic', { section: 'calendar' });
-      if (data && data.length > 0) {
-        setEvents(data);
-      } else {
-        // إذا لم تكن هناك بيانات مضافة بعد في قاعدة البيانات، نعرض الأحداث الافتراضية المرجعية
-        setEvents(DEFAULT_CALENDAR_EVENTS);
-      }
+      setEvents(data || []);
     } catch (err) {
       console.error('Failed to load academic calendar events:', err);
-      setEvents(DEFAULT_CALENDAR_EVENTS);
+      setEvents([]);
     } finally {
       setLoading(false);
     }
@@ -167,17 +162,13 @@ export default function AcademicCalendar() {
     }
 
     try {
-      // إذا كان العنصر موجوداً في قاعدة البيانات (ليس عنصراً تجريبياً ثابتاً غير مخزن)
-      if (!id.startsWith('cal-')) {
-        await deleteHubContent(id, 'academic');
-      }
-
-      setEvents((prev) => prev.filter((item) => item._id !== id));
+      await deleteHubContent(id, 'academic');
+      setEvents((prev) => prev.filter((item) => (item._id || item.id) !== id));
       setNotification('تم حذف الموعد من التقويم الأكاديمي بنجاح!');
       setTimeout(() => setNotification(''), 4000);
     } catch (err) {
       console.error('Delete Calendar Event Error:', err);
-      alert('فشل حذف الموعد: ' + (err.message || 'حدث خطأ في الخادم'));
+      alert('فشل حذف الموعد من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 
@@ -194,7 +185,7 @@ export default function AcademicCalendar() {
       setNotification('تمت إضافة الموعد الجديد إلى التقويم الأكاديمي وحفظه في MongoDB بنجاح!');
     } else {
       setEvents((prev) =>
-        prev.map((item) => (item._id === savedItem._id ? savedItem : item))
+        prev.map((item) => ((item._id || item.id) === (savedItem._id || savedItem.id) ? savedItem : item))
       );
       setNotification('تم تحديث بيانات الموعد وحفظها في قاعدة البيانات بنجاح!');
     }

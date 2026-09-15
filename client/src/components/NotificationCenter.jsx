@@ -35,7 +35,14 @@ export default function NotificationCenter() {
   // 1. جلب الإشعارات الأولية
   const fetchNotifications = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/notifications`);
+      const res = await axios.get(`${API_BASE}/notifications`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        params: { _t: Date.now() }
+      });
       if (res.data && res.data.notifications) {
         const notifs = res.data.notifications;
         setNotifications(notifs);
@@ -43,7 +50,7 @@ export default function NotificationCenter() {
         setUnreadCount(unread);
       }
     } catch (e) {
-      console.log('Notifications load note:', e.message);
+      console.error('Notifications load note:', e.message);
     }
   };
 

@@ -322,54 +322,54 @@ export default function AdminDashboard() {
     const studentId = student._id || student.id;
     const studentEmail = (student.email || '').toLowerCase().trim();
 
-    const approvedStudent = {
-      ...student,
-      verificationStatus: 'verified',
-      status: 'approved',
-      role: student.role || 'user',
-    };
-
-    const isMatch = (u) => {
-      if (studentId && (u._id === studentId || u.id === studentId)) return true;
-      if (studentEmail && u.email && u.email.toLowerCase().trim() === studentEmail) return true;
-      return false;
-    };
-
-    const newPending = pendingUsers.filter((u) => !isMatch(u));
-    const newRejected = rejectedUsers.filter((u) => !isMatch(u));
-    const newApproved = [approvedStudent, ...approvedUsers.filter((u) => !isMatch(u))];
-
-    setPendingUsers(newPending);
-    setRejectedUsers(newRejected);
-    setApprovedUsers(newApproved);
-
-    // تحديث فوري وشامل في التخزين المحلي
     try {
-      const localPending = JSON.parse(localStorage.getItem('pending_users') || '[]');
-      localStorage.setItem('pending_users', JSON.stringify(localPending.filter((u) => !isMatch(u))));
+      const res = await axios.patch(
+        `${API_BASE}/admin/students/${studentId}/status`,
+        { status: 'verified' },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
 
-      const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
-      localStorage.setItem('rejected_users', JSON.stringify(localRejected.filter((u) => !isMatch(u))));
+      if (res.status === 200 || res.data?.success) {
+        const approvedStudent = {
+          ...student,
+          verificationStatus: 'verified',
+          status: 'approved',
+          role: student.role || 'user',
+        };
 
-      const localApproved = JSON.parse(localStorage.getItem('approved_users') || '[]');
-      const updatedLocalApproved = [approvedStudent, ...localApproved.filter((u) => !isMatch(u))];
-      localStorage.setItem('approved_users', JSON.stringify(updatedLocalApproved));
+        const isMatch = (u) => {
+          if (studentId && (u._id === studentId || u.id === studentId)) return true;
+          if (studentEmail && u.email && u.email.toLowerCase().trim() === studentEmail) return true;
+          return false;
+        };
 
-      // إذا كان المستخدم المعتمد هو المستخدم الحالي المسجل دخوله
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || 'null');
-      if (currentUser && isMatch(currentUser)) {
-        const updatedCurrent = { ...currentUser, verificationStatus: 'verified', status: 'approved' };
-        localStorage.setItem('currentUser', JSON.stringify(updatedCurrent));
-        localStorage.setItem('user', JSON.stringify(updatedCurrent));
+        setPendingUsers((prev) => prev.filter((u) => !isMatch(u)));
+        setRejectedUsers((prev) => prev.filter((u) => !isMatch(u)));
+        setApprovedUsers((prev) => [approvedStudent, ...prev.filter((u) => !isMatch(u))]);
+
+        // تحديث التخزين المحلي بعد التأكد من نجاح الخادم
+        try {
+          const localPending = JSON.parse(localStorage.getItem('pending_users') || '[]');
+          localStorage.setItem('pending_users', JSON.stringify(localPending.filter((u) => !isMatch(u))));
+
+          const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
+          localStorage.setItem('rejected_users', JSON.stringify(localRejected.filter((u) => !isMatch(u))));
+
+          const localApproved = JSON.parse(localStorage.getItem('approved_users') || '[]');
+          localStorage.setItem('approved_users', JSON.stringify([approvedStudent, ...localApproved.filter((u) => !isMatch(u))]));
+        } catch (e) {}
+      } else {
+        throw new Error(res.data?.message || 'تعذر اعتماد الحساب في الخادم');
       }
     } catch (e) {
-      console.error('LocalStorage approve error:', e);
-    }
-
-    try {
-      await axios.patch(`${API_BASE}/admin/students/${studentId}/status`, { status: 'verified' });
-    } catch (e) {
-      console.log('Server update note:', e.message);
+      console.error('Approve failed:', e);
+      alert('فشل اعتماد الطالب في قاعدة البيانات: ' + (e.response?.data?.message || e.message));
     }
   };
 
@@ -377,63 +377,83 @@ export default function AdminDashboard() {
   const handleReject = async (studentId, studentEmail) => {
     if (!window.confirm('هل أنت متأكد من رغبتك في رفض هذا الطلب وحظر تسجيل الدخول؟')) return;
 
-    const isMatch = (u) => {
-      if (studentId && (u._id === studentId || u.id === studentId)) return true;
-      if (studentEmail && u.email && u.email.toLowerCase().trim() === studentEmail.toLowerCase().trim()) return true;
-      return false;
-    };
-
-    const targetStudent =
-      pendingUsers.find(isMatch) ||
-      approvedUsers.find(isMatch) || { _id: studentId, id: studentId, email: studentEmail };
-
-    const rejectedStudent = {
-      ...targetStudent,
-      verificationStatus: 'rejected',
-      status: 'rejected',
-    };
-
-    const newPending = pendingUsers.filter((u) => !isMatch(u));
-    const newApproved = approvedUsers.filter((u) => !isMatch(u));
-    const newRejected = [rejectedStudent, ...rejectedUsers.filter((u) => !isMatch(u))];
-
-    setPendingUsers(newPending);
-    setApprovedUsers(newApproved);
-    setRejectedUsers(newRejected);
-
     try {
-      const localPending = JSON.parse(localStorage.getItem('pending_users') || '[]');
-      localStorage.setItem('pending_users', JSON.stringify(localPending.filter((u) => !isMatch(u))));
+      const res = await axios.patch(
+        `${API_BASE}/admin/students/${studentId}/status`,
+        { status: 'rejected' },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
 
-      const localApproved = JSON.parse(localStorage.getItem('approved_users') || '[]');
-      localStorage.setItem('approved_users', JSON.stringify(localApproved.filter((u) => !isMatch(u))));
+      if (res.status === 200 || res.data?.success) {
+        const isMatch = (u) => {
+          if (studentId && (u._id === studentId || u.id === studentId)) return true;
+          if (studentEmail && u.email && u.email.toLowerCase().trim() === studentEmail.toLowerCase().trim()) return true;
+          return false;
+        };
 
-      const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
-      localStorage.setItem('rejected_users', JSON.stringify([rejectedStudent, ...localRejected.filter((u) => !isMatch(u))]));
+        const targetStudent =
+          pendingUsers.find(isMatch) ||
+          approvedUsers.find(isMatch) || { _id: studentId, id: studentId, email: studentEmail };
 
-      // إذا كان المرفوض هو الحساب الحالي المسجل دخوله
-      const currentUser = JSON.parse(localStorage.getItem('currentUser') || localStorage.getItem('user') || 'null');
-      if (currentUser && isMatch(currentUser) && currentUser.role !== 'admin') {
-        localStorage.removeItem('currentUser');
-        localStorage.removeItem('user');
+        const rejectedStudent = {
+          ...targetStudent,
+          verificationStatus: 'rejected',
+          status: 'rejected',
+        };
+
+        setPendingUsers((prev) => prev.filter((u) => !isMatch(u)));
+        setApprovedUsers((prev) => prev.filter((u) => !isMatch(u)));
+        setRejectedUsers((prev) => [rejectedStudent, ...prev.filter((u) => !isMatch(u))]);
+
+        try {
+          const localPending = JSON.parse(localStorage.getItem('pending_users') || '[]');
+          localStorage.setItem('pending_users', JSON.stringify(localPending.filter((u) => !isMatch(u))));
+
+          const localApproved = JSON.parse(localStorage.getItem('approved_users') || '[]');
+          localStorage.setItem('approved_users', JSON.stringify(localApproved.filter((u) => !isMatch(u))));
+
+          const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
+          localStorage.setItem('rejected_users', JSON.stringify([rejectedStudent, ...localRejected.filter((u) => !isMatch(u))]));
+        } catch (e) {}
+      } else {
+        throw new Error(res.data?.message || 'تعذر رفض الحساب في الخادم');
       }
-    } catch (e) {}
-
-    try {
-      await axios.patch(`${API_BASE}/admin/students/${studentId}/status`, { status: 'rejected' });
-    } catch (e) {}
+    } catch (e) {
+      console.error('Reject failed:', e);
+      alert('فشل رفض الطالب في قاعدة البيانات: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   // حذف سجل طالب مرفوض نهائياً
   const handleDeleteRejected = async (studentId) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا السجل المرفوض نهائياً؟')) return;
-    const updated = rejectedUsers.filter((u) => (u._id || u.id) !== studentId);
-    setRejectedUsers(updated);
     try {
-      const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
-      localStorage.setItem('rejected_users', JSON.stringify(localRejected.filter((u) => (u._id || u.id) !== studentId)));
-      await axios.delete(`${API_BASE}/admin/students/${studentId}`);
-    } catch (e) {}
+      const res = await axios.delete(`${API_BASE}/admin/students/${studentId}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+      if (res.status === 200 || res.data?.success) {
+        setRejectedUsers((prev) => prev.filter((u) => (u._id || u.id) !== studentId));
+        try {
+          const localRejected = JSON.parse(localStorage.getItem('rejected_users') || '[]');
+          localStorage.setItem('rejected_users', JSON.stringify(localRejected.filter((u) => (u._id || u.id) !== studentId)));
+        } catch (e) {}
+      } else {
+        throw new Error(res.data?.message || 'تعذر الحذف من الخادم');
+      }
+    } catch (e) {
+      console.error('Delete rejected error:', e);
+      alert('فشل حذف السجل من قاعدة البيانات: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   // 3. ترقية أو عزل الأدمن (Promote / Demote) مع التحديث الفوري
@@ -448,38 +468,59 @@ export default function AdminDashboard() {
 
     if (!window.confirm(confirmMsg)) return;
 
-    // تحديث القائمة المحلية
-    const updatedApproved = approvedUsers.map((u) => {
-      if ((u._id || u.id) === userId) {
-        return { ...u, role: newRole };
-      }
-      return u;
-    });
-
-    setApprovedUsers(updatedApproved);
-    localStorage.setItem('approved_users', JSON.stringify(updatedApproved));
-
-    // تحديث في AuthContext
-    if (updateUserRole) {
-      updateUserRole(userId, newRole);
-    }
-
     try {
-      await axios.patch(`${API_BASE}/admin/students/${userId}/role`, { role: newRole });
-    } catch (e) {}
+      const res = await axios.patch(
+        `${API_BASE}/admin/students/${userId}/role`,
+        { role: newRole },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
+
+      if (res.status === 200 || res.data?.success) {
+        setApprovedUsers((prev) =>
+          prev.map((u) => ((u._id || u.id) === userId ? { ...u, role: newRole } : u))
+        );
+        if (updateUserRole) {
+          updateUserRole(userId, newRole);
+        }
+      } else {
+        throw new Error(res.data?.message || 'تعذر تحديث الرتبة في الخادم');
+      }
+    } catch (e) {
+      console.error('Role update error:', e);
+      alert('فشل تحديث رتبة المستخدم في قاعدة البيانات: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   // 4. حذف سجل طالب معتمد
   const handleDeleteApproved = async (userId) => {
     if (!window.confirm('هل أنت متأكد من إلغاء اعتماد هذا الحساب وحذفه نهائياً؟')) return;
-
-    const updated = approvedUsers.filter((u) => (u._id || u.id) !== userId);
-    setApprovedUsers(updated);
-    localStorage.setItem('approved_users', JSON.stringify(updated));
-
     try {
-      await axios.delete(`${API_BASE}/admin/students/${userId}`);
-    } catch (e) {}
+      const res = await axios.delete(`${API_BASE}/admin/students/${userId}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+      if (res.status === 200 || res.data?.success) {
+        setApprovedUsers((prev) => prev.filter((u) => (u._id || u.id) !== userId));
+        try {
+          const localApproved = JSON.parse(localStorage.getItem('approved_users') || '[]');
+          localStorage.setItem('approved_users', JSON.stringify(localApproved.filter((u) => (u._id || u.id) !== userId)));
+        } catch (e) {}
+      } else {
+        throw new Error(res.data?.message || 'تعذر الحذف من الخادم');
+      }
+    } catch (e) {
+      console.error('Delete approved error:', e);
+      alert('فشل حذف الحساب من قاعدة البيانات: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   // 5. تصدير ملف الـ CSV
@@ -507,23 +548,37 @@ export default function AdminDashboard() {
     if (!newNotif.title.trim() || !newNotif.message.trim()) return;
 
     try {
-      const res = await axios.post(`${API_BASE}/notifications`, {
-        title: newNotif.title.trim(),
-        message: newNotif.message.trim(),
-        type: newNotif.type || 'general',
-        link: newNotif.link || '/posts',
-        sender: user?.fullName || user?.name || 'إدارة الرابطة (SSA-FS-CU)',
-        senderRole: 'admin',
-      });
+      const res = await axios.post(
+        `${API_BASE}/notifications`,
+        {
+          title: newNotif.title.trim(),
+          message: newNotif.message.trim(),
+          type: newNotif.type || 'general',
+          link: newNotif.link || '/posts',
+          sender: user?.fullName || user?.name || 'إدارة الرابطة (SSA-FS-CU)',
+          senderRole: 'admin',
+        },
+        {
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        }
+      );
 
-      if (res.data?.notification) {
-        setNotificationsList((prev) => [res.data.notification, ...prev]);
+      const created = res.data?.notification || (res.data?._id ? res.data : null);
+      if (created) {
+        setNotificationsList((prev) => [created, ...prev]);
         setNotifSuccessMsg('تم إرسال وبث الإشعار الفوري بنجاح لجميع الأجهزة والطلاب! 🔔🚀');
         setNewNotif({ title: '', message: '', type: 'general', link: '/posts' });
         setTimeout(() => setNotifSuccessMsg(''), 4500);
+      } else {
+        throw new Error(res.data?.message || 'تعذر إرسال الإشعار');
       }
     } catch (err) {
       console.error('Broadcast notification error:', err);
+      alert('فشل بث الإشعار: ' + (err.response?.data?.message || err.message));
     }
   };
 
@@ -531,10 +586,21 @@ export default function AdminDashboard() {
   const handleDeleteNotification = async (id) => {
     if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا الإشعار؟')) return;
     try {
-      await axios.delete(`${API_BASE}/notifications/${id}`);
-      setNotificationsList((prev) => prev.filter((n) => n._id !== id));
+      const res = await axios.delete(`${API_BASE}/notifications/${id}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+      if (res.status === 200 || res.data?.success) {
+        setNotificationsList((prev) => prev.filter((n) => (n._id || n.id) !== id));
+      } else {
+        throw new Error(res.data?.message || 'تعذر حذف الإشعار');
+      }
     } catch (err) {
       console.error('Delete notif error:', err);
+      alert('فشل حذف الإشعار من قاعدة البيانات.');
     }
   };
 
@@ -544,32 +610,45 @@ export default function AdminDashboard() {
     if (!newAnnouncement.content.trim()) return;
 
     try {
-      const res = await axios.post(`${API_BASE}/admin/announcements`, newAnnouncement);
-      if (res.data?.announcement) {
-        setAnnouncements([res.data.announcement, ...announcements]);
+      const res = await axios.post(`${API_BASE}/admin/announcements`, newAnnouncement, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+      const created = res.data?.announcement || (res.data?._id ? res.data : null);
+      if (created) {
+        setAnnouncements((prev) => [created, ...prev]);
+        setNewAnnouncement({ title: '', content: '', isPinned: true });
+      } else {
+        throw new Error(res.data?.message || 'تعذر حفظ الإعلان');
       }
     } catch (err) {
-      const item = {
-        id: Date.now(),
-        title: newAnnouncement.title || 'تنويه إداري',
-        content: newAnnouncement.content,
-        date: new Date().toLocaleDateString('ar-EG'),
-      };
-      const updated = [item, ...announcements];
-      setAnnouncements(updated);
-      localStorage.setItem('ssa_announcements', JSON.stringify(updated));
+      console.error('Add announcement error:', err);
+      alert('فشل إضافة الإعلان في قاعدة البيانات: ' + (err.response?.data?.message || err.message));
     }
-
-    setNewAnnouncement({ title: '', content: '', isPinned: true });
   };
 
   const handleDeleteAnnouncement = async (id) => {
+    if (!window.confirm('هل أنت متأكد من حذف هذا الإعلان نهائياً؟')) return;
     try {
-      await axios.delete(`${API_BASE}/admin/announcements/${id}`);
-    } catch (e) {}
-    const updated = announcements.filter((a) => (a._id || a.id) !== id);
-    setAnnouncements(updated);
-    localStorage.setItem('ssa_announcements', JSON.stringify(updated));
+      const res = await axios.delete(`${API_BASE}/admin/announcements/${id}`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      });
+      if (res.status === 200 || res.data?.success) {
+        setAnnouncements((prev) => prev.filter((a) => (a._id || a.id) !== id));
+      } else {
+        throw new Error(res.data?.message || 'تعذر حذف الإعلان');
+      }
+    } catch (e) {
+      console.error('Delete announcement error:', e);
+      alert('فشل حذف الإعلان من قاعدة البيانات: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   // تصفية نتائج البحث واستمارات التسجيل

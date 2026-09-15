@@ -236,12 +236,13 @@ export default function SportsHub() {
   const [activeTab, setActiveTab] = useState('tournaments');
 
   // Dynamic state
-  const [tournaments, setTournaments] = useState(DEFAULT_TOURNAMENTS);
-  const [teams, setTeams] = useState(DEFAULT_TEAMS);
-  const [matches, setMatches] = useState(DEFAULT_MATCHES);
-  const [standings, setStandings] = useState(DEFAULT_STANDINGS);
-  const [scorers, setScorers] = useState(DEFAULT_SCORERS);
-  const [hallOfFame, setHallOfFame] = useState(DEFAULT_HALLOFFAME);
+  const [tournaments, setTournaments] = useState([]);
+  const [teams, setTeams] = useState([]);
+  const [matches, setMatches] = useState([]);
+  const [standings, setStandings] = useState([]);
+  const [scorers, setScorers] = useState([]);
+  const [hallOfFame, setHallOfFame] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -249,70 +250,82 @@ export default function SportsHub() {
   const [notification, setNotification] = useState('');
 
   const tabs = [
-    { id: 'tournaments', label: 'البطولات', icon: Trophy, count: '4 منافسات' },
-    { id: 'teams', label: 'الفرق', icon: Users, count: '8 فرق علمية' },
+    { id: 'tournaments', label: 'البطولات', icon: Trophy, count: 'منافسات وبطولات' },
+    { id: 'teams', label: 'الفرق', icon: Users, count: 'فرق علمية' },
     { id: 'results', label: 'النتائج والمباريات', icon: Calendar, count: 'مباشر وتاريخي' },
     { id: 'standings', label: 'الترتيب', icon: TrendingUp, count: 'جدول الدوري' },
     { id: 'scorers', label: 'الهدافين', icon: Flame, count: 'الحذاء الذهبي' },
     { id: 'halloffame', label: 'سجل الأبطال', icon: Award, count: 'لوحة الشرف' },
   ];
 
-  // Fetch Live Data from MongoDB Atlas
-  useEffect(() => {
-    async function loadDynamic() {
+  // Fetch Live Data purely from MongoDB Atlas
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('sports');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicTournaments = dynamicItems.filter((i) => i.section === 'tournaments');
-        const dynamicTeams = dynamicItems.filter((i) => i.section === 'teams');
-        const dynamicMatches = dynamicItems.filter((i) => i.section === 'results');
-
-        if (dynamicTournaments.length > 0) {
-          const ids = new Set(dynamicTournaments.map((d) => d._id));
-          setTournaments([...dynamicTournaments, ...DEFAULT_TOURNAMENTS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicTeams.length > 0) {
-          const ids = new Set(dynamicTeams.map((d) => d._id));
-          setTeams([...dynamicTeams, ...DEFAULT_TEAMS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicMatches.length > 0) {
-          const ids = new Set(dynamicMatches.map((d) => d._id));
-          setMatches([...dynamicMatches, ...DEFAULT_MATCHES.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setTournaments((dynamicItems || []).filter((i) => i.section === 'tournaments' || !i.section));
+      setTeams((dynamicItems || []).filter((i) => i.section === 'teams'));
+      setMatches((dynamicItems || []).filter((i) => i.section === 'results'));
+      setStandings((dynamicItems || []).filter((i) => i.section === 'standings'));
+      setScorers((dynamicItems || []).filter((i) => i.section === 'scorers'));
+      setHallOfFame((dynamicItems || []).filter((i) => i.section === 'halloffame'));
+    } catch (err) {
+      console.error('Failed to load sports hub content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'teams') {
-      setTeams(action === 'create' ? [item, ...teams] : teams.map((t) => (t._id === item._id ? item : t)));
+      setTeams((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((t) => ((t._id || t.id) === (item._id || item.id) ? item : t))
+      );
     } else if (item.section === 'results') {
-      setMatches(action === 'create' ? [item, ...matches] : matches.map((m) => (m._id === item._id ? item : m)));
+      setMatches((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((m) => ((m._id || m.id) === (item._id || item.id) ? item : m))
+      );
     } else {
-      setTournaments(action === 'create' ? [item, ...tournaments] : tournaments.map((t) => (t._id === item._id ? item : t)));
+      setTournaments((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((t) => ((t._id || t.id) === (item._id || item.id) ? item : t))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة المحتوى بنجاح إلى قاعدة البيانات!' : 'تم تحديث المحتوى بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة المحتوى بنجاح وحفظه في قاعدة البيانات!'
+        : 'تم تحديث المحتوى بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, type) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر الرياضي؟')) {
-      try {
-        if (!id.startsWith('t-') && !id.startsWith('tm-') && !id.startsWith('m-')) {
-          await deleteHubContent(id);
-        }
-        if (type === 'teams') {
-          setTeams(teams.filter((t) => t._id !== id));
-        } else if (type === 'results') {
-          setMatches(matches.filter((m) => m._id !== id));
-        } else {
-          setTournaments(tournaments.filter((t) => t._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر الرياضي نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'sports');
+      if (type === 'teams') {
+        setTeams((prev) => prev.filter((t) => (t._id || t.id) !== id));
+      } else if (type === 'results') {
+        setMatches((prev) => prev.filter((m) => (m._id || m.id) !== id));
+      } else {
+        setTournaments((prev) => prev.filter((t) => (t._id || t.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete sports item error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

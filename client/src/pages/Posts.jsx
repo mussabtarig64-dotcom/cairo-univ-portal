@@ -63,71 +63,23 @@ export default function Posts() {
 
   const loadPosts = async () => {
     try {
-      const res = await axios.get(`${API_BASE}/posts`);
-      if (res.data && Array.isArray(res.data) && res.data.length > 0) {
+      const res = await axios.get(`${API_BASE}/posts`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        },
+        params: { _t: Date.now() }
+      });
+      if (res.data && Array.isArray(res.data)) {
         setPosts(res.data);
-        return;
+      } else {
+        setPosts([]);
       }
     } catch (e) {
-      console.log('Posts API error, loading local posts:', e.message);
+      console.error('Posts API error:', e);
+      setPosts([]);
     }
-
-    // المنشورات الافتراضية
-    const saved = localStorage.getItem('ssa_community_posts');
-    if (saved) {
-      try {
-        setPosts(JSON.parse(saved));
-        return;
-      } catch (e) {}
-    }
-
-    const defaultPosts = [
-      {
-        _id: '1',
-        id: 1,
-        author: 'المكتب التنفيذي للرابطة',
-        authorRole: 'إدارة الرابطة',
-        department: 'العلوم العامة',
-        createdAt: new Date().toISOString(),
-        title: '🌟 ترحيب بجميع الزملاء والطلاب الجدد للعام الجامعي 2025/2026',
-        content:
-          'ترحب رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة بجميع الطلاب والطالبات المستجدين والقدامى. يسعدنا تقديم كافة الخدمات الأكاديمية ومساعدتكم في كل ما يخص جداول المحاضرات والمعامل.',
-        mediaType: 'none',
-        mediaUrl: '',
-        fileName: '',
-        likes: 38,
-        likedBy: [],
-        isPinned: true,
-        comments: [
-          {
-            author: 'أحمد عثمان',
-            text: 'ألف شكر لإدارة الرابطة الموقرة على جهودكم المستمرة في خدمة الطلاب!',
-            createdAt: new Date().toISOString(),
-          },
-        ],
-      },
-      {
-        _id: '2',
-        id: 2,
-        author: 'اللجنة الأكاديمية - قسم الكيمياء',
-        authorRole: 'طالب',
-        department: 'الكيمياء والكيمياء الحيوية',
-        createdAt: new Date(Date.now() - 3600000 * 4).toISOString(),
-        title: '🧪 مذكرة وتجارب معمل الكيمياء العامة (General Chemistry Lab Notes)',
-        content:
-          'تم رفع مذكرة شاملة لتجارب الكيمياء العامة مع شرح أدوات المعمل ومعادلات التحليل الحجمي والنوعي لمساعدة طلاب المستوى الأول.',
-        mediaType: 'pdf',
-        mediaUrl: '#',
-        fileName: 'General_Chemistry_Lab_Notes_SSA.pdf',
-        likes: 22,
-        likedBy: [],
-        isPinned: false,
-        comments: [],
-      },
-    ];
-
-    setPosts(defaultPosts);
-    localStorage.setItem('ssa_community_posts', JSON.stringify(defaultPosts));
   };
 
   const handleFileUpload = (e) => {
@@ -209,49 +161,43 @@ export default function Posts() {
 
     try {
       const res = await axios.post(`${API_BASE}/posts`, newPostData);
-      if (res.data?.post) {
-        const updated = [res.data.post, ...posts];
-        setPosts(updated);
-        localStorage.setItem('ssa_community_posts', JSON.stringify(updated));
+      if (res.status === 200 || res.status === 201) {
+        const createdPost = res.data?.post || res.data;
+        if (createdPost && (createdPost._id || createdPost.id)) {
+          setPosts((prev) => [createdPost, ...prev]);
+        } else {
+          await loadPosts();
+        }
+        setNewTitle('');
+        setNewContent('');
+        setMediaType('none');
+        setMediaUrl('');
+        setFileName('');
+        setIsPinned(false);
+        setShowAddModal(false);
+      } else {
+        alert('حدث خطأ أثناء إضافة المنشور في الخادم');
       }
     } catch (err) {
-      const localPost = { ...newPostData, _id: `local_${Date.now()}`, id: Date.now() };
-      const updated = [localPost, ...posts];
-      setPosts(updated);
-      localStorage.setItem('ssa_community_posts', JSON.stringify(updated));
+      console.error('Create Post Error:', err);
+      alert('فشل إضافة المنشور: ' + (err.response?.data?.message || err.message));
     }
-
-    setNewTitle('');
-    setNewContent('');
-    setMediaType('none');
-    setMediaUrl('');
-    setFileName('');
-    setIsPinned(false);
-    setShowAddModal(false);
   };
 
   const handleLike = async (postId) => {
     const userEmail = user?.email || 'guest';
-    const updated = posts.map((p) => {
-      const pId = p._id || p.id;
-      if (pId === postId) {
-        const alreadyLiked = p.likedBy?.includes(userEmail);
-        const newLikes = alreadyLiked ? Math.max(0, p.likes - 1) : p.likes + 1;
-        const newLikedBy = alreadyLiked
-          ? (p.likedBy || []).filter((e) => e !== userEmail)
-          : [...(p.likedBy || []), userEmail];
-
-        return { ...p, likes: newLikes, likedBy: newLikedBy };
-      }
-      return p;
-    });
-
-    setPosts(updated);
-    localStorage.setItem('ssa_community_posts', JSON.stringify(updated));
-
     try {
-      await axios.post(`${API_BASE}/posts/${postId}/like`, { userEmail });
-    } catch (e) {}
+      const res = await axios.post(`${API_BASE}/posts/${postId}/like`, { userEmail });
+      if (res.status === 200 && res.data?.post) {
+        const updatedPost = res.data.post;
+        setPosts((prev) => prev.map((p) => ((p._id || p.id) === (updatedPost._id || updatedPost.id) ? updatedPost : p)));
+      } else if (res.status === 200) {
+        await loadPosts();
+      }
+    } catch (e) {
+      console.error('Like Post Error:', e);
+      alert('فشل تحديث الإعجاب: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   const handleAddComment = async (postId) => {
@@ -267,35 +213,38 @@ export default function Posts() {
       createdAt: new Date().toISOString(),
     };
 
-    const updated = posts.map((p) => {
-      if ((p._id || p.id) === postId) {
-        return {
-          ...p,
-          comments: [...(p.comments || []), newComment],
-        };
-      }
-      return p;
-    });
-
-    setPosts(updated);
-    localStorage.setItem('ssa_community_posts', JSON.stringify(updated));
-    setCommentText('');
-
     try {
-      await axios.post(`${API_BASE}/posts/${postId}/comments`, newComment);
-    } catch (e) {}
+      const res = await axios.post(`${API_BASE}/posts/${postId}/comments`, newComment);
+      if ((res.status === 200 || res.status === 201) && res.data?.post) {
+        const updatedPost = res.data.post;
+        setPosts((prev) => prev.map((p) => ((p._id || p.id) === (updatedPost._id || updatedPost.id) ? updatedPost : p)));
+        setCommentText('');
+        setActiveCommentPostId(null);
+      } else if (res.status === 200 || res.status === 201) {
+        await loadPosts();
+        setCommentText('');
+        setActiveCommentPostId(null);
+      }
+    } catch (e) {
+      console.error('Add Comment Error:', e);
+      alert('فشل إضافة التعليق: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   const handleDeletePost = async (postId) => {
     if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا المنشور؟')) return;
 
-    const updated = posts.filter((p) => (p._id || p.id) !== postId);
-    setPosts(updated);
-    localStorage.setItem('ssa_community_posts', JSON.stringify(updated));
-
     try {
-      await axios.delete(`${API_BASE}/posts/${postId}`);
-    } catch (e) {}
+      const res = await axios.delete(`${API_BASE}/posts/${postId}`);
+      if (res.status === 200 && (res.data?.success || res.status === 200)) {
+        setPosts((prev) => prev.filter((p) => (p._id || p.id) !== postId));
+      } else {
+        alert('تعذر حذف المنشور من الخادم');
+      }
+    } catch (e) {
+      console.error('Delete Post Error:', e);
+      alert('فشل حذف المنشور: ' + (e.response?.data?.message || e.message));
+    }
   };
 
   // تصفية المنشورات

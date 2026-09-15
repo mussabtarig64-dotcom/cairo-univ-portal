@@ -77,9 +77,10 @@ export default function AdministrationHub() {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('executive');
 
-  const [executiveBoard, setExecutiveBoard] = useState(DEFAULT_BOARD);
-  const [committees, setCommittees] = useState(DEFAULT_COMMITTEES);
-  const [plans, setPlans] = useState(DEFAULT_PLANS);
+  const [executiveBoard, setExecutiveBoard] = useState([]);
+  const [committees, setCommittees] = useState([]);
+  const [plans, setPlans] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -93,61 +94,70 @@ export default function AdministrationHub() {
     { id: 'plans', label: 'الخطط والمشاريع', icon: Target, desc: 'الخطة الاستراتيجية 2026' },
   ];
 
-  useEffect(() => {
-    async function loadDynamic() {
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('administration');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicBoard = dynamicItems.filter((i) => i.section === 'executive');
-        const dynamicComm = dynamicItems.filter((i) => i.section === 'committees');
-        const dynamicPln = dynamicItems.filter((i) => i.section === 'plans');
-
-        if (dynamicBoard.length > 0) {
-          const ids = new Set(dynamicBoard.map((d) => d._id));
-          setExecutiveBoard([...dynamicBoard, ...DEFAULT_BOARD.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicComm.length > 0) {
-          const ids = new Set(dynamicComm.map((d) => d._id));
-          setCommittees([...dynamicComm, ...DEFAULT_COMMITTEES.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicPln.length > 0) {
-          const ids = new Set(dynamicPln.map((d) => d._id));
-          setPlans([...dynamicPln, ...DEFAULT_PLANS.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setExecutiveBoard((dynamicItems || []).filter((i) => i.section === 'executive' || !i.section));
+      setCommittees((dynamicItems || []).filter((i) => i.section === 'committees'));
+      setPlans((dynamicItems || []).filter((i) => i.section === 'plans'));
+    } catch (err) {
+      console.error('Failed to load administration hub content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'committees') {
-      setCommittees(action === 'create' ? [item, ...committees] : committees.map((c) => (c._id === item._id ? item : c)));
+      setCommittees((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((c) => ((c._id || c.id) === (item._id || item.id) ? item : c))
+      );
     } else if (item.section === 'plans') {
-      setPlans(action === 'create' ? [item, ...plans] : plans.map((p) => (p._id === item._id ? item : p)));
+      setPlans((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((p) => ((p._id || p.id) === (item._id || item.id) ? item : p))
+      );
     } else {
-      setExecutiveBoard(action === 'create' ? [item, ...executiveBoard] : executiveBoard.map((b) => (b._id === item._id ? item : b)));
+      setExecutiveBoard((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((b) => ((b._id || b.id) === (item._id || item.id) ? item : b))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة البيانات الإدارية بنجاح!' : 'تم التحديث بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة البيانات الإدارية بنجاح في قاعدة البيانات!'
+        : 'تم تحديث البيانات الإدارية بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا المحتوى الإداري؟')) {
-      try {
-        if (!id.startsWith('b-') && !id.startsWith('c-') && !id.startsWith('p-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'committees') {
-          setCommittees(committees.filter((c) => c._id !== id));
-        } else if (section === 'plans') {
-          setPlans(plans.filter((p) => p._id !== id));
-        } else {
-          setExecutiveBoard(executiveBoard.filter((b) => b._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا المحتوى الإداري نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'administration');
+      if (section === 'committees') {
+        setCommittees((prev) => prev.filter((c) => (c._id || c.id) !== id));
+      } else if (section === 'plans') {
+        setPlans((prev) => prev.filter((p) => (p._id || p.id) !== id));
+      } else {
+        setExecutiveBoard((prev) => prev.filter((b) => (b._id || b.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete administration item error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

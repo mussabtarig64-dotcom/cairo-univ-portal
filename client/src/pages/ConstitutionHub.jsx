@@ -48,10 +48,11 @@ export default function ConstitutionHub() {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('constitution');
 
-  const [articles, setArticles] = useState(DEFAULT_ARTICLES);
-  const [decrees, setDecrees] = useState(DEFAULT_DECREES);
-  const [reports, setReports] = useState(DEFAULT_REPORTS);
-  const [minutes, setMinutes] = useState(DEFAULT_MINUTES);
+  const [articles, setArticles] = useState([]);
+  const [decrees, setDecrees] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [minutes, setMinutes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,70 +66,79 @@ export default function ConstitutionHub() {
     { id: 'minutes', label: 'محاضر الاجتماعات', icon: FileText, count: 'أرشيف الجلسات' },
   ];
 
-  useEffect(() => {
-    async function loadDynamic() {
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('constitution');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicArts = dynamicItems.filter((i) => i.section === 'constitution');
-        const dynamicDecs = dynamicItems.filter((i) => i.section === 'decisions');
-        const dynamicReps = dynamicItems.filter((i) => i.section === 'reports');
-        const dynamicMins = dynamicItems.filter((i) => i.section === 'minutes');
-
-        if (dynamicArts.length > 0) {
-          const ids = new Set(dynamicArts.map((d) => d._id));
-          setArticles([...dynamicArts, ...DEFAULT_ARTICLES.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicDecs.length > 0) {
-          const ids = new Set(dynamicDecs.map((d) => d._id));
-          setDecrees([...dynamicDecs, ...DEFAULT_DECREES.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicReps.length > 0) {
-          const ids = new Set(dynamicReps.map((d) => d._id));
-          setReports([...dynamicReps, ...DEFAULT_REPORTS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicMins.length > 0) {
-          const ids = new Set(dynamicMins.map((d) => d._id));
-          setMinutes([...dynamicMins, ...DEFAULT_MINUTES.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setArticles((dynamicItems || []).filter((i) => i.section === 'constitution' || !i.section));
+      setDecrees((dynamicItems || []).filter((i) => i.section === 'decisions'));
+      setReports((dynamicItems || []).filter((i) => i.section === 'reports'));
+      setMinutes((dynamicItems || []).filter((i) => i.section === 'minutes'));
+    } catch (err) {
+      console.error('Failed to load constitution content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'decisions') {
-      setDecrees(action === 'create' ? [item, ...decrees] : decrees.map((d) => (d._id === item._id ? item : d)));
+      setDecrees((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((d) => ((d._id || d.id) === (item._id || item.id) ? item : d))
+      );
     } else if (item.section === 'reports') {
-      setReports(action === 'create' ? [item, ...reports] : reports.map((r) => (r._id === item._id ? item : r)));
+      setReports((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((r) => ((r._id || r.id) === (item._id || item.id) ? item : r))
+      );
     } else if (item.section === 'minutes') {
-      setMinutes(action === 'create' ? [item, ...minutes] : minutes.map((m) => (m._id === item._id ? item : m)));
+      setMinutes((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((m) => ((m._id || m.id) === (item._id || item.id) ? item : m))
+      );
     } else {
-      setArticles(action === 'create' ? [item, ...articles] : articles.map((a) => (a._id === item._id ? item : a)));
+      setArticles((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((a) => ((a._id || a.id) === (item._id || item.id) ? item : a))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة الوثيقة التنظيمية بنجاح!' : 'تم التحديث بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة الوثيقة وحفظها في قاعدة البيانات بنجاح!'
+        : 'تم التحديث بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا البند أو التقرير؟')) {
-      try {
-        if (!id.startsWith('art-') && !id.startsWith('dec-') && !id.startsWith('rep-') && !id.startsWith('min-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'decisions') {
-          setDecrees(decrees.filter((d) => d._id !== id));
-        } else if (section === 'reports') {
-          setReports(reports.filter((r) => r._id !== id));
-        } else if (section === 'minutes') {
-          setMinutes(minutes.filter((m) => m._id !== id));
-        } else {
-          setArticles(articles.filter((a) => a._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا البند أو التقرير نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'constitution');
+      if (section === 'decisions') {
+        setDecrees((prev) => prev.filter((d) => (d._id || d.id) !== id));
+      } else if (section === 'reports') {
+        setReports((prev) => prev.filter((r) => (r._id || r.id) !== id));
+      } else if (section === 'minutes') {
+        setMinutes((prev) => prev.filter((m) => (m._id || m.id) !== id));
+      } else {
+        setArticles((prev) => prev.filter((a) => (a._id || a.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete constitution error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

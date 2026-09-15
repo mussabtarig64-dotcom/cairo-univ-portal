@@ -48,10 +48,11 @@ export default function AchievementsHub() {
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('honor');
 
-  const [topStudents, setTopStudents] = useState(DEFAULT_HONOR);
-  const [distinguished, setDistinguished] = useState(DEFAULT_DISTINGUISHED);
-  const [volunteers, setVolunteers] = useState(DEFAULT_VOLUNTEERS);
-  const [athletes, setAthletes] = useState(DEFAULT_ATHLETES);
+  const [topStudents, setTopStudents] = useState([]);
+  const [distinguished, setDistinguished] = useState([]);
+  const [volunteers, setVolunteers] = useState([]);
+  const [athletes, setAthletes] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -65,70 +66,79 @@ export default function AchievementsHub() {
     { id: 'athletes', label: 'أبطال الرياضة', icon: Trophy, count: 'كؤوس وميداليات' },
   ];
 
-  useEffect(() => {
-    async function loadDynamic() {
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('achievements');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicHonor = dynamicItems.filter((i) => i.section === 'honor');
-        const dynamicDist = dynamicItems.filter((i) => i.section === 'distinguished');
-        const dynamicVols = dynamicItems.filter((i) => i.section === 'volunteers');
-        const dynamicAth = dynamicItems.filter((i) => i.section === 'athletes');
-
-        if (dynamicHonor.length > 0) {
-          const ids = new Set(dynamicHonor.map((d) => d._id));
-          setTopStudents([...dynamicHonor, ...DEFAULT_HONOR.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicDist.length > 0) {
-          const ids = new Set(dynamicDist.map((d) => d._id));
-          setDistinguished([...dynamicDist, ...DEFAULT_DISTINGUISHED.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicVols.length > 0) {
-          const ids = new Set(dynamicVols.map((d) => d._id));
-          setVolunteers([...dynamicVols, ...DEFAULT_VOLUNTEERS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicAth.length > 0) {
-          const ids = new Set(dynamicAth.map((d) => d._id));
-          setAthletes([...dynamicAth, ...DEFAULT_ATHLETES.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setTopStudents((dynamicItems || []).filter((i) => i.section === 'honor' || !i.section));
+      setDistinguished((dynamicItems || []).filter((i) => i.section === 'distinguished'));
+      setVolunteers((dynamicItems || []).filter((i) => i.section === 'volunteers'));
+      setAthletes((dynamicItems || []).filter((i) => i.section === 'athletes'));
+    } catch (err) {
+      console.error('Failed to load achievements hub content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'distinguished') {
-      setDistinguished(action === 'create' ? [item, ...distinguished] : distinguished.map((d) => (d._id === item._id ? item : d)));
+      setDistinguished((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((d) => ((d._id || d.id) === (item._id || item.id) ? item : d))
+      );
     } else if (item.section === 'volunteers') {
-      setVolunteers(action === 'create' ? [item, ...volunteers] : volunteers.map((v) => (v._id === item._id ? item : v)));
+      setVolunteers((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((v) => ((v._id || v.id) === (item._id || item.id) ? item : v))
+      );
     } else if (item.section === 'athletes') {
-      setAthletes(action === 'create' ? [item, ...athletes] : athletes.map((a) => (a._id === item._id ? item : a)));
+      setAthletes((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((a) => ((a._id || a.id) === (item._id || item.id) ? item : a))
+      );
     } else {
-      setTopStudents(action === 'create' ? [item, ...topStudents] : topStudents.map((h) => (h._id === item._id ? item : h)));
+      setTopStudents((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((h) => ((h._id || h.id) === (item._id || item.id) ? item : h))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة التكريم بنجاح!' : 'تم تحديث البيانات بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة التكريم وحفظه في قاعدة البيانات بنجاح!'
+        : 'تم تحديث البيانات بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا التكريم؟')) {
-      try {
-        if (!id.startsWith('h-') && !id.startsWith('d-') && !id.startsWith('v-') && !id.startsWith('a-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'distinguished') {
-          setDistinguished(distinguished.filter((d) => d._id !== id));
-        } else if (section === 'volunteers') {
-          setVolunteers(volunteers.filter((v) => v._id !== id));
-        } else if (section === 'athletes') {
-          setAthletes(athletes.filter((a) => a._id !== id));
-        } else {
-          setTopStudents(topStudents.filter((h) => h._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا التكريم نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'achievements');
+      if (section === 'distinguished') {
+        setDistinguished((prev) => prev.filter((d) => (d._id || d.id) !== id));
+      } else if (section === 'volunteers') {
+        setVolunteers((prev) => prev.filter((v) => (v._id || v.id) !== id));
+      } else if (section === 'athletes') {
+        setAthletes((prev) => prev.filter((a) => (a._id || a.id) !== id));
+      } else {
+        setTopStudents((prev) => prev.filter((h) => (h._id || h.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete achievement item error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

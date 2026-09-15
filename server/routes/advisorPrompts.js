@@ -45,18 +45,6 @@ router.get('/', async (req, res) => {
     res.setHeader('Expires', '0');
 
     let prompts = await AdvisorPrompt.find().sort({ createdAt: -1 });
-
-    // إذا كانت قاعدة البيانات فارغة، ننشئ أسئلة تمهيدية أولية ونحفظها في MongoDB
-    if (!prompts || prompts.length === 0) {
-      try {
-        prompts = await AdvisorPrompt.insertMany(DEFAULT_SEED_PROMPTS);
-      } catch (seedErr) {
-        console.warn('Seed advisor prompts note:', seedErr.message);
-        prompts = await AdvisorPrompt.find().sort({ createdAt: -1 });
-      }
-    }
-
-    // إرجاع مصفوفة صريحة مع دعم الحقول المساعدة
     res.status(200).json(prompts || []);
   } catch (error) {
     console.error('Get Advisor Prompts Error:', error.message);

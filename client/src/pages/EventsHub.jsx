@@ -91,8 +91,9 @@ export default function EventsHub() {
   const { activeTheme } = useTheme();
   const { isAdmin } = useAuth();
   const [activeTab, setActiveTab] = useState('upcoming');
-  const [eventsList, setEventsList] = useState(DEFAULT_EVENTS);
-  const [galleryItems, setGalleryItems] = useState(DEFAULT_GALLERY);
+  const [eventsList, setEventsList] = useState([]);
+  const [galleryItems, setGalleryItems] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const [registeredEvents, setRegisteredEvents] = useState({});
 
   // CMS Modal
@@ -106,52 +107,61 @@ export default function EventsHub() {
     { id: 'gallery', label: 'التغطيات والصور', icon: Camera, desc: 'أرشيف وتوثيق الفعاليات' },
   ];
 
-  useEffect(() => {
-    async function loadDynamic() {
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('events');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicEvents = dynamicItems.filter((i) => i.section === 'upcoming');
-        const dynamicGallery = dynamicItems.filter((i) => i.section === 'gallery');
-
-        if (dynamicEvents.length > 0) {
-          const ids = new Set(dynamicEvents.map((d) => d._id));
-          setEventsList([...dynamicEvents, ...DEFAULT_EVENTS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicGallery.length > 0) {
-          const ids = new Set(dynamicGallery.map((d) => d._id));
-          setGalleryItems([...dynamicGallery, ...DEFAULT_GALLERY.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setEventsList((dynamicItems || []).filter((i) => i.section === 'upcoming' || !i.section));
+      setGalleryItems((dynamicItems || []).filter((i) => i.section === 'gallery'));
+    } catch (err) {
+      console.error('Failed to load events hub content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'gallery') {
-      setGalleryItems(action === 'create' ? [item, ...galleryItems] : galleryItems.map((g) => (g._id === item._id ? item : g)));
+      setGalleryItems((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((g) => ((g._id || g.id) === (item._id || item.id) ? item : g))
+      );
     } else {
-      setEventsList(action === 'create' ? [item, ...eventsList] : eventsList.map((e) => (e._id === item._id ? item : e)));
+      setEventsList((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((e) => ((e._id || e.id) === (item._id || item.id) ? item : e))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة الفعالية بنجاح!' : 'تم تحديث الفعالية بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة الفعالية وحفظها في قاعدة البيانات بنجاح!'
+        : 'تم تحديث الفعالية بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر؟')) {
-      try {
-        if (!id.startsWith('evt-') && !id.startsWith('gal-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'gallery') {
-          setGalleryItems(galleryItems.filter((g) => g._id !== id));
-        } else {
-          setEventsList(eventsList.filter((e) => e._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا العنصر نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'events');
+      if (section === 'gallery') {
+        setGalleryItems((prev) => prev.filter((g) => (g._id || g.id) !== id));
+      } else {
+        setEventsList((prev) => prev.filter((e) => (e._id || e.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete events item error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 

@@ -249,10 +249,11 @@ export default function SudanPortal() {
   const [selectedState, setSelectedState] = useState(null);
 
   // Dynamic Content State
-  const [heritageItems, setHeritageItems] = useState(DEFAULT_HERITAGE);
-  const [statesList, setStatesList] = useState(DEFAULT_STATES);
-  const [talentsList, setTalentsList] = useState(DEFAULT_TALENTS);
-  const [artsList, setArtsList] = useState(DEFAULT_ARTS);
+  const [heritageItems, setHeritageItems] = useState([]);
+  const [statesList, setStatesList] = useState([]);
+  const [talentsList, setTalentsList] = useState([]);
+  const [artsList, setArtsList] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
 
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -266,71 +267,80 @@ export default function SudanPortal() {
     { id: 'arts', label: 'الأدب والفنون', icon: Feather, count: 'شعر وموسيقى' },
   ];
 
-  // Fetch Live CMS Items from MongoDB
-  useEffect(() => {
-    async function loadDynamic() {
+  // Fetch Live CMS Items purely from MongoDB
+  const loadDynamic = async () => {
+    try {
+      setIsLoading(true);
       const dynamicItems = await fetchHubContent('sudan');
-      if (dynamicItems && dynamicItems.length > 0) {
-        const dynamicHeritage = dynamicItems.filter((i) => i.section === 'heritage');
-        const dynamicStates = dynamicItems.filter((i) => i.section === 'states');
-        const dynamicTalents = dynamicItems.filter((i) => i.section === 'talents');
-        const dynamicArts = dynamicItems.filter((i) => i.section === 'arts');
-
-        if (dynamicHeritage.length > 0) {
-          const ids = new Set(dynamicHeritage.map((d) => d._id));
-          setHeritageItems([...dynamicHeritage, ...DEFAULT_HERITAGE.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicStates.length > 0) {
-          const ids = new Set(dynamicStates.map((d) => d._id));
-          setStatesList([...dynamicStates, ...DEFAULT_STATES.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicTalents.length > 0) {
-          const ids = new Set(dynamicTalents.map((d) => d._id));
-          setTalentsList([...dynamicTalents, ...DEFAULT_TALENTS.filter((d) => !ids.has(d._id))]);
-        }
-        if (dynamicArts.length > 0) {
-          const ids = new Set(dynamicArts.map((d) => d._id));
-          setArtsList([...dynamicArts, ...DEFAULT_ARTS.filter((d) => !ids.has(d._id))]);
-        }
-      }
+      setHeritageItems((dynamicItems || []).filter((i) => i.section === 'heritage' || !i.section));
+      setStatesList((dynamicItems || []).filter((i) => i.section === 'states'));
+      setTalentsList((dynamicItems || []).filter((i) => i.section === 'talents'));
+      setArtsList((dynamicItems || []).filter((i) => i.section === 'arts'));
+    } catch (err) {
+      console.error('Failed to load sudan portal content:', err);
+    } finally {
+      setIsLoading(false);
     }
+  };
+
+  useEffect(() => {
     loadDynamic();
   }, []);
 
   const handleSaved = (item, action) => {
     if (item.section === 'states') {
-      setStatesList(action === 'create' ? [item, ...statesList] : statesList.map((s) => (s._id === item._id ? item : s)));
+      setStatesList((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((s) => ((s._id || s.id) === (item._id || item.id) ? item : s))
+      );
     } else if (item.section === 'talents') {
-      setTalentsList(action === 'create' ? [item, ...talentsList] : talentsList.map((t) => (t._id === item._id ? item : t)));
+      setTalentsList((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((t) => ((t._id || t.id) === (item._id || item.id) ? item : t))
+      );
     } else if (item.section === 'arts') {
-      setArtsList(action === 'create' ? [item, ...artsList] : artsList.map((a) => (a._id === item._id ? item : a)));
+      setArtsList((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((a) => ((a._id || a.id) === (item._id || item.id) ? item : a))
+      );
     } else {
-      setHeritageItems(action === 'create' ? [item, ...heritageItems] : heritageItems.map((h) => (h._id === item._id ? item : h)));
+      setHeritageItems((prev) =>
+        action === 'create'
+          ? [item, ...prev]
+          : prev.map((h) => ((h._id || h.id) === (item._id || item.id) ? item : h))
+      );
     }
-    setNotification(action === 'create' ? 'تمت إضافة العنصر التراثي بنجاح إلى قاعدة البيانات!' : 'تم تحديث البيانات بنجاح!');
+    setNotification(
+      action === 'create'
+        ? 'تمت إضافة العنصر التراثي وحفظه في قاعدة البيانات بنجاح!'
+        : 'تم تحديث البيانات بنجاح!'
+    );
     setTimeout(() => setNotification(''), 4000);
   };
 
   const handleDeleteItem = async (id, section) => {
-    if (window.confirm('هل أنت متأكد من رغبتك في حذف هذا المحتوى؟')) {
-      try {
-        if (!id.startsWith('h-') && !id.startsWith('st-') && !id.startsWith('tl-') && !id.startsWith('art-')) {
-          await deleteHubContent(id);
-        }
-        if (section === 'states') {
-          setStatesList(statesList.filter((s) => s._id !== id));
-        } else if (section === 'talents') {
-          setTalentsList(talentsList.filter((t) => t._id !== id));
-        } else if (section === 'arts') {
-          setArtsList(artsList.filter((a) => a._id !== id));
-        } else {
-          setHeritageItems(heritageItems.filter((h) => h._id !== id));
-        }
-        setNotification('تم حذف العنصر بنجاح.');
-        setTimeout(() => setNotification(''), 4000);
-      } catch (err) {
-        alert('فشل الحذف: ' + err.message);
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا المحتوى نهائياً من قاعدة البيانات؟')) {
+      return;
+    }
+    try {
+      await deleteHubContent(id, 'sudan');
+      if (section === 'states') {
+        setStatesList((prev) => prev.filter((s) => (s._id || s.id) !== id));
+      } else if (section === 'talents') {
+        setTalentsList((prev) => prev.filter((t) => (t._id || t.id) !== id));
+      } else if (section === 'arts') {
+        setArtsList((prev) => prev.filter((a) => (a._id || a.id) !== id));
+      } else {
+        setHeritageItems((prev) => prev.filter((h) => (h._id || h.id) !== id));
       }
+      setNotification('تم حذف العنصر بنجاح من قاعدة البيانات.');
+      setTimeout(() => setNotification(''), 4000);
+    } catch (err) {
+      console.error('Delete sudan item error:', err);
+      alert('فشل الحذف من قاعدة البيانات: ' + (err.message || 'حدث خطأ في الخادم'));
     }
   };
 
