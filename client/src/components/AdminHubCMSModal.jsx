@@ -394,35 +394,34 @@ export default function AdminHubCMSModal({
             </div>
           )}
 
-          {/* Title and Member Name Grid */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
-            <div>
-              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                عنوان المحتوى أو المنصب الإداري: *
-              </label>
-              <input
-                type="text"
-                required
-                placeholder="مثال: رئيس الرابطة، مذكرة الكيمياء العضوية، جدول المحاضرات..."
-                value={formData.title}
-                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-                style={inputStyle}
-              />
-            </div>
+          {/* Association Member Name Field (Unconditionally Visible Above Title) */}
+          <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '14px', padding: '14px 16px' }}>
+            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '700', color: '#fbbf24', marginBottom: '8px' }}>
+              <UserCheck size={18} color="#f59e0b" />
+              <span>اسم عضو الرابطة (Association Member Name):</span>
+            </label>
+            <input
+              type="text"
+              placeholder="مثال: مصعب طارق، د. سيف الدين، عمر صديق، أو اسم المسؤول..."
+              value={formData.memberName}
+              onChange={(e) => setFormData({ ...formData, memberName: e.target.value })}
+              style={{ ...inputStyle, backgroundColor: 'rgba(0, 0, 0, 0.35)', borderColor: 'rgba(245, 158, 11, 0.4)' }}
+            />
+          </div>
 
-            <div>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                <UserCheck size={15} color="#f59e0b" />
-                <span>اسم عضو الرابطة (Association Member Name):</span>
-              </label>
-              <input
-                type="text"
-                placeholder="مثال: مصعب طارق، د. سيف الدين، عمر صديق..."
-                value={formData.memberName}
-                onChange={(e) => setFormData({ ...formData, memberName: e.target.value })}
-                style={inputStyle}
-              />
-            </div>
+          {/* Title */}
+          <div>
+            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
+              عنوان المحتوى الرئيسي أو المنصب الإداري: *
+            </label>
+            <input
+              type="text"
+              required
+              placeholder="مثال: رئيس الرابطة، مذكرة الكيمياء العضوية، جدول المحاضرات، الخطة الاستراتيجية..."
+              value={formData.title}
+              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+              style={inputStyle}
+            />
           </div>
 
           {/* Subtitle / Department / Category */}
