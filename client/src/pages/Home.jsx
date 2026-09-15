@@ -28,6 +28,7 @@ import { Link } from 'react-router-dom';
 import teamImg from '../assets/team.jpg';
 import SocialLinks from '../components/SocialLinks';
 import ScienceParticles from '../components/ScienceParticles';
+import RelaxingFountain3D from '../components/RelaxingFountain3D';
 
 export default function Home() {
   const { activeTheme } = useTheme();
@@ -657,6 +658,9 @@ export default function Home() {
           </Link>
         </div>
       </section>
+
+      {/* واحة الهدوء والنافورة الذكية ثلاثية الأبعاد 3D Zen Oasis */}
+      <RelaxingFountain3D />
     </div>
   );
 }

@@ -19,6 +19,16 @@ const HubContentSchema = new mongoose.Schema(
       required: true,
       trim: true,
     },
+    memberName: {
+      type: String,
+      trim: true,
+      default: '',
+    },
+    name: {
+      type: String,
+      trim: true,
+      default: '',
+    },
     subtitle: {
       type: String,
       trim: true,

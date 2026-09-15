@@ -331,10 +331,10 @@ export default function AdministrationHub() {
                     <UserCheck size={20} color="#38bdf8" />
                   </div>
                   <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffffff', margin: '0 0 4px' }}>
-                    {item.name || item.title}
+                    {item.memberName || item.name || item.title}
                   </h3>
                   <div style={{ fontSize: '13px', color: '#38bdf8', fontWeight: 'bold', marginBottom: '12px' }}>
-                    {item.title || item.subtitle}
+                    {item.memberName || item.name ? (item.title || item.subtitle || 'عضو المكتب التنفيذي') : (item.subtitle || 'عضو المكتب التنفيذي')}
                   </div>
                   <p style={{ fontSize: '14px', color: '#cbd5e1', lineHeight: '1.7', margin: '0 0 14px' }}>
                     {item.role || item.description}

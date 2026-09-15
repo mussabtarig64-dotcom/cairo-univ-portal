@@ -19,7 +19,9 @@ import {
   RefreshCw,
   Cloud,
   CloudUpload,
-  Loader2
+  Loader2,
+  UserCheck,
+  User
 } from 'lucide-react';
 import { createHubContent, updateHubContent, deleteHubContent } from '../utils/cmsApi';
 
@@ -38,6 +40,7 @@ export default function AdminHubCMSModal({
   const [formData, setFormData] = useState({
     title: '',
     subtitle: '',
+    memberName: '',
     description: '',
     section: section || 'general',
     category: 'عام',
@@ -92,6 +95,7 @@ export default function AdminHubCMSModal({
       setFormData({
         title: editingItem.title || '',
         subtitle: editingItem.subtitle || '',
+        memberName: editingItem.memberName || editingItem.name || editingItem.lead || editingItem.member || '',
         description: editingItem.description || editingItem.desc || '',
         section: editingItem.section || section || 'general',
         category: editingItem.category || editingItem.dept || editingItem.sport || 'عام',
@@ -113,6 +117,7 @@ export default function AdminHubCMSModal({
       setFormData({
         title: '',
         subtitle: '',
+        memberName: '',
         description: '',
         section: section || 'general',
         category: 'عام',
@@ -230,6 +235,8 @@ export default function AdminHubCMSModal({
       const fd = new FormData();
       fd.append('title', formData.title.trim() || formData.fileName);
       fd.append('subtitle', formData.subtitle || '');
+      fd.append('memberName', formData.memberName || '');
+      fd.append('name', formData.memberName || '');
       fd.append('description', formData.description || '');
       fd.append('section', formData.section || 'general');
       fd.append('category', formData.category || 'عام');
@@ -387,19 +394,35 @@ export default function AdminHubCMSModal({
             </div>
           )}
 
-          {/* Title */}
-          <div>
-            <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-              عنوان المحتوى الرئيسي: *
-            </label>
-            <input
-              type="text"
-              required
-              placeholder="مثال: مذكرة الكيمياء العضوية، امتحان 2025، جدول المحاضرات..."
-              value={formData.title}
-              onChange={(e) => setFormData({ ...formData, title: e.target.value })}
-              style={inputStyle}
-            />
+          {/* Title and Member Name Grid */}
+          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '12px' }}>
+            <div>
+              <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
+                عنوان المحتوى أو المنصب الإداري: *
+              </label>
+              <input
+                type="text"
+                required
+                placeholder="مثال: رئيس الرابطة، مذكرة الكيمياء العضوية، جدول المحاضرات..."
+                value={formData.title}
+                onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
+
+            <div>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '6px', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
+                <UserCheck size={15} color="#f59e0b" />
+                <span>اسم عضو الرابطة (Association Member Name):</span>
+              </label>
+              <input
+                type="text"
+                placeholder="مثال: مصعب طارق، د. سيف الدين، عمر صديق..."
+                value={formData.memberName}
+                onChange={(e) => setFormData({ ...formData, memberName: e.target.value })}
+                style={inputStyle}
+              />
+            </div>
           </div>
 
           {/* Subtitle / Department / Category */}

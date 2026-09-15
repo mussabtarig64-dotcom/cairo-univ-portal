@@ -181,10 +181,13 @@ router.post('/:hub', handleFileUpload, async (req, res) => {
     }
 
     // حفظ الرابط السحابي فقط في MongoDB Atlas بدون Base64
+    const memberName = body.memberName || body.name || '';
     const newItem = new HubContent({
       hub,
       section: section || 'general',
       title: finalTitle,
+      memberName: memberName,
+      name: memberName,
       subtitle: subtitle || '',
       description: description || '',
       category: category || 'عام',
