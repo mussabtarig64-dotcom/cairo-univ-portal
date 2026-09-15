@@ -61,7 +61,16 @@ export default function AdminDashboard() {
   const [rejectedUsers, setRejectedUsers] = useState([]);
   const [registrationSubFilter, setRegistrationSubFilter] = useState('all'); // 'all' | 'pending' | 'approved'
   const [announcements, setAnnouncements] = useState([]);
-  const [kbItems, setKbItems] = useState([]);
+  const [kbItems, setKbItems] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cairo_univ_advisor_prompts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
   const [notificationsList, setNotificationsList] = useState([]);
   const [searchTerm, setSearchTerm] = useState('');
   const [previewDoc, setPreviewDoc] = useState(null);
@@ -79,31 +88,54 @@ export default function AdminDashboard() {
   const [newKbKeywords, setNewKbKeywords] = useState('');
   const [editingKbId, setEditingKbId] = useState(null);
 
-  // جلب مباشر وموثوق لأسئلة المستشار الأكاديمي وقاعدة المعرفة عند التحميل
+  // جلب مباشر وموثوق لأسئلة المستشار الأكاديمي مع تجاوز التخزين المؤقت (Cache-Busting)
+  const fetchAdvisorPromptsLive = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/advisor-prompts`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+        params: {
+          _t: Date.now(),
+          _bust: Math.random().toString(36).substring(7),
+        },
+      });
+      if (res.data && (Array.isArray(res.data.prompts) || Array.isArray(res.data.items))) {
+        const list = res.data.prompts || res.data.items || [];
+        console.log(`🤖 [AdminDashboard] Loaded ${list.length} advisor prompts from MongoDB Atlas`);
+        setKbItems(list);
+        try {
+          localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(list));
+        } catch (e) {}
+        return list;
+      }
+    } catch (err) {
+      console.error('❌ [AdminDashboard] Error fetching advisor prompts:', err);
+    }
+    return null;
+  };
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchAdvisorPromptsDirect = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/advisor-prompts`);
-        if (isMounted && res.data && (Array.isArray(res.data.prompts) || Array.isArray(res.data.items))) {
-          const list = res.data.prompts || res.data.items || [];
-          console.log(`🤖 [AdminDashboard] Mounted & Loaded ${list.length} advisor prompts from MongoDB`);
-          setKbItems(list);
-        }
-      } catch (err) {
-        console.error('❌ [AdminDashboard] Error fetching initial advisor prompts:', err);
+    fetchAdvisorPromptsLive();
+
+    const handleSyncEvent = (e) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setKbItems(e.detail);
+      } else {
+        fetchAdvisorPromptsLive();
       }
     };
 
-    fetchAdvisorPromptsDirect();
+    window.addEventListener('advisor_prompts_updated', handleSyncEvent);
     return () => {
-      isMounted = false;
+      window.removeEventListener('advisor_prompts_updated', handleSyncEvent);
     };
   }, []);
 
   useEffect(() => {
     loadDashboardData();
-    // إعادة التحميل الدوري كل 10 ثوانٍ لضمان ظهور الاستمارات الجديدة تلقائياً
     const interval = setInterval(() => {
       loadDashboardData();
     }, 10000);
@@ -114,14 +146,7 @@ export default function AdminDashboard() {
   useEffect(() => {
     loadDashboardData();
     if (activeTab === 'kb') {
-      axios
-        .get(`${API_BASE}/advisor-prompts`)
-        .then((res) => {
-          if (res.data && (Array.isArray(res.data.prompts) || Array.isArray(res.data.items))) {
-            setKbItems(res.data.prompts || res.data.items || []);
-          }
-        })
-        .catch((err) => console.error('Error fetching KB items on tab switch:', err));
+      fetchAdvisorPromptsLive();
     }
   }, [activeTab]);
 
@@ -626,7 +651,14 @@ export default function AdminDashboard() {
         // التحقق الصارم من نجاح الخادم قبل تحديث الواجهة (DB-First)
         if ((res.status === 200 || res.status === 201) && res.data?.success) {
           const updated = res.data.prompt || res.data.item;
-          setKbItems((prev) => prev.map((k) => (k._id === editingKbId ? updated : k)));
+          setKbItems((prev) => {
+            const nextList = prev.map((k) => ((k._id || k.id) === editingKbId ? updated : k));
+            try {
+              localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(nextList));
+              window.dispatchEvent(new CustomEvent('advisor_prompts_updated', { detail: nextList }));
+            } catch (e) {}
+            return nextList;
+          });
           setKbSuccessMsg('تم تحديث السؤال في قاعدة المعرفة بنجاح ✨');
         } else {
           throw new Error(res.data?.message || 'فشل تحديث السؤال');
@@ -643,7 +675,14 @@ export default function AdminDashboard() {
         // التحقق الصارم من استجابة 200/201 وحفظ الـ DB قبل التحديث المحلي
         if ((res.status === 200 || res.status === 201) && res.data?.success) {
           const created = res.data.prompt || res.data.item;
-          setKbItems((prev) => [created, ...prev]);
+          setKbItems((prev) => {
+            const nextList = [created, ...prev];
+            try {
+              localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(nextList));
+              window.dispatchEvent(new CustomEvent('advisor_prompts_updated', { detail: nextList }));
+            } catch (e) {}
+            return nextList;
+          });
           setKbSuccessMsg('تمت إضافة السؤال بنجاح إلى المستشار الذكي 🤖');
         } else {
           throw new Error(res.data?.message || 'فشل حفظ السؤال');
@@ -666,9 +705,14 @@ export default function AdminDashboard() {
     try {
       const res = await axios.patch(`${API_BASE}/advisor-prompts/${id}/toggle`);
       if (res.status === 200 && res.data?.success) {
-        setKbItems((prev) =>
-          prev.map((k) => (k._id === id ? { ...k, isActive: res.data.isActive } : k))
-        );
+        setKbItems((prev) => {
+          const nextList = prev.map((k) => ((k._id || k.id) === id ? { ...k, isActive: res.data.isActive } : k));
+          try {
+            localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(nextList));
+            window.dispatchEvent(new CustomEvent('advisor_prompts_updated', { detail: nextList }));
+          } catch (e) {}
+          return nextList;
+        });
       }
     } catch (err) {
       console.error('KB toggle error:', err);
@@ -682,7 +726,14 @@ export default function AdminDashboard() {
       // انتظار الحذف من قاعدة البيانات أولاً (DB-First)
       const res = await axios.delete(`${API_BASE}/advisor-prompts/${id}`);
       if (res.status === 200 && res.data?.success) {
-        setKbItems((prev) => prev.filter((k) => k._id !== id));
+        setKbItems((prev) => {
+          const nextList = prev.filter((k) => (k._id || k.id) !== id);
+          try {
+            localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(nextList));
+            window.dispatchEvent(new CustomEvent('advisor_prompts_updated', { detail: nextList }));
+          } catch (e) {}
+          return nextList;
+        });
       } else {
         throw new Error(res.data?.message || 'تعذر حذف السؤال');
       }

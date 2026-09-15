@@ -30,7 +30,16 @@ export default function FloatingAIChatWidget() {
 
   const [isOpen, setIsOpen] = useState(false);
   const [loading, setLoading] = useState(false);
-  const [advisorPrompts, setAdvisorPrompts] = useState([]);
+  const [advisorPrompts, setAdvisorPrompts] = useState(() => {
+    try {
+      const saved = localStorage.getItem('cairo_univ_advisor_prompts');
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) return parsed;
+      }
+    } catch (e) {}
+    return [];
+  });
   const [showAddPrompt, setShowAddPrompt] = useState(false);
   const [newPromptText, setNewPromptText] = useState('');
   const [isAddingPrompt, setIsAddingPrompt] = useState(false);
@@ -98,23 +107,48 @@ export default function FloatingAIChatWidget() {
     }
   }, [inputMsg]);
 
-  // 1. جلب الأسئلة والمحفزات السريعة ديناميكياً من قاعدة بيانات MongoDB عند التحميل
+  // 1. جلب الأسئلة والمحفزات السريعة ديناميكياً من قاعدة بيانات MongoDB مع تجاوز الـ Cache
+  const fetchAdvisorPromptsLive = async () => {
+    try {
+      const res = await axios.get(`${API_BASE}/advisor-prompts`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+        params: {
+          _t: Date.now(),
+          _bust: Math.random().toString(36).substring(7),
+        },
+      });
+      if (res.data && (Array.isArray(res.data.prompts) || Array.isArray(res.data.items))) {
+        const list = res.data.prompts || res.data.items || [];
+        setAdvisorPrompts(list);
+        try {
+          localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(list));
+        } catch (e) {}
+        return list;
+      }
+    } catch (err) {
+      console.error('Error fetching advisor prompts in widget:', err);
+    }
+    return null;
+  };
+
   useEffect(() => {
-    let isMounted = true;
-    const fetchAdvisorPrompts = async () => {
-      try {
-        const res = await axios.get(`${API_BASE}/advisor-prompts`);
-        if (isMounted && res.data && Array.isArray(res.data.prompts)) {
-          setAdvisorPrompts(res.data.prompts);
-        }
-      } catch (err) {
-        console.error('Error fetching advisor prompts:', err);
+    fetchAdvisorPromptsLive();
+
+    const handleSyncEvent = (e) => {
+      if (e.detail && Array.isArray(e.detail)) {
+        setAdvisorPrompts(e.detail);
+      } else {
+        fetchAdvisorPromptsLive();
       }
     };
 
-    fetchAdvisorPrompts();
+    window.addEventListener('advisor_prompts_updated', handleSyncEvent);
     return () => {
-      isMounted = false;
+      window.removeEventListener('advisor_prompts_updated', handleSyncEvent);
     };
   }, []);
 
@@ -132,9 +166,16 @@ export default function FloatingAIChatWidget() {
 
       // التحقق الصارم من استجابة الخادم 200/201 قبل تحديث الواجهة
       if ((res.status === 200 || res.status === 201) && res.data?.success) {
-        const createdPrompt = res.data.prompt;
+        const createdPrompt = res.data.prompt || res.data.item;
         if (createdPrompt) {
-          setAdvisorPrompts((prev) => [...prev, createdPrompt]);
+          setAdvisorPrompts((prev) => {
+            const nextList = [createdPrompt, ...prev];
+            try {
+              localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(nextList));
+              window.dispatchEvent(new CustomEvent('advisor_prompts_updated', { detail: nextList }));
+            } catch (e) {}
+            return nextList;
+          });
         }
         setNewPromptText('');
         setShowAddPrompt(false);
@@ -161,7 +202,14 @@ export default function FloatingAIChatWidget() {
 
       // التحقق الصارم من نجاح الخادم 200 OK قبل إزالة العنصر محلياً
       if (res.status === 200 && res.data?.success) {
-        setAdvisorPrompts((prev) => prev.filter((p) => (p._id || p.id) !== promptId));
+        setAdvisorPrompts((prev) => {
+          const nextList = prev.filter((p) => (p._id || p.id) !== promptId);
+          try {
+            localStorage.setItem('cairo_univ_advisor_prompts', JSON.stringify(nextList));
+            window.dispatchEvent(new CustomEvent('advisor_prompts_updated', { detail: nextList }));
+          } catch (e) {}
+          return nextList;
+        });
         showToast('تم حذف السؤال بنجاح من قاعدة البيانات', 'success');
       } else {
         throw new Error(res.data?.message || 'تعذر حذف السؤال');

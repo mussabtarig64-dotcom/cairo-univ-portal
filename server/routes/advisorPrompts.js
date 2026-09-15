@@ -40,6 +40,11 @@ const DEFAULT_SEED_PROMPTS = [
 // 1. GET /api/advisor-prompts - جلب جميع الأسئلة المقترحة وقاعدة معرفة المستشار الذكي
 router.get('/', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+    res.setHeader('Surrogate-Control', 'no-store');
+
     let prompts = await AdvisorPrompt.find().sort({ createdAt: -1 });
 
     // إذا كانت قاعدة البيانات فارغة تماماً، ننشئ أسئلة تمهيدية أولية ونحفظها في MongoDB
