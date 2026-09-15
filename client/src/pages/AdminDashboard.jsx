@@ -121,7 +121,7 @@ export default function AdminDashboard() {
         axios.get(`${API_BASE}/admin/pending`, requestConfig),
         axios.get(`${API_BASE}/admin/stats`, requestConfig),
         axios.get(`${API_BASE}/admin/announcements`, requestConfig),
-        axios.get(`${API_BASE}/admin/faq`, requestConfig),
+        axios.get(`${API_BASE}/advisor-prompts`, requestConfig),
       ]);
 
       if (studentsRes.status === 'fulfilled') {
@@ -142,8 +142,8 @@ export default function AdminDashboard() {
         console.warn('⚠️ [AdminDashboard] statsRes note:', statsRes.reason?.message);
       }
 
-      if (kbRes.status === 'fulfilled' && kbRes.value.data?.items) {
-        setKbItems(kbRes.value.data.items);
+      if (kbRes.status === 'fulfilled' && (kbRes.value.data?.prompts || kbRes.value.data?.items)) {
+        setKbItems(kbRes.value.data.prompts || kbRes.value.data.items);
       }
 
       let all = [];
@@ -571,30 +571,43 @@ export default function AdminDashboard() {
 
   const handleSaveKb = async (e) => {
     e.preventDefault();
-    if (!newKbQuestion.trim() || !newKbAnswer.trim()) return;
+    const qText = newKbQuestion.trim();
+    const aText = newKbAnswer.trim();
+    if (!qText) return;
 
     try {
       if (editingKbId) {
-        const res = await axios.put(`${API_BASE}/admin/faq/${editingKbId}`, {
-          question: newKbQuestion.trim(),
-          answer: newKbAnswer.trim(),
+        const res = await axios.put(`${API_BASE}/advisor-prompts/${editingKbId}`, {
+          question: qText,
+          prompt: qText,
+          answer: aText,
           category: newKbCategory,
           keywords: newKbKeywords.split(',').map((k) => k.trim()).filter(Boolean),
         });
-        if (res.data?.success) {
-          setKbItems((prev) => prev.map((k) => (k._id === editingKbId ? res.data.item : k)));
+        // التحقق الصارم من نجاح الخادم قبل تحديث الواجهة (DB-First)
+        if ((res.status === 200 || res.status === 201) && res.data?.success) {
+          const updated = res.data.prompt || res.data.item;
+          setKbItems((prev) => prev.map((k) => (k._id === editingKbId ? updated : k)));
           setKbSuccessMsg('تم تحديث السؤال في قاعدة المعرفة بنجاح ✨');
+        } else {
+          throw new Error(res.data?.message || 'فشل تحديث السؤال');
         }
       } else {
-        const res = await axios.post(`${API_BASE}/admin/faq`, {
-          question: newKbQuestion.trim(),
-          answer: newKbAnswer.trim(),
+        const res = await axios.post(`${API_BASE}/advisor-prompts`, {
+          question: qText,
+          prompt: qText,
+          answer: aText,
           category: newKbCategory,
           keywords: newKbKeywords.split(',').map((k) => k.trim()).filter(Boolean),
+          isActive: true,
         });
-        if (res.data?.success) {
-          setKbItems((prev) => [res.data.item, ...prev]);
+        // التحقق الصارم من استجابة 200/201 وحفظ الـ DB قبل التحديث المحلي
+        if ((res.status === 200 || res.status === 201) && res.data?.success) {
+          const created = res.data.prompt || res.data.item;
+          setKbItems((prev) => [created, ...prev]);
           setKbSuccessMsg('تمت إضافة السؤال بنجاح إلى المستشار الذكي 🤖');
+        } else {
+          throw new Error(res.data?.message || 'فشل حفظ السؤال');
         }
       }
 
@@ -606,36 +619,44 @@ export default function AdminDashboard() {
       setTimeout(() => setKbSuccessMsg(''), 4000);
     } catch (err) {
       console.error('KB save error:', err);
+      alert(err.response?.data?.message || 'فشل حفظ السؤال في قاعدة البيانات، يرجى المحاولة مرة أخرى.');
     }
   };
 
   const handleToggleKb = async (id) => {
     try {
-      const res = await axios.patch(`${API_BASE}/admin/faq/${id}/toggle`);
-      if (res.data?.success) {
+      const res = await axios.patch(`${API_BASE}/advisor-prompts/${id}/toggle`);
+      if (res.status === 200 && res.data?.success) {
         setKbItems((prev) =>
           prev.map((k) => (k._id === id ? { ...k, isActive: res.data.isActive } : k))
         );
       }
     } catch (err) {
       console.error('KB toggle error:', err);
+      alert('تعذر تغيير حالة تفعيل السؤال.');
     }
   };
 
   const handleDeleteKb = async (id) => {
-    if (!window.confirm('هل أنت تأكد من رغبتك في حذف هذا الموضوع من قاعدة المعرفة؟')) return;
+    if (!window.confirm('هل أنت متأكد من رغبتك في حذف هذا الموضوع نهائياً من قاعدة المعرفة؟')) return;
     try {
-      await axios.delete(`${API_BASE}/admin/faq/${id}`);
-      setKbItems((prev) => prev.filter((k) => k._id !== id));
+      // انتظار الحذف من قاعدة البيانات أولاً (DB-First)
+      const res = await axios.delete(`${API_BASE}/advisor-prompts/${id}`);
+      if (res.status === 200 && res.data?.success) {
+        setKbItems((prev) => prev.filter((k) => k._id !== id));
+      } else {
+        throw new Error(res.data?.message || 'تعذر حذف السؤال');
+      }
     } catch (err) {
       console.error('KB delete error:', err);
+      alert(err.response?.data?.message || 'فشل حذف السؤال من قاعدة البيانات.');
     }
   };
 
   const handleEditKb = (item) => {
     setEditingKbId(item._id);
-    setNewKbQuestion(item.question);
-    setNewKbAnswer(item.answer);
+    setNewKbQuestion(item.question || item.prompt || '');
+    setNewKbAnswer(item.answer || '');
     setNewKbCategory(item.category || 'general');
     setNewKbKeywords(Array.isArray(item.keywords) ? item.keywords.join(', ') : '');
   };
@@ -1156,10 +1177,10 @@ export default function AdminDashboard() {
 
                   <div>
                     <h4 style={{ color: activeTheme.textMain, fontSize: '15px', fontWeight: 'bold', margin: '0 0 6px' }}>
-                      السؤال: {item.question}
+                      السؤال: {item.question || item.prompt}
                     </h4>
                     <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: 0, whiteSpace: 'pre-line' }}>
-                      الإجابة: {item.answer}
+                      {item.answer ? `الإجابة: ${item.answer}` : 'سؤال توجيهي سريع ومباشر للمستشار الذكي'}
                     </p>
                   </div>
 

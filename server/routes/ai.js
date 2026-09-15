@@ -2,6 +2,7 @@ const express = require('express');
 const router = express.Router();
 const Groq = require('groq-sdk');
 const KnowledgeBase = require('../models/KnowledgeBase');
+const AdvisorPrompt = require('../models/AdvisorPrompt');
 
 const groqApiKey = process.env.GROQ_API_KEY || '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';
 let groq = null;
@@ -23,8 +24,12 @@ const SUPPORTED_MODELS = [
 // مسار جلب عناصر قاعدة المعرفة النشطة للطلاب (Public Knowledge Base query)
 router.get('/knowledge', async (req, res) => {
   try {
-    const items = await KnowledgeBase.find({ isActive: true }).sort({ createdAt: -1 });
-    res.json({ success: true, count: items.length, items });
+    const [kbItems, advisorPrompts] = await Promise.all([
+      KnowledgeBase.find({ isActive: true }).sort({ createdAt: -1 }),
+      AdvisorPrompt.find({ isActive: true }).sort({ createdAt: -1 }),
+    ]);
+    const items = [...advisorPrompts, ...kbItems];
+    res.json({ success: true, count: items.length, items, prompts: items });
   } catch (error) {
     console.error('Fetch KB Items Error:', error.message, error.stack);
     res.status(500).json({
@@ -52,10 +57,14 @@ router.post('/chat', async (req, res) => {
     // جلب المواضيع المعرفة من قبل الإدارة في MongoDB
     let kbContextText = '';
     try {
-      const activeKBItems = await KnowledgeBase.find({ isActive: true }).limit(50);
-      if (activeKBItems && activeKBItems.length > 0) {
-        kbContextText = activeKBItems
-          .map((item, idx) => `[Topic ${idx + 1} - Category: ${item.category}]\nQ: ${item.question}\nA: ${item.answer}`)
+      const [activePrompts, activeKBItems] = await Promise.all([
+        AdvisorPrompt.find({ isActive: true }).limit(50),
+        KnowledgeBase.find({ isActive: true }).limit(50),
+      ]);
+      const combined = [...activePrompts, ...activeKBItems];
+      if (combined && combined.length > 0) {
+        kbContextText = combined
+          .map((item, idx) => `[Topic ${idx + 1} - Category: ${item.category || 'general'}]\nQ: ${item.question || item.prompt}\nA: ${item.answer || 'Standard advisory topic'}`)
           .join('\n\n');
       }
     } catch (kbErr) {

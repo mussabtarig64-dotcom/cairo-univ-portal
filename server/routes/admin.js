@@ -4,6 +4,7 @@ const User = require('../models/User');
 const Announcement = require('../models/Announcement');
 const Settings = require('../models/Settings');
 const KnowledgeBase = require('../models/KnowledgeBase');
+const AdvisorPrompt = require('../models/AdvisorPrompt');
 const {
   sendStatusUpdateEmail,
   sendRoleUpdateEmail,
@@ -627,8 +628,8 @@ router.post('/settings', async (req, res) => {
 // 9. مسارات قاعدة المعرفة للمستشار الأكاديمي (Admin Knowledge Base / FAQ CRUD)
 router.get('/faq', async (req, res) => {
   try {
-    const items = await KnowledgeBase.find().sort({ createdAt: -1 });
-    res.json({ success: true, items });
+    const items = await AdvisorPrompt.find().sort({ createdAt: -1 });
+    res.json({ success: true, count: items.length, items, prompts: items });
   } catch (error) {
     console.error('Get FAQ Error:', error.message, error.stack);
     res.status(500).json({
@@ -642,21 +643,23 @@ router.get('/faq', async (req, res) => {
 
 router.post('/faq', async (req, res) => {
   try {
-    const { question, answer, category, keywords, isActive } = req.body;
-    if (!question || !answer) {
-      return res.status(400).json({ success: false, message: 'السؤال والإجابة حقول إجبارية' });
+    const { question, prompt, answer, category, keywords, isActive } = req.body;
+    const qText = question || prompt;
+    if (!qText) {
+      return res.status(400).json({ success: false, message: 'السؤال حقل إجباري' });
     }
 
-    const newItem = new KnowledgeBase({
-      question,
-      answer,
+    const newItem = new AdvisorPrompt({
+      prompt: qText.trim(),
+      question: qText.trim(),
+      answer: (answer || '').trim(),
       category: category || 'general',
       keywords: Array.isArray(keywords) ? keywords : (keywords || '').split(',').map((k) => k.trim()).filter(Boolean),
       isActive: isActive !== undefined ? isActive : true,
     });
 
     await newItem.save();
-    res.status(201).json({ success: true, message: 'تم إضافة السؤال إلى قاعدة المعرفة بنجاح', item: newItem });
+    res.status(201).json({ success: true, message: 'تم إضافة السؤال إلى قاعدة المعرفة بنجاح', item: newItem, prompt: newItem });
   } catch (error) {
     console.error('Save FAQ Error:', error.message, error.stack);
     res.status(500).json({
@@ -670,23 +673,27 @@ router.post('/faq', async (req, res) => {
 
 router.put('/faq/:id', async (req, res) => {
   try {
-    const { question, answer, category, keywords, isActive } = req.body;
+    const { question, prompt, answer, category, keywords, isActive } = req.body;
     const updateData = { updatedAt: new Date() };
 
-    if (question !== undefined) updateData.question = question;
-    if (answer !== undefined) updateData.answer = answer;
+    const qText = question || prompt;
+    if (qText !== undefined) {
+      updateData.question = qText.trim();
+      updateData.prompt = qText.trim();
+    }
+    if (answer !== undefined) updateData.answer = answer.trim();
     if (category !== undefined) updateData.category = category;
     if (keywords !== undefined) {
       updateData.keywords = Array.isArray(keywords) ? keywords : (keywords || '').split(',').map((k) => k.trim()).filter(Boolean);
     }
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    const item = await KnowledgeBase.findByIdAndUpdate(req.params.id, updateData, { new: true });
+    const item = await AdvisorPrompt.findByIdAndUpdate(req.params.id, updateData, { new: true });
     if (!item) {
       return res.status(404).json({ success: false, message: 'العنصر غير موجود' });
     }
 
-    res.json({ success: true, message: 'تم تحديث عنصر قاعدة المعرفة بنجاح', item });
+    res.json({ success: true, message: 'تم تحديث عنصر قاعدة المعرفة بنجاح', item, prompt: item });
   } catch (error) {
     console.error('Update FAQ Error:', error.message, error.stack);
     res.status(500).json({
@@ -700,7 +707,7 @@ router.put('/faq/:id', async (req, res) => {
 
 router.patch('/faq/:id/toggle', async (req, res) => {
   try {
-    const item = await KnowledgeBase.findById(req.params.id);
+    const item = await AdvisorPrompt.findById(req.params.id);
     if (!item) {
       return res.status(404).json({ success: false, message: 'العنصر غير موجود' });
     }
@@ -709,7 +716,7 @@ router.patch('/faq/:id/toggle', async (req, res) => {
     item.updatedAt = new Date();
     await item.save();
 
-    res.json({ success: true, message: 'تم تغيير حالة التفعيل بنجاح', isActive: item.isActive, item });
+    res.json({ success: true, message: 'تم تغيير حالة التفعيل بنجاح', isActive: item.isActive, item, prompt: item });
   } catch (error) {
     console.error('Toggle FAQ Error:', error.message, error.stack);
     res.status(500).json({
@@ -723,7 +730,7 @@ router.patch('/faq/:id/toggle', async (req, res) => {
 
 router.delete('/faq/:id', async (req, res) => {
   try {
-    await KnowledgeBase.findByIdAndDelete(req.params.id);
+    await AdvisorPrompt.findByIdAndDelete(req.params.id);
     res.json({ success: true, message: 'تم حذف السؤال من قاعدة المعرفة بنجاح' });
   } catch (error) {
     console.error('Delete FAQ Error:', error.message, error.stack);

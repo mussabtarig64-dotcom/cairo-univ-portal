@@ -6,11 +6,26 @@ const advisorPromptSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  question: {
+    type: String,
+    trim: true,
+  },
+  answer: {
+    type: String,
+    trim: true,
+    default: '',
+  },
   category: {
     type: String,
     default: 'general',
     trim: true,
   },
+  keywords: [
+    {
+      type: String,
+      trim: true,
+    },
+  ],
   isActive: {
     type: Boolean,
     default: true,
@@ -23,6 +38,17 @@ const advisorPromptSchema = new mongoose.Schema({
     type: Date,
     default: Date.now,
   },
+});
+
+// مزامنة حقل prompt و question تلقائياً قبل الحفظ
+advisorPromptSchema.pre('save', function () {
+  if (this.prompt && !this.question) {
+    this.question = this.prompt;
+  }
+  if (this.question && !this.prompt) {
+    this.prompt = this.question;
+  }
+  this.updatedAt = new Date();
 });
 
 module.exports = mongoose.models.AdvisorPrompt || mongoose.model('AdvisorPrompt', advisorPromptSchema);
