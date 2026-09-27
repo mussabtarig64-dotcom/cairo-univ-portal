@@ -21,19 +21,12 @@ const server = http.createServer(app);
 
 // 1. إعداد CORS بشكل صارم في مقدمة التطبيق قبل أي مسارات أو معالجات
 const corsOptions = {
-  origin: [
-    'https://cairo-univ-app.vercel.app',
-    'http://localhost:5173',
-    'http://localhost:3000',
-    'http://127.0.0.1:5173'
-  ],
+  origin: ['https://cairo-univ-app.vercel.app', 'http://localhost:5173'], // Allow production and local
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With'],
   credentials: true,
   optionsSuccessStatus: 200
 };
-
-// تطبيق CORS كأول وسيط (Middleware) في التطبيق
 app.use(cors(corsOptions));
 
 // 2. إعداد Socket.IO للتواصل الحي مع نفس إعدادات الـ CORS تماماً
