@@ -10,6 +10,8 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "@react-three/drei": "^10.7.9",
+    "@react-three/fiber": "^9.8.1",
     "@tsparticles/react": "^4.4.0",
     "@tsparticles/slim": "^4.4.0",
     "axios": "^1.19.0",
@@ -19,7 +21,8 @@
     "react-markdown": "^10.1.0",
     "react-parallax-tilt": "^1.7.342",
     "react-router-dom": "^7.18.2",
-    "socket.io-client": "^4.8.3"
+    "socket.io-client": "^4.8.3",
+    "three": "^0.186.1"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

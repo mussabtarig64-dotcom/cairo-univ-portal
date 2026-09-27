@@ -145,9 +145,14 @@ function Footer() {
       </div>
 
       <div
-        className="w-full max-w-7xl mx-auto border-t border-white/10 pt-5 text-center text-xs text-slate-400"
+        className="w-full max-w-7xl mx-auto border-t border-white/10 pt-5 text-center text-xs text-slate-400 flex flex-col items-center justify-center gap-1.5"
       >
-        جميع الحقوق محفوظة © {new Date().getFullYear()} رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة (SSA-FS-CU)
+        <div>
+          جميع الحقوق محفوظة © {new Date().getFullYear()} رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة (SSA-FS-CU)
+        </div>
+        <div className="text-gray-400 text-xs font-medium tracking-wide">
+          تصميم وتطوير: مصعب طارق
+        </div>
       </div>
     </footer>
   );

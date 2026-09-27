@@ -30,7 +30,7 @@ import SocialLinks from '../components/SocialLinks';
 
 // Lazy-loaded heavy visual components to keep initial FCP/LCP instant
 const ScienceParticles = lazy(() => import('../components/ScienceParticles'));
-const RelaxingFountain3D = lazy(() => import('../components/RelaxingFountain3D'));
+const ScienceAtom3D = lazy(() => import('../components/ScienceAtom3D'));
 
 export default function Home() {
   const { activeTheme } = useTheme();
@@ -669,9 +669,9 @@ export default function Home() {
         </div>
       </section>
 
-      {/* واحة الهدوء والنافورة الذكية ثلاثية الأبعاد 3D Zen Oasis */}
+      {/* واحة العلوم والنموذج الذري ثلاثي الأبعاد 3D Science Oasis */}
       <Suspense fallback={null}>
-        <RelaxingFountain3D />
+        <ScienceAtom3D />
       </Suspense>
     </div>
   );
