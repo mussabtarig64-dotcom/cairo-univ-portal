@@ -106,7 +106,7 @@ export default function Navbar() {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'space-between',
-            gap: '12px',
+            gap: '8px',
             width: '100%',
             boxSizing: 'border-box',
           }}
@@ -119,7 +119,7 @@ export default function Navbar() {
               alignItems: 'center',
               gap: '8px',
               textDecoration: 'none',
-              flexShrink: 0,
+              flexShrink: 1,
               minWidth: 0,
             }}
           >
@@ -387,7 +387,7 @@ export default function Navbar() {
           {/* أزرار الإجراءات والدخول والمظهر */}
           <div className="navbar-actions" style={{ display: 'flex', alignItems: 'center', gap: '6px', flexShrink: 0 }}>
             {isAuthenticated ? (
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }} className="user-action-group">
                 <div style={{ textAlign: 'right' }} className="user-info-text">
                   <div style={{ display: 'flex', alignItems: 'center', gap: '5px' }}>
                     <span style={{ color: '#ffffff', fontSize: '12.5px', fontWeight: 'bold', maxWidth: '110px', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
@@ -416,6 +416,7 @@ export default function Navbar() {
                   type="button"
                   onClick={handleLogoutClick}
                   title="تسجيل الخروج"
+                  className="nav-logout-btn"
                   style={{
                     background: 'rgba(239, 68, 68, 0.15)',
                     border: '1px solid rgba(239, 68, 68, 0.3)',
@@ -428,6 +429,7 @@ export default function Navbar() {
                     gap: '4px',
                     fontSize: '11.5px',
                     fontWeight: 'bold',
+                    flexShrink: 0,
                   }}
                 >
                   <LogOut size={13} />
@@ -452,6 +454,7 @@ export default function Navbar() {
                     fontSize: '12px',
                     fontWeight: 'bold',
                     whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   <UserPlus size={13} />
@@ -474,6 +477,7 @@ export default function Navbar() {
                     fontWeight: 'bold',
                     boxShadow: '0 3px 10px rgba(245, 158, 11, 0.3)',
                     whiteSpace: 'nowrap',
+                    flexShrink: 0,
                   }}
                 >
                   <LogIn size={13} />
@@ -483,7 +487,9 @@ export default function Navbar() {
             )}
 
             {/* Notification Center */}
-            <NotificationCenter />
+            <div style={{ flexShrink: 0 }}>
+              <NotificationCenter />
+            </div>
 
             {/* Dark / Light Toggle */}
             <button
@@ -495,7 +501,9 @@ export default function Navbar() {
                 border: '1px solid rgba(255, 255, 255, 0.15)',
                 color: '#fbbf24',
                 padding: '7px',
-                borderRadius: '8px',
+                width: '36px',
+                height: '36px',
+                borderRadius: '9px',
                 cursor: 'pointer',
                 display: 'flex',
                 alignItems: 'center',
@@ -503,29 +511,35 @@ export default function Navbar() {
                 flexShrink: 0,
               }}
             >
-              {activeTheme.isDark ? <Sun size={15} /> : <Moon size={15} />}
+              {activeTheme.isDark ? <Sun size={16} /> : <Moon size={16} />}
             </button>
 
-            {/* Mobile Menu Button */}
+            {/* Mobile Menu Button (Hamburger) */}
             <button
               type="button"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="mobile-menu-btn"
-              aria-label="Toggle navigation menu"
+              aria-label="تبديل القائمة الرئيسية"
+              title="القائمة الرئيسية"
               style={{
-                background: 'rgba(255,255,255,0.08)',
-                border: '1px solid rgba(255, 255, 255, 0.15)',
-                color: '#ffffff',
+                background: isMobileMenuOpen ? 'rgba(245, 158, 11, 0.2)' : 'rgba(255,255,255,0.08)',
+                border: isMobileMenuOpen ? '1px solid #f59e0b' : '1px solid rgba(255, 255, 255, 0.15)',
+                color: isMobileMenuOpen ? '#fbbf24' : '#ffffff',
                 padding: '7px',
-                borderRadius: '8px',
+                width: '38px',
+                height: '38px',
+                minWidth: '38px',
+                minHeight: '38px',
+                borderRadius: '9px',
                 cursor: 'pointer',
                 display: 'none',
                 alignItems: 'center',
                 justifyContent: 'center',
                 flexShrink: 0,
+                boxShadow: isMobileMenuOpen ? '0 0 12px rgba(245, 158, 11, 0.3)' : 'none',
               }}
             >
-              {isMobileMenuOpen ? <X size={18} /> : <Menu size={18} />}
+              {isMobileMenuOpen ? <X size={20} strokeWidth={2.2} /> : <Menu size={20} strokeWidth={2.2} />}
             </button>
           </div>
         </div>
@@ -670,26 +684,59 @@ export default function Navbar() {
         }
         @media (max-width: 979px) {
           .desktop-menu { display: none !important; }
-          .mobile-menu-btn { display: flex !important; }
+          .mobile-menu-btn { display: flex !important; flex-shrink: 0 !important; }
           .user-info-text { display: none !important; }
         }
+        @media (max-width: 639px) {
+          .auth-btns-group {
+            display: none !important;
+          }
+          .navbar-container {
+            padding: 8px 12px !important;
+            gap: 6px !important;
+          }
+        }
         @media (max-width: 480px) {
+          .navbar-container {
+            padding: 7px 10px !important;
+            gap: 6px !important;
+          }
+          .logo-wrapper {
+            width: 34px !important;
+            height: 34px !important;
+          }
           .logo-title-text {
-            font-size: 12.5px !important;
+            font-size: 12px !important;
           }
           .logo-subtitle-text {
-            font-size: 9.5px !important;
-          }
-          .nav-register-btn span,
-          .nav-login-btn span {
-            font-size: 11px !important;
-          }
-          .nav-register-btn,
-          .nav-login-btn {
-            padding: 6px 8px !important;
+            font-size: 9px !important;
           }
           .logout-btn-label {
-            display: none;
+            display: none !important;
+          }
+          .nav-logout-btn {
+            padding: 7px !important;
+            width: 36px !important;
+            height: 36px !important;
+            justify-content: center !important;
+          }
+          .mobile-menu-btn {
+            width: 36px !important;
+            height: 36px !important;
+            min-width: 36px !important;
+            min-height: 36px !important;
+            padding: 6px !important;
+          }
+        }
+        @media (max-width: 360px) {
+          .logo-subtitle-text {
+            display: none !important;
+          }
+          .logo-title-text {
+            font-size: 11px !important;
+          }
+          .navbar-container {
+            padding: 6px 8px !important;
           }
         }
       `}</style>

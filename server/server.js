@@ -19,37 +19,29 @@ const advisorPromptsRoutes = require('./routes/advisorPrompts');
 const app = express();
 const server = http.createServer(app);
 
-// إعداد Socket.IO للتواصل الحي في غرف المذاكرة
-const io = new Server(server, {
-  cors: {
-    origin: true,
-    credentials: true,
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-  },
-});
-
-// إتاحة io لكافة الـ middlewares والمسارات
-app.use((req, res, next) => {
-  req.io = io;
-  next();
-});
-
-// الوسائط والـ Middlewares
+// إعداد قائمة النطاقات المسموح بها للـ CORS
 const allowedOrigins = [
+  'https://cairo-univ-app.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
-  'https://cairo-univ-app.vercel.app'
+  'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
 ];
 
 const corsOptions = {
   origin: function (origin, callback) {
-    if (!origin || allowedOrigins.indexOf(origin) !== -1 || origin.endsWith('.vercel.app')) {
-      callback(null, true);
-    } else {
-      callback(null, true);
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      origin.endsWith('.vercel.app') ||
+      origin.includes('localhost') ||
+      origin.includes('127.0.0.1')
+    ) {
+      return callback(null, true);
     }
+    return callback(null, true);
   },
-  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS', 'HEAD'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS', 'PATCH', 'HEAD'],
   allowedHeaders: [
     'Content-Type',
     'Authorization',
@@ -69,10 +61,57 @@ const corsOptions = {
   ],
   exposedHeaders: ['Cache-Control', 'Pragma', 'Expires'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
 };
 
+// إعداد Socket.IO للتواصل الحي في غرف المذاكرة
+const io = new Server(server, {
+  cors: {
+    origin: [
+      'https://cairo-univ-app.vercel.app',
+      'http://localhost:5173',
+      'http://localhost:3000',
+      'http://127.0.0.1:5173',
+      'http://127.0.0.1:3000',
+    ],
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    credentials: true,
+    allowedHeaders: ['Content-Type', 'Authorization', 'Origin', 'Accept', 'X-Requested-With'],
+  },
+  transports: ['websocket', 'polling'],
+  allowEIO3: true,
+  pingTimeout: 60000,
+  pingInterval: 25000,
+});
+
+// إتاحة io لكافة الـ middlewares والمسارات
+app.use((req, res, next) => {
+  req.io = io;
+  next();
+});
+
+// تطبيق الـ CORS middleware
 app.use(cors(corsOptions));
+
+// Explicit preflight and fallback header middleware for maximum reliability
+app.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin && (allowedOrigins.includes(origin) || origin.endsWith('.vercel.app') || origin.includes('localhost') || origin.includes('127.0.0.1'))) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else if (!origin) {
+    res.setHeader('Access-Control-Allow-Origin', 'https://cairo-univ-app.vercel.app');
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS, PATCH, HEAD');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Accept, Origin, Cache-Control, Pragma, Expires');
+  
+  if (req.method === 'OPTIONS') {
+    return res.sendStatus(200);
+  }
+  next();
+});
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
@@ -238,18 +277,21 @@ io.on('connection', (socket) => {
   socket.on('disconnect', () => { });
 });
 
-// تشغيل الخادم المستقل في البيئات المحلية
-if (process.env.VERCEL !== '1' && require.main === module) {
-  const PORT = process.env.PORT || 5000;
-  server.listen(PORT, () => {
-    console.log(`\n===========================================================`);
-    console.log(`🇸🇩 خادم بوابة رابطة الطلاب السودانيين - كلية العلوم يعمل بنجاح!`);
-    console.log(`🏛️ SSA-FS-CU Backend Server Running on http://localhost:${PORT}`);
-    console.log(`===========================================================\n`);
-  });
+// تشغيل الخادم المستقل في بيئات Railway والاستضافة والخوادم المحلية
+const PORT = process.env.PORT || 5000;
+if (process.env.VERCEL !== '1') {
+  if (!server.listening) {
+    server.listen(PORT, '0.0.0.0', () => {
+      console.log(`\n===========================================================`);
+      console.log(`🇸🇩 خادم بوابة رابطة الطلاب السودانيين - كلية العلوم يعمل بنجاح!`);
+      console.log(`🏛️ SSA-FS-CU Backend Server Running on port ${PORT}`);
+      console.log(`🌐 Allowed CORS Origin: https://cairo-univ-app.vercel.app`);
+      console.log(`===========================================================\n`);
+    });
+  }
 }
 
-// إتاحة التطبيق لـ Vercel Serverless Function
+// إتاحة التطبيق لـ Vercel Serverless Function و Railway
 app.server = server;
 app.io = io;
 module.exports = app;
