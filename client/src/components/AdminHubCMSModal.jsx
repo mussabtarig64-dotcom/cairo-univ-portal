@@ -585,7 +585,15 @@ export default function AdminHubCMSModal({
                         flexShrink: 0,
                       }}
                     >
-                      <img src={selectedFile.previewUrl} alt="Preview" style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                      <img
+                        src={selectedFile.previewUrl}
+                        alt="Preview"
+                        loading="lazy"
+                        decoding="async"
+                        width="48"
+                        height="48"
+                        style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                      />
                     </div>
                   ) : selectedFile.type === 'pdf' ? (
                     <div

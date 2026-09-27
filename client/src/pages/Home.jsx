@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, lazy, Suspense } from 'react';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
@@ -27,8 +27,10 @@ import {
 import { Link } from 'react-router-dom';
 import teamImg from '../assets/team.jpg';
 import SocialLinks from '../components/SocialLinks';
-import ScienceParticles from '../components/ScienceParticles';
-import RelaxingFountain3D from '../components/RelaxingFountain3D';
+
+// Lazy-loaded heavy visual components to keep initial FCP/LCP instant
+const ScienceParticles = lazy(() => import('../components/ScienceParticles'));
+const RelaxingFountain3D = lazy(() => import('../components/RelaxingFountain3D'));
 
 export default function Home() {
   const { activeTheme } = useTheme();
@@ -156,7 +158,9 @@ export default function Home() {
           }}
         >
           {/* Science-Themed 3D Particles Background */}
-          <ScienceParticles />
+          <Suspense fallback={null}>
+            <ScienceParticles />
+          </Suspense>
 
           {/* تأثير توهج خلفي */}
           <div
@@ -227,14 +231,20 @@ export default function Home() {
               overflow: 'hidden',
               border: `2px solid ${activeTheme.border}`,
               boxShadow: '0 15px 35px rgba(0, 0, 0, 0.5)',
+              aspectRatio: '16 / 9',
+              background: '#0b1622',
             }}
           >
             <img
               src={teamImg}
               alt="المكتب التنفيذي لرابطة الطلاب السودانيين"
+              loading="lazy"
+              decoding="async"
+              width="850"
+              height="478"
               style={{
                 width: '100%',
-                height: 'auto',
+                height: '100%',
                 display: 'block',
                 objectFit: 'cover',
               }}
@@ -660,7 +670,9 @@ export default function Home() {
       </section>
 
       {/* واحة الهدوء والنافورة الذكية ثلاثية الأبعاد 3D Zen Oasis */}
-      <RelaxingFountain3D />
+      <Suspense fallback={null}>
+        <RelaxingFountain3D />
+      </Suspense>
     </div>
   );
 }

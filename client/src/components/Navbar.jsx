@@ -143,6 +143,9 @@ export default function Navbar() {
               <img
                 src={logoImg}
                 alt="SSA Logo"
+                width="38"
+                height="38"
+                decoding="async"
                 style={{
                   width: '100%',
                   height: '100%',

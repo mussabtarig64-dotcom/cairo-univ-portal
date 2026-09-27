@@ -12,16 +12,34 @@ function Fountain3DCanvas({ isNightMode = true }) {
   const rotationRef = useRef({ x: 0.35, y: 0 });
   const isDraggingRef = useRef(false);
   const lastMousePosRef = useRef({ x: 0, y: 0 });
+  const isVisibleRef = useRef(true);
 
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
-    const ctx = canvas.getContext('2d');
+    const ctx = canvas.getContext('2d', { alpha: true });
     if (!ctx) return;
 
     let animationFrameId;
     let width = (canvas.width = canvas.parentElement.clientWidth);
     let height = (canvas.height = canvas.parentElement.clientHeight);
+
+    const isMobile = typeof window !== 'undefined' && (window.innerWidth < 768 || (navigator.hardwareConcurrency && navigator.hardwareConcurrency <= 4));
+
+    // IntersectionObserver to freeze RAF when fountain is scrolled out of viewport
+    let observer;
+    if (typeof IntersectionObserver !== 'undefined') {
+      observer = new IntersectionObserver(
+        ([entry]) => {
+          isVisibleRef.current = entry.isIntersecting;
+          if (entry.isIntersecting && !animationFrameId) {
+            render();
+          }
+        },
+        { threshold: 0.05 }
+      );
+      observer.observe(canvas);
+    }
 
     const handleResize = () => {
       if (!canvas || !canvas.parentElement) return;
@@ -30,28 +48,28 @@ function Fountain3DCanvas({ isNightMode = true }) {
     };
     window.addEventListener('resize', handleResize);
 
-    // 1. Water Particles System (80 Parabolic Ballistic Droplets)
-    const particleCount = 85;
+    // 1. Optimized Water Particles System (Low-poly count: 24 on mobile, 38 on desktop)
+    const particleCount = isMobile ? 24 : 38;
     const particles = [];
     for (let i = 0; i < particleCount; i++) {
       const angle = Math.random() * Math.PI * 2;
-      const speed = 0.4 + Math.random() * 0.9;
+      const speed = 0.4 + Math.random() * 0.8;
       particles.push({
         x: 0,
         y: -1.2, // Spout height
         z: 0,
-        vx: Math.cos(angle) * speed * 0.8,
-        vy: 2.4 + Math.random() * 1.4, // Upward initial velocity
-        vz: Math.sin(angle) * speed * 0.8,
-        life: Math.random() * 2.0,
-        maxLife: 1.8 + Math.random() * 0.8,
-        size: 2.2 + Math.random() * 2.5,
-        alpha: 0.8 + Math.random() * 0.2,
+        vx: Math.cos(angle) * speed * 0.75,
+        vy: 2.2 + Math.random() * 1.2, // Upward initial velocity
+        vz: Math.sin(angle) * speed * 0.75,
+        life: Math.random() * 1.8,
+        maxLife: 1.6 + Math.random() * 0.6,
+        size: 2.0 + Math.random() * 2.0,
       });
     }
 
-    // 2. 3D 3D Object Hierarchy: Fountain Basins, Pedestal, Spout, Ripples
-    const createCylinderRings = (radius, y, segments = 28) => {
+    // 2. Optimized 3D Object Geometry (Low-poly: 14 segments on mobile, 18 on desktop)
+    const segmentsCount = isMobile ? 14 : 18;
+    const createCylinderRings = (radius, y, segments = segmentsCount) => {
       const pts = [];
       for (let i = 0; i < segments; i++) {
         const theta = (i / segments) * Math.PI * 2;
@@ -79,15 +97,13 @@ function Fountain3DCanvas({ isNightMode = true }) {
 
     let time = 0;
 
-    // 3. 3D Perspective Projection Function
-    const project = (p, rotX, rotY, scale = 75) => {
-      // Rotate Y
+    // 3. Fast Perspective Projection
+    const project = (p, rotX, rotY) => {
       const cosY = Math.cos(rotY);
       const sinY = Math.sin(rotY);
       const x1 = p.x * cosY + p.z * sinY;
       const z1 = -p.x * sinY + p.z * cosY;
 
-      // Rotate X
       const cosX = Math.cos(rotX);
       const sinX = Math.sin(rotX);
       const y2 = p.y * cosX - z1 * sinX;
@@ -95,8 +111,7 @@ function Fountain3DCanvas({ isNightMode = true }) {
 
       const cameraDistance = 7.5;
       const distance = cameraDistance + z2;
-      const fov = 450;
-      const f = distance > 0.1 ? fov / distance : 0;
+      const f = distance > 0.1 ? 450 / distance : 0;
 
       return {
         x: width / 2 + x1 * f,
@@ -106,13 +121,18 @@ function Fountain3DCanvas({ isNightMode = true }) {
       };
     };
 
-    // 4. Render Loop
+    // 4. Lightweight Render Loop
     const render = () => {
+      if (!isVisibleRef.current) {
+        animationFrameId = null;
+        return;
+      }
+
       time += 0.02;
 
       // Auto-rotation when not dragging
       if (!isDraggingRef.current) {
-        rotationRef.current.y += 0.007;
+        rotationRef.current.y += 0.006;
       }
 
       ctx.clearRect(0, 0, width, height);
@@ -120,19 +140,18 @@ function Fountain3DCanvas({ isNightMode = true }) {
       const rotX = rotationRef.current.x;
       const rotY = rotationRef.current.y;
 
-      // Glowing Ambient Fountain Core Light
+      // Ambient Fountain Glow
       const glowPoint = project({ x: 0, y: -1.2, z: 0 }, rotX, rotY);
-      const glowPulse = Math.sin(time * 3) * 15 + 65;
+      const glowPulse = Math.sin(time * 3) * 12 + 55;
       const glowGrad = ctx.createRadialGradient(
         glowPoint.x,
         glowPoint.y,
-        5,
+        4,
         glowPoint.x,
         glowPoint.y,
         glowPulse * glowPoint.scale
       );
-      glowGrad.addColorStop(0, isNightMode ? 'rgba(56, 189, 248, 0.55)' : 'rgba(14, 165, 233, 0.45)');
-      glowGrad.addColorStop(0.5, isNightMode ? 'rgba(2, 132, 199, 0.2)' : 'rgba(56, 189, 248, 0.15)');
+      glowGrad.addColorStop(0, isNightMode ? 'rgba(56, 189, 248, 0.45)' : 'rgba(14, 165, 233, 0.35)');
       glowGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
 
       ctx.fillStyle = glowGrad;
@@ -140,15 +159,14 @@ function Fountain3DCanvas({ isNightMode = true }) {
       ctx.arc(glowPoint.x, glowPoint.y, glowPulse * glowPoint.scale, 0, Math.PI * 2);
       ctx.fill();
 
-      // Draw Tiered Basins and Structures (Sorted by Depth)
+      // Draw Low-Poly Basins
       tiers.forEach((tier) => {
-        const topPts = createCylinderRings(tier.radius, tier.y, 32);
-        const botPts = createCylinderRings(tier.radius * 0.92, tier.y + tier.thickness, 32);
+        const topPts = createCylinderRings(tier.radius, tier.y, segmentsCount);
+        const botPts = createCylinderRings(tier.radius * 0.92, tier.y + tier.thickness, segmentsCount);
 
         const projTop = topPts.map((pt) => project(pt, rotX, rotY));
         const projBot = botPts.map((pt) => project(pt, rotX, rotY));
 
-        // Draw Cylinder Body
         ctx.beginPath();
         ctx.moveTo(projTop[0].x, projTop[0].y);
         for (let i = 1; i < projTop.length; i++) {
@@ -159,27 +177,27 @@ function Fountain3DCanvas({ isNightMode = true }) {
         if (tier.type === 'water') {
           ctx.fillStyle = isNightMode ? 'rgba(2, 132, 199, 0.85)' : 'rgba(56, 189, 248, 0.85)';
           ctx.fill();
-          ctx.strokeStyle = isNightMode ? 'rgba(56, 189, 248, 0.7)' : 'rgba(255, 255, 255, 0.8)';
-          ctx.lineWidth = 1.5;
+          ctx.strokeStyle = isNightMode ? 'rgba(56, 189, 248, 0.6)' : 'rgba(255, 255, 255, 0.7)';
+          ctx.lineWidth = 1.2;
           ctx.stroke();
 
-          // Concentric animated water ripples
-          const rippleRadius = (tier.radius * (0.4 + (Math.sin(time * 2) * 0.1 + 0.1))) * (width / 750);
+          // Concentric animated ripple
+          const rippleRadius = (tier.radius * (0.4 + (Math.sin(time * 2) * 0.08 + 0.08))) * (width / 750);
           const centerProj = project({ x: 0, y: tier.y, z: 0 }, rotX, rotY);
           ctx.beginPath();
-          ctx.ellipse(centerProj.x, centerProj.y, rippleRadius * 28, rippleRadius * 14 * Math.sin(rotX), 0, 0, Math.PI * 2);
-          ctx.strokeStyle = 'rgba(255, 255, 255, 0.4)';
+          ctx.ellipse(centerProj.x, centerProj.y, rippleRadius * 26, rippleRadius * 13 * Math.sin(rotX), 0, 0, Math.PI * 2);
+          ctx.strokeStyle = 'rgba(255, 255, 255, 0.35)';
           ctx.lineWidth = 1;
           ctx.stroke();
         } else {
           ctx.fillStyle = tier.color;
           ctx.fill();
-          ctx.strokeStyle = isNightMode ? 'rgba(255, 255, 255, 0.12)' : 'rgba(0, 0, 0, 0.15)';
-          ctx.lineWidth = 1.2;
+          ctx.strokeStyle = isNightMode ? 'rgba(255, 255, 255, 0.1)' : 'rgba(0, 0, 0, 0.12)';
+          ctx.lineWidth = 1;
           ctx.stroke();
         }
 
-        // Draw depth side profile
+        // Depth profile
         ctx.beginPath();
         for (let i = 0; i < projTop.length; i++) {
           const next = (i + 1) % projTop.length;
@@ -190,14 +208,15 @@ function Fountain3DCanvas({ isNightMode = true }) {
             ctx.lineTo(projBot[i].x, projBot[i].y);
           }
         }
-        ctx.fillStyle = isNightMode ? 'rgba(15, 23, 42, 0.75)' : 'rgba(51, 65, 85, 0.6)';
+        ctx.fillStyle = isNightMode ? 'rgba(15, 23, 42, 0.7)' : 'rgba(51, 65, 85, 0.55)';
         ctx.fill();
       });
 
-      // 5. Update and Render Water Droplets
+      // 5. Update and Fast Render Water Droplets (Zero expensive shadowBlur in loops)
       const gravity = 4.2;
       const dt = 0.016;
 
+      ctx.fillStyle = isNightMode ? 'rgba(125, 211, 252, 0.9)' : 'rgba(2, 132, 199, 0.85)';
       particles.forEach((p) => {
         p.life += dt;
         if (p.life >= p.maxLife || p.y > 1.0) {
@@ -207,9 +226,9 @@ function Fountain3DCanvas({ isNightMode = true }) {
           p.z = (Math.random() - 0.5) * 0.06;
 
           const angle = Math.random() * Math.PI * 2;
-          const spread = 0.45 + Math.random() * 0.95;
+          const spread = 0.4 + Math.random() * 0.85;
           p.vx = Math.cos(angle) * spread;
-          p.vy = - (2.2 + Math.random() * 1.5); // shoot upwards in inverted coordinate system
+          p.vy = - (2.0 + Math.random() * 1.4);
           p.vz = Math.sin(angle) * spread;
         } else {
           p.vy += gravity * dt;
@@ -221,25 +240,17 @@ function Fountain3DCanvas({ isNightMode = true }) {
         const proj = project(p, rotX, rotY);
         const radius = Math.max(1, p.size * proj.scale);
 
-        // Glowing water droplet
         ctx.beginPath();
         ctx.arc(proj.x, proj.y, radius, 0, Math.PI * 2);
-        ctx.fillStyle = isNightMode ? 'rgba(125, 211, 252, 0.9)' : 'rgba(2, 132, 199, 0.85)';
-        ctx.shadowColor = '#38bdf8';
-        ctx.shadowBlur = 8;
         ctx.fill();
-        ctx.shadowBlur = 0;
       });
 
-      // Top Crystal Spout Nozzle Light
+      // Top Nozzle Highlight
       const spoutProj = project({ x: 0, y: -1.25, z: 0 }, rotX, rotY);
       ctx.beginPath();
-      ctx.arc(spoutProj.x, spoutProj.y, 6 * spoutProj.scale, 0, Math.PI * 2);
+      ctx.arc(spoutProj.x, spoutProj.y, 5 * spoutProj.scale, 0, Math.PI * 2);
       ctx.fillStyle = '#ffffff';
-      ctx.shadowColor = '#38bdf8';
-      ctx.shadowBlur = 15;
       ctx.fill();
-      ctx.shadowBlur = 0;
 
       animationFrameId = requestAnimationFrame(render);
     };
@@ -291,7 +302,8 @@ function Fountain3DCanvas({ isNightMode = true }) {
     window.addEventListener('touchend', handleMouseUp);
 
     return () => {
-      cancelAnimationFrame(animationFrameId);
+      if (animationFrameId) cancelAnimationFrame(animationFrameId);
+      if (observer) observer.disconnect();
       window.removeEventListener('resize', handleResize);
       canvas.removeEventListener('mousedown', handleMouseDown);
       window.removeEventListener('mousemove', handleMouseMove);

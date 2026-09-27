@@ -206,7 +206,15 @@ export default function DigitalMemberCard({ customUser = null }) {
                       flexShrink: 0,
                     }}
                   >
-                    <img src={logoImg} alt="SSA Logo" style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }} />
+                    <img
+                      src={logoImg}
+                      alt="SSA Logo"
+                      loading="lazy"
+                      decoding="async"
+                      width="44"
+                      height="44"
+                      style={{ width: '100%', height: '100%', objectFit: 'contain', borderRadius: '50%' }}
+                    />
                   </div>
 
                   <div>

@@ -436,6 +436,9 @@ export default function SiteStory() {
                                   alt={item.person}
                                   className="w-full h-full object-cover object-center"
                                   loading="lazy"
+                                  decoding="async"
+                                  width="56"
+                                  height="56"
                                 />
                               </div>
                             </div>
@@ -513,6 +516,10 @@ export default function SiteStory() {
                   <img
                     src={mubasherImg}
                     alt="مبشر عمر عثمان الطاهر"
+                    loading="lazy"
+                    decoding="async"
+                    width="128"
+                    height="128"
                     className="w-full h-full object-cover object-center"
                   />
                 </div>
@@ -547,6 +554,10 @@ export default function SiteStory() {
                   <img
                     src={mohammedRabieImg}
                     alt="محمد ربيع محمد عبدالمطلب"
+                    loading="lazy"
+                    decoding="async"
+                    width="144"
+                    height="144"
                     className="w-full h-full object-cover object-center scale-105 group-hover:scale-110 transition-transform duration-300"
                   />
                 </div>
@@ -581,6 +592,10 @@ export default function SiteStory() {
                   <img
                     src={mussabImg}
                     alt="مصعب طارق عوض محمد"
+                    loading="lazy"
+                    decoding="async"
+                    width="128"
+                    height="128"
                     className="w-full h-full object-cover object-center"
                   />
                 </div>
