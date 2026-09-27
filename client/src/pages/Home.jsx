@@ -236,7 +236,7 @@ export default function Home() {
             }}
           >
             <img
-              src={teamImg}
+              src="/assets/team/team.jpg?v=2"
               alt="المكتب التنفيذي لرابطة الطلاب السودانيين"
               loading="lazy"
               decoding="async"
