@@ -1,5 +1,7 @@
 const nodemailer = require('nodemailer');
 
+const CLIENT_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://cairo-univ-app.vercel.app';
+
 // إنشاء ناقل البريد الإلكتروني (Transporter)
 let transporter = null;
 let etherealAccount = null;
@@ -160,7 +162,7 @@ async function sendWelcomeEmail(student) {
       </div>
 
       <div style="text-align: center;">
-        <a href="http://localhost:5173/login" class="action-btn">الدخول إلى البوابة الطلابية</a>
+        <a href="${CLIENT_URL}/login" class="action-btn">الدخول إلى البوابة الطلابية</a>
       </div>
     </div>
 
@@ -273,7 +275,7 @@ async function sendStatusUpdateEmail(student, newStatus, adminNotes = '') {
       ${isVerified ? `
         <p>يمكنك الآن تسجيل الدخول والاستفادة من جميع خدمات البوابة الأكاديمية (المستشار الذكي، الملتقى العلمي، غرف المذاكرة، ودفع الاشتراكات).</p>
         <div style="text-align:center;">
-          <a href="http://localhost:5173/login" class="action-btn">الدخول إلى حسابك الآن</a>
+          <a href="${CLIENT_URL}/login" class="action-btn">الدخول إلى حسابك الآن</a>
         </div>
       ` : isRejected ? `
         <p style="color: #b91c1c;">إذا كان لديك أي استفسار أو ترغب في تعديل بيانات القيد، يرجى التواصل مع أمانة شؤون الطلاب عبر البريد أو زيارة مقر الرابطة بكلية العلوم.</p>
@@ -438,7 +440,7 @@ async function sendRoleUpdateEmail(student, newRole) {
         بصفتك مسؤولاً إدارياً (Admin)، أصبح بإمكانك الآن الوصول إلى لوحة تحكم الإدارة الشاملة (<strong>/admin</strong>)، مراجعة واعتماد طلبات قيد الطلاب، إدارة الإعلانات العاجلة، تصدير بيانات الاستبيان، وتخصيص ثيمات المنصة.
       </p>
       <div style="text-align: center;">
-        <a href="http://localhost:5173/admin" class="action-btn">الدخول إلى لوحة تحكم الإدارة</a>
+        <a href="${CLIENT_URL}/admin" class="action-btn">الدخول إلى لوحة تحكم الإدارة</a>
       </div>
       ` : `
       <p style="line-height: 1.7; color: #2d3748;">
@@ -516,7 +518,7 @@ async function sendAnnouncementBroadcastEmail(student, announcement) {
       </div>
 
       <div style="text-align: center; margin-top: 20px;">
-        <a href="http://localhost:5173" style="display:inline-block; background:#d4af37; color:#0b3b24; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:bold;">زيارة البوابة والاطلاع على التفاصيل</a>
+        <a href="${CLIENT_URL}" style="display:inline-block; background:#d4af37; color:#0b3b24; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:bold;">زيارة البوابة والاطلاع على التفاصيل</a>
       </div>
     </div>
     <div class="footer">

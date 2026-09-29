@@ -3,6 +3,8 @@
  * رابطة الطلاب السودانيين - كلية العلوم - جامعة القاهرة (SSA-FS-CU)
  */
 
+const CLIENT_URL = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://cairo-univ-app.vercel.app';
+
 async function sendRegistrationSMS(student) {
   const {
     fullName = student.name || 'طالبنا العزيز',
@@ -13,7 +15,7 @@ async function sendRegistrationSMS(student) {
   } = student;
 
   const targetNumber = whatsapp || phone || 'غير مسجل';
-  const smsText = `مرحباً بك يا ${fullName} في رابطة الطلاب السودانيين بكلية العلوم - جامعة القاهرة (SSA-FS-CU). تم استلام طلب تسجيلك وقيدك (${studentId} - ${department}) بنجاح. حالة القيد: ⏳ قيد التحقق الأكاديمي. البوابة: http://localhost:5173`;
+  const smsText = `مرحباً بك يا ${fullName} في رابطة الطلاب السودانيين بكلية العلوم - جامعة القاهرة (SSA-FS-CU). تم استلام طلب تسجيلك وقيدك (${studentId} - ${department}) بنجاح. حالة القيد: ⏳ قيد التحقق الأكاديمي. البوابة: ${CLIENT_URL}`;
 
   console.log(`\n------------------------------------------------------`);
   console.log(`📱 [SMS/WhatsApp Gateway] إرسال إشعار تسجيل جديد:`);
@@ -37,7 +39,7 @@ async function sendStatusUpdateSMS(student, newStatus, adminNotes = '') {
     smsText += ` ملاحظة الإدارة: ${adminNotes}`;
   }
   if (isVerified) {
-    smsText += ` يمكنك الآن تسجيل الدخول والاستفادة من كافة خدمات البوابة: http://localhost:5173/login`;
+    smsText += ` يمكنك الآن تسجيل الدخول والاستفادة من كافة خدمات البوابة: ${CLIENT_URL}/login`;
   }
 
   console.log(`\n------------------------------------------------------`);
@@ -56,7 +58,7 @@ async function sendRoleUpdateSMS(student, newRole) {
   const isAdmin = newRole === 'admin';
 
   const smsText = isAdmin
-    ? `تهانينا يا ${fullName}! تم منحك صلاحيات مسؤول النظام (Admin) في بوابة رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة. لوحة التحكم: http://localhost:5173/admin`
+    ? `تهانينا يا ${fullName}! تم منحك صلاحيات مسؤول النظام (Admin) في بوابة رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة. لوحة التحكم: ${CLIENT_URL}/admin`
     : `مرحباً ${fullName}، تم تحديث رتبة حسابك إلى عضو / طالب في بوابة رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة.`;
 
   console.log(`\n------------------------------------------------------`);
@@ -73,7 +75,7 @@ async function sendAnnouncementSMS(student, announcement) {
   const { fullName = student.name || 'عضو الرابطة', phone, whatsapp } = student;
   const targetNumber = whatsapp || phone || 'غير مسجل';
 
-  const smsText = `📢 تنويه عاجل من رابطة الطلاب السودانيين - كلية العلوم:\n"${announcement.title || 'إعلان هام'}": ${announcement.content?.slice(0, 80)}...\nالتفاصيل: http://localhost:5173`;
+  const smsText = `📢 تنويه عاجل من رابطة الطلاب السودانيين - كلية العلوم:\n"${announcement.title || 'إعلان هام'}": ${announcement.content?.slice(0, 80)}...\nالتفاصيل: ${CLIENT_URL}`;
 
   console.log(`\n------------------------------------------------------`);
   console.log(`📱 [SMS/WhatsApp Gateway] إرسال إشعار إعلان عاجل:`);

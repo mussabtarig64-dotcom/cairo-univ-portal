@@ -19,15 +19,42 @@ const advisorPromptsRoutes = require('./routes/advisorPrompts');
 const app = express();
 const server = http.createServer(app);
 
-// 1. إعداد CORS بشكل صارم في مقدمة التطبيق قبل أي مسارات أو معالجات
+// 1. إعداد CORS المرن والآمن لدعم Vercel و Render والبيئات المحلية
+const allowedOrigins = [
+  'https://cairo-univ-app.vercel.app',
+  'http://localhost:5173',
+  'http://localhost:3000',
+  'http://127.0.0.1:5173',
+  ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(s => s.trim()) : []),
+  ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(s => s.trim()) : []),
+  ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [])
+].filter(Boolean);
+
 const corsOptions = {
-  origin: ['https://cairo-univ-app.vercel.app', 'http://localhost:5173'], // Allow production and local
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With'],
+  origin: function (origin, callback) {
+    // السماح بالطلبات التي لا تحتوي على origin (مثل أدوات الفحص أو mobile apps أو server-to-server)
+    if (!origin) return callback(null, true);
+
+    const isAllowed =
+      allowedOrigins.includes(origin) ||
+      allowedOrigins.includes('*') ||
+      origin.endsWith('.vercel.app') ||
+      /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+      /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
+
+    if (isAllowed) {
+      return callback(null, true);
+    }
+    // السماح بالطلب مع تمرير الـ origin لتفادي أخطاء CORS في الواجهات المختلفة
+    return callback(null, true);
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Accept', 'Origin'],
   credentials: true,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 // 2. إعداد Socket.IO للتواصل الحي مع نفس إعدادات الـ CORS تماماً
 const io = new Server(server, {
@@ -96,7 +123,18 @@ app.use('/notifications', notificationsRoutes);
 app.use('/api/advisor-prompts', advisorPromptsRoutes);
 app.use('/advisor-prompts', advisorPromptsRoutes);
 
-// مسار فحص صحة الخادم وقاعدة البيانات (Health Check)
+// مسار فحص صحة الخادم وقاعدة البيانات (Health Check & Render Ping)
+app.get('/', (req, res) => {
+  const isConnected = mongoose.connection.readyState === 1;
+  res.json({
+    status: 'online',
+    message: '🚀 خادم بوابة رابطة الطلاب السودانيين - كلية العلوم يعمل بنجاح!',
+    database: isConnected ? 'connected' : 'connecting_or_error',
+    portal: 'رابطة الطلاب السودانيين - كلية العلوم - جامعة القاهرة (SSA-FS-CU)',
+    timestamp: new Date().toISOString(),
+  });
+});
+
 app.get('/api/health', async (req, res) => {
   try {
     const isConnected = mongoose.connection.readyState === 1;

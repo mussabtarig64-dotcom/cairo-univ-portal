@@ -4,11 +4,15 @@
   "description": "Official Portal for the Sudanese Students Association - Faculty of Science, Cairo University (SSA-FS-CU)",
   "main": "server/server.js",
   "scripts": {
-    "start": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
+    "start": "node server/server.js",
     "dev": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
+    "dev:all": "concurrently \"node server/server.js\" \"npm run dev --prefix client\" --names \"SERVER,CLIENT\" --prefix-colors \"green.bold,cyan.bold\"",
     "server": "node server/server.js",
     "client": "npm run dev --prefix client",
     "build": "npm run build --prefix client"
+  },
+  "engines": {
+    "node": ">=18.0.0"
   },
   "dependencies": {
     "bcryptjs": "^3.0.3",
