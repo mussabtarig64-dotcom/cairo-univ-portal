@@ -66,6 +66,7 @@ const corsOptions = {
     'Authorization',
     'Cache-Control',
     'Pragma',
+    'Expires',
     'X-Requested-With',
     'Accept',
     'Origin',
