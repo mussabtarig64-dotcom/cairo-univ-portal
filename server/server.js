@@ -19,46 +19,85 @@ const advisorPromptsRoutes = require('./routes/advisorPrompts');
 const app = express();
 const server = http.createServer(app);
 
-// 1. إعداد CORS المرن والآمن لدعم Vercel و Render والبيئات المحلية
+// 1. إعداد CORS المرن والآمن لدعم Hostinger و Vercel و Render والبيئات المحلية
 const allowedOrigins = [
+  'https://cairo-univ-portal.com',
+  'https://www.cairo-univ-portal.com',
   'https://cairo-univ-app.vercel.app',
   'http://localhost:5173',
   'http://localhost:3000',
+  'http://localhost:5000',
   'http://127.0.0.1:5173',
+  'http://127.0.0.1:3000',
+  'http://127.0.0.1:5000',
   ...(process.env.CLIENT_URL ? process.env.CLIENT_URL.split(',').map(s => s.trim()) : []),
   ...(process.env.FRONTEND_URL ? process.env.FRONTEND_URL.split(',').map(s => s.trim()) : []),
   ...(process.env.ALLOWED_ORIGINS ? process.env.ALLOWED_ORIGINS.split(',').map(s => s.trim()) : [])
 ].filter(Boolean);
+
+const isOriginAllowed = (origin) => {
+  if (!origin) return true;
+  return (
+    allowedOrigins.includes(origin) ||
+    origin === 'https://cairo-univ-portal.com' ||
+    origin === 'https://www.cairo-univ-portal.com' ||
+    origin.endsWith('.cairo-univ-portal.com') ||
+    origin.endsWith('.vercel.app') ||
+    origin.endsWith('.onrender.com') ||
+    /^http:\/\/localhost(:\d+)?$/.test(origin) ||
+    /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin)
+  );
+};
 
 const corsOptions = {
   origin: function (origin, callback) {
     // السماح بالطلبات التي لا تحتوي على origin (مثل أدوات الفحص أو mobile apps أو server-to-server)
     if (!origin) return callback(null, true);
 
-    const isAllowed =
-      allowedOrigins.includes(origin) ||
-      allowedOrigins.includes('*') ||
-      origin.endsWith('.vercel.app') ||
-      /^http:\/\/localhost(:\d+)?$/.test(origin) ||
-      /^http:\/\/127\.0\.0\.1(:\d+)?$/.test(origin);
-
-    if (isAllowed) {
+    if (isOriginAllowed(origin)) {
       return callback(null, true);
     }
-    // السماح بالطلب مع تمرير الـ origin لتفادي أخطاء CORS في الواجهات المختلفة
+    // السماح بالطلب لتفادي أخطاء CORS مع ضمان التوافق
     return callback(null, true);
   },
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'Cache-Control', 'X-Requested-With', 'Accept', 'Origin'],
+  allowedHeaders: [
+    'Content-Type',
+    'Authorization',
+    'Cache-Control',
+    'X-Requested-With',
+    'Accept',
+    'Origin',
+    'Range'
+  ],
   credentials: true,
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
-app.options('*', cors(corsOptions));
+app.options('/*', cors(corsOptions));
 
 // 2. إعداد Socket.IO للتواصل الحي مع نفس إعدادات الـ CORS تماماً
 const io = new Server(server, {
-  cors: corsOptions,
+  cors: {
+    origin: function (origin, callback) {
+      if (!origin) return callback(null, true);
+      if (isOriginAllowed(origin)) {
+        return callback(null, true);
+      }
+      return callback(null, true);
+    },
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: [
+      'Content-Type',
+      'Authorization',
+      'Cache-Control',
+      'X-Requested-With',
+      'Accept',
+      'Origin',
+      'Range'
+    ],
+    credentials: true,
+  },
   transports: ['websocket', 'polling'],
   allowEIO3: true,
   pingTimeout: 60000,
@@ -254,7 +293,7 @@ if (process.env.VERCEL !== '1') {
       console.log(`\n===========================================================`);
       console.log(`🇸🇩 خادم بوابة رابطة الطلاب السودانيين - كلية العلوم يعمل بنجاح!`);
       console.log(`🏛️ SSA-FS-CU Backend Server Running on port ${PORT}`);
-      console.log(`🌐 Allowed CORS Origin: https://cairo-univ-app.vercel.app`);
+      console.log(`🌐 Allowed CORS Origins: https://cairo-univ-portal.com, https://www.cairo-univ-portal.com`);
       console.log(`===========================================================\n`);
     });
   }

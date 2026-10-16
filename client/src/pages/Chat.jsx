@@ -19,12 +19,16 @@ import {
   ChevronDown,
   ChevronUp
 } from 'lucide-react';
+import { SOCKET_URL } from '../config/api';
 
 let socket = null;
 try {
-  const socketUrl = import.meta.env.VITE_API_URL || (typeof window !== 'undefined' ? window.location.origin : '');
-  if (socketUrl) {
-    socket = io(socketUrl, { reconnectionAttempts: 3 });
+  if (SOCKET_URL) {
+    socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      reconnectionAttempts: 5,
+    });
   }
 } catch (e) {
   console.log('Socket init note:', e.message);

@@ -1,0 +1,78 @@
+# ========================================================
+# Apache / Hostinger / LiteSpeed Configuration for React SPA
+# رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة (SSA-FS-CU)
+# ========================================================
+
+# 1. منع تصفح المجلدات مباشرة لأسباب أمنية
+Options -Indexes
+
+# 2. تعطيل MultiViews لمنع تداخل Apache مع مسارات React Router
+Options -MultiViews
+
+# 3. تعيين التشفير الافتراضي
+AddDefaultCharset UTF-8
+
+# 4. توجيه جميع المسارات إلى index.html لدعم React Router (تجنب أخطاء 404 عند التحديث أو الدخول المباشر)
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+  # إذا كان الطلب هو index.html نفسه، لا تقم بإعادة التوجيه لمنع التكرار اللانهائي
+  RewriteRule ^index\.html$ - [L]
+
+  # السماح بالوصول المباشر للملفات والمجلدات الحقيقية الموجودة على السيرفر (مثل الصور وملفات CSS و JS)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteCond %{REQUEST_FILENAME} !-l
+
+  # توجيه جميع المسارات الأخرى إلى /index.html ليتولى React Router التوجيه في المتصفح
+  RewriteRule . /index.html [L]
+</IfModule>
+
+# 5. احتياطي إضافي لأخطاء 404 في حال عدم تفعيل mod_rewrite على السيرفر
+ErrorDocument 404 /index.html
+
+# 6. منع التخزين المؤقت لملف index.html لضمان وصول التحديثات والإصدارات الجديدة فوراً للمستخدمين
+<IfModule mod_headers.c>
+  <FilesMatch "^(index\.html)?$">
+    Header set Cache-Control "no-cache, no-store, must-revalidate"
+    Header set Pragma "no-cache"
+    Header set Expires "0"
+  </FilesMatch>
+
+  # ترويسات الأمان (Security Headers)
+  Header set X-Content-Type-Options "nosniff"
+  Header set X-XSS-Protection "1; mode=block"
+  Header set X-Frame-Options "SAMEORIGIN"
+  Header set Referrer-Policy "strict-origin-when-cross-origin"
+</IfModule>
+
+# 7. ضغط الملفات لتسريع تحميل الموقع بشكل فائق (Gzip / Deflate)
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE text/html
+  AddOutputFilterByType DEFLATE text/plain
+  AddOutputFilterByType DEFLATE text/xml
+  AddOutputFilterByType DEFLATE text/css
+  AddOutputFilterByType DEFLATE text/javascript
+  AddOutputFilterByType DEFLATE application/javascript
+  AddOutputFilterByType DEFLATE application/x-javascript
+  AddOutputFilterByType DEFLATE application/json
+  AddOutputFilterByType DEFLATE application/xml
+  AddOutputFilterByType DEFLATE image/svg+xml
+</IfModule>
+
+# 8. تحسين التخزين المؤقت للملفات الثابتة والصور (Assets Caching)
+<IfModule mod_expires.c>
+  ExpiresActive On
+  ExpiresByType image/jpg "access plus 1 year"
+  ExpiresByType image/jpeg "access plus 1 year"
+  ExpiresByType image/gif "access plus 1 year"
+  ExpiresByType image/png "access plus 1 year"
+  ExpiresByType image/webp "access plus 1 year"
+  ExpiresByType image/svg+xml "access plus 1 year"
+  ExpiresByType image/x-icon "access plus 1 year"
+  ExpiresByType text/css "access plus 1 year"
+  ExpiresByType application/javascript "access plus 1 year"
+  ExpiresByType font/woff2 "access plus 1 year"
+  ExpiresByType font/woff "access plus 1 year"
+</IfModule>

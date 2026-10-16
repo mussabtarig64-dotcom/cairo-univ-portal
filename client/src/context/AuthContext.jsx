@@ -163,7 +163,7 @@ export function AuthProvider({ children }) {
       // محاولة احتياطية على /api/register في حال تعذر المسار الرئيسي
       if (err.response?.status === 404 || err.response?.status === 405) {
         try {
-          const fallbackRes = await axios.post('/api/register', userData, {
+          const fallbackRes = await axios.post(`${API_BASE}/register`, userData, {
             headers: {
               'Content-Type': 'application/json',
               Accept: 'application/json',

@@ -225,7 +225,7 @@ export default function Register() {
         if (typeof register === 'function') {
           res = await register(payload);
         } else {
-          const response = await axios.post('/api/auth/register', payload, {
+          const response = await axios.post(`${API_BASE}/auth/register`, payload, {
             headers: {
               'Content-Type': 'application/json',
               Accept: 'application/json',

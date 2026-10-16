@@ -1,6 +1,9 @@
 node_modules
 .vercel
 .env*
+!.env.example
+!client/.env.example
+!client/.env.production
 dist
 client/dist
 .DS_Store

@@ -3,6 +3,7 @@ import ReactMarkdown from 'react-markdown';
 import axios from 'axios';
 import { useTheme } from '../context/ThemeContext';
 import { useAuth } from '../context/AuthContext';
+import { API_BASE } from '../config/api';
 import {
   Bot,
   User,
@@ -127,7 +128,7 @@ export default function AIChat() {
     setLoading(true);
 
     try {
-      const apiEndpoint = `${import.meta.env.VITE_API_BASE_URL || (import.meta.env.VITE_API_URL ? `${import.meta.env.VITE_API_URL}/api` : '/api')}/ai/chat`;
+      const apiEndpoint = `${API_BASE}/ai/chat`;
       const res = await axios.post(apiEndpoint, {
         messages: newMessages,
         studentName: studentName,

@@ -58,8 +58,10 @@ export default function NotificationCenter() {
     fetchNotifications();
 
     // إعداد الاتصال بالـ Socket.IO لتلقي الإشعارات الفورية
-    const socket = io(SOCKET_URL || 'http://localhost:5000', {
+    const socket = io(SOCKET_URL, {
       transports: ['websocket', 'polling'],
+      withCredentials: true,
+      reconnectionAttempts: 5,
     });
 
     socket.on('new_notification', (newNotif) => {
