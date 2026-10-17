@@ -18,9 +18,9 @@ if (process.env.CLOUDINARY_URL) {
 const isCloudinaryConfigured = () => {
   return Boolean(
     process.env.CLOUDINARY_URL ||
-      (process.env.CLOUDINARY_CLOUD_NAME &&
-        process.env.CLOUDINARY_API_KEY &&
-        process.env.CLOUDINARY_API_SECRET)
+    (process.env.CLOUDINARY_CLOUD_NAME &&
+      process.env.CLOUDINARY_API_KEY &&
+      process.env.CLOUDINARY_API_SECRET)
   );
 };
 
@@ -52,13 +52,15 @@ const uploadBufferToCloudinary = (buffer, options = {}) => {
       .replace(/[^a-zA-Z0-9_-]/g, '_')
       .substring(0, 50);
 
-    const uploadStream = cloudinary.uploader.upload_stream(
+    // استخدام upload_chunked_stream لدعم الملفات الأكبر من 10MB
+    const uploadStream = cloudinary.uploader.upload_chunked_stream(
       {
         folder,
         resource_type: resourceType,
         public_id: `${Date.now()}_${sanitizedFilename}`,
         use_filename: true,
         unique_filename: true,
+        chunk_size: 6 * 1024 * 1024, // رفع كل 6MB في جزء
       },
       (error, result) => {
         if (error) {
