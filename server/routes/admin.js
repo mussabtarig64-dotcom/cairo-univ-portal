@@ -17,12 +17,7 @@ const {
   sendAnnouncementSMS,
 } = require('../utils/smsService');
 
-// معالجة طلبات OPTIONS لكافة مسارات لوحة الإدارة لضمان نجاح Preflight
-router.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin');
-  res.sendStatus(200);
-});
+
 
 // 0. نقطة الصيانة الإجبارية لتنظيف قاعدة البيانات والاحتفاظ بالأدمن الأساسي فقط (Hard Reset DB Endpoint)
 router.get('/hard-reset-db', async (req, res) => {
@@ -292,7 +287,7 @@ router.post('/approve-student', async (req, res) => {
     Promise.allSettled([
       sendStatusUpdateEmail(student, 'verified', notes),
       sendStatusUpdateSMS(student, 'verified', notes),
-    ]).catch(() => {});
+    ]).catch(() => { });
     return res.json({ success: true, message: 'تم اعتماد وقبول الطالب بنجاح', student });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
@@ -322,7 +317,7 @@ router.post('/reject-student', async (req, res) => {
     Promise.allSettled([
       sendStatusUpdateEmail(student, 'rejected', notes),
       sendStatusUpdateSMS(student, 'rejected', notes),
-    ]).catch(() => {});
+    ]).catch(() => { });
     return res.json({ success: true, message: 'تم رفض طلب الطالب', student });
   } catch (err) {
     return res.status(500).json({ success: false, message: err.message });
