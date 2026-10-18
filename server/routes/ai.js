@@ -5,12 +5,7 @@ const KnowledgeBase = require('../models/KnowledgeBase');
 const AdvisorPrompt = require('../models/AdvisorPrompt');
 const AIConversation = require('../models/AIConversation');
 
-// Preflight options handling for AI routes
-router.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin');
-  res.sendStatus(200);
-});
+
 
 const groqApiKey = process.env.GROQ_API_KEY || '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';
 let groq = null;
