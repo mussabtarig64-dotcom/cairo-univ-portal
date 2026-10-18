@@ -149,7 +149,10 @@ export default function FloatingAIChatWidget() {
         prompt: text,
       });
 
-      const createdPrompt = res.data?.prompt || (res.data?._id ? res.data : null);
+      const createdPrompt =
+        (res.data?.prompt && typeof res.data.prompt === 'object')
+          ? res.data.prompt
+          : (res.data?._id ? res.data : (res.data?.item || (typeof res.data?.prompt === 'string' ? { _id: res.data._id || `prompt_${Date.now()}`, prompt: res.data.prompt } : null)));
       if (createdPrompt) {
         setAdvisorPrompts((prev) => [createdPrompt, ...prev]);
         window.dispatchEvent(new CustomEvent('advisor_prompts_updated'));

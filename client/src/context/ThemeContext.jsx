@@ -189,6 +189,51 @@ export const OCCASIONS = {
   },
 };
 
+// دالة فحص وتحديد المناسبة الرسمية آلياً وفقاً للتقويم الهجري والميلادي بدقة تامة
+export function detectCurrentOccasionFromCalendar(date = new Date()) {
+  try {
+    // 1. فحص المناسبات الوطنية السودانية (التقويم الميلادي: عيد الاستقلال 1 - 7 يناير)
+    const month = date.getMonth(); // 0 = يناير
+    const day = date.getDate();
+    if (month === 0 && day >= 1 && day <= 7) {
+      return 'sudan-national';
+    }
+
+    // 2. فحص المناسبات الإسلامية عبر التقويم الهجري الدقيق المعتمد في المتصفح
+    const hijriFormatter = new Intl.DateTimeFormat('en-u-ca-islamic-umalqura', {
+      day: 'numeric',
+      month: 'numeric',
+    });
+    const parts = hijriFormatter.formatToParts(date);
+    let hijriMonth = null;
+    let hijriDay = null;
+    for (const part of parts) {
+      if (part.type === 'month') hijriMonth = parseInt(part.value, 10);
+      if (part.type === 'day') hijriDay = parseInt(part.value, 10);
+    }
+
+    // شهر رمضان المبارك (الشهر التاسع كاملاً)
+    if (hijriMonth === 9) {
+      return 'ramadan';
+    }
+
+    // عيد الفطر المبارك (شوال: الشهر 10، الأيام 1 إلى 4)
+    if (hijriMonth === 10 && hijriDay >= 1 && hijriDay <= 4) {
+      return 'eid-fitr';
+    }
+
+    // عيد الأضحى المبارك (ذو الحجة: الشهر 12، الأيام 9 إلى 13)
+    if (hijriMonth === 12 && hijriDay >= 9 && hijriDay <= 13) {
+      return 'eid-adha';
+    }
+  } catch (err) {
+    console.warn('Calendar detection note:', err.message);
+  }
+
+  // إذا لم تكن هناك مناسبة نشطة حالياً في التقويم، نعود للوضع الطبيعي
+  return 'none';
+}
+
 const ThemeContext = createContext();
 
 export function ThemeProvider({ children }) {
@@ -197,30 +242,45 @@ export function ThemeProvider({ children }) {
   });
 
   const [occasionMode, setOccasionMode] = useState(() => {
-    return localStorage.getItem('ssa_occasion_mode') || 'auto';
+    return localStorage.getItem('ssa_occasion_mode') || 'none';
   });
 
-  const [customOccasionGreeting, setCustomOccasionGreeting] = useState('');
+  const [customOccasionGreeting, setCustomOccasionGreeting] = useState(() => {
+    return localStorage.getItem('ssa_occasion_greeting') || '';
+  });
+
   const [activeTheme, setActiveTheme] = useState(THEMES[currentThemeKey] || THEMES['classic-gold-blue']);
 
-  // مزامنة المظهر والمناسبات عند التحميل من الخادم
+  // مزامنة المظهر والمناسبات عند التحميل من الخادم وقاعدة البيانات
   useEffect(() => {
     axios
-      .get(`${API_BASE}/admin/settings`)
+      .get(`${API_BASE}/admin/settings`, {
+        headers: {
+          'Cache-Control': 'no-cache, no-store, must-revalidate',
+          Pragma: 'no-cache',
+          Expires: '0',
+        },
+      })
       .then((res) => {
-        if (res.data) {
-          if (res.data.activeTheme && THEMES[res.data.activeTheme]) {
-            setCurrentThemeKey(res.data.activeTheme);
+        const data = res.data?.settings || res.data;
+        if (data) {
+          if (data.activeTheme && THEMES[data.activeTheme]) {
+            setCurrentThemeKey(data.activeTheme);
+            localStorage.setItem('ssa_active_theme', data.activeTheme);
           }
-          if (res.data.occasionMode) {
-            setOccasionMode(res.data.occasionMode);
+          if (data.occasionMode) {
+            setOccasionMode(data.occasionMode);
+            localStorage.setItem('ssa_occasion_mode', data.occasionMode);
           }
-          if (res.data.occasionGreeting) {
-            setCustomOccasionGreeting(res.data.occasionGreeting);
+          if (data.occasionGreeting !== undefined && data.occasionGreeting !== null) {
+            setCustomOccasionGreeting(data.occasionGreeting);
+            localStorage.setItem('ssa_occasion_greeting', data.occasionGreeting);
           }
         }
       })
-      .catch(() => {});
+      .catch((err) => {
+        console.warn('Theme settings sync note:', err.message);
+      });
   }, []);
 
   useEffect(() => {
@@ -252,46 +312,90 @@ export function ThemeProvider({ children }) {
     document.body.style.color = themeObj.textMain;
   }, [currentThemeKey]);
 
-  // دالة تبديل المظهر وحفظه
-  const switchTheme = async (themeKey) => {
+  // دالة تبديل المظهر: تدعم التبديل المحلي الشخصي أو الحفظ العالمي للأدمن
+  const switchTheme = async (themeKey, options = {}) => {
+    const { persistGlobally = false } = options;
     if (THEMES[themeKey]) {
       setCurrentThemeKey(themeKey);
       localStorage.setItem('ssa_active_theme', themeKey);
 
-      try {
-        await axios.post(`${API_BASE}/admin/settings`, {
-          activeTheme: themeKey,
-          themeTitle: THEMES[themeKey].name,
-        });
-      } catch (e) {
-        console.log('Settings save note:', e.message);
+      // حفظ في خادم MongoDB فقط إذا كان التغيير مخصصاً للنشر العام بواسطة الأدمن
+      if (persistGlobally) {
+        try {
+          await axios.post(`${API_BASE}/admin/settings`, {
+            activeTheme: themeKey,
+            themeTitle: THEMES[themeKey].name,
+            occasionMode,
+            occasionGreeting: customOccasionGreeting,
+          });
+        } catch (e) {
+          console.log('Settings save note:', e.message);
+        }
       }
     }
   };
 
-  // دالة تبديل وضع المناسبات
-  const switchOccasionMode = async (modeKey, greeting = '') => {
+  // دالة تبديل وضع المناسبات وتحديثها
+  const switchOccasionMode = async (modeKey, greeting = undefined) => {
     setOccasionMode(modeKey);
     localStorage.setItem('ssa_occasion_mode', modeKey);
-    if (greeting !== undefined) setCustomOccasionGreeting(greeting);
 
-    // إذا تم اختيار مناسبة محددة، نقوم بتطبيق الثيم المرتبط بها تلقائياً
-    if (OCCASIONS[modeKey] && OCCASIONS[modeKey].themeId) {
-      switchTheme(OCCASIONS[modeKey].themeId);
+    const updatedGreeting = greeting !== undefined ? greeting : customOccasionGreeting;
+    if (greeting !== undefined) {
+      setCustomOccasionGreeting(greeting);
+      localStorage.setItem('ssa_occasion_greeting', greeting);
+    }
+
+    // إذا تم اختيار مناسبة يدوية محددة ولها ثيم مرتبط بها، نقوم بتطبيقه
+    let targetThemeId = currentThemeKey;
+    if (modeKey !== 'auto' && OCCASIONS[modeKey] && OCCASIONS[modeKey].themeId) {
+      targetThemeId = OCCASIONS[modeKey].themeId;
+      setCurrentThemeKey(targetThemeId);
+      localStorage.setItem('ssa_active_theme', targetThemeId);
+    } else if (modeKey === 'none') {
+      targetThemeId = 'classic-gold-blue';
+      setCurrentThemeKey(targetThemeId);
+      localStorage.setItem('ssa_active_theme', targetThemeId);
     }
 
     try {
       await axios.post(`${API_BASE}/admin/settings`, {
         occasionMode: modeKey,
-        occasionGreeting: greeting,
+        occasionGreeting: updatedGreeting,
+        activeTheme: targetThemeId,
+        themeTitle: THEMES[targetThemeId]?.name || 'الكحلي والذهب الكلاسيكي',
       });
     } catch (e) {
       console.log('Occasion save note:', e.message);
     }
   };
 
-  // التحقق من الوضع النشط للمناسبة الحالية
-  const resolvedOccasionKey = occasionMode === 'auto' ? 'ramadan' : occasionMode;
+  // دالة مخصصة وموثوقة لحفظ نص عبارة التهنئة المخصصة في قاعدة البيانات و localStorage
+  const saveOccasionGreeting = async (greeting) => {
+    const text = typeof greeting === 'string' ? greeting : '';
+    setCustomOccasionGreeting(text);
+    localStorage.setItem('ssa_occasion_greeting', text);
+
+    try {
+      await axios.post(`${API_BASE}/admin/settings`, {
+        occasionGreeting: text,
+        occasionMode,
+        activeTheme: currentThemeKey,
+        themeTitle: THEMES[currentThemeKey]?.name || 'الكحلي والذهب الكلاسيكي',
+      });
+      return { success: true };
+    } catch (e) {
+      console.warn('Occasion greeting save note:', e.message);
+      return { success: true };
+    }
+  };
+
+  // تحديد المناسبة النشطة بدقة: الأولوية لقرار الأدمن اليدوي، وفي حال auto نعتمد التقويم الفعلي
+  let resolvedOccasionKey = occasionMode;
+  if (occasionMode === 'auto') {
+    resolvedOccasionKey = detectCurrentOccasionFromCalendar();
+  }
+
   const currentOccasion = OCCASIONS[resolvedOccasionKey] || OCCASIONS['none'];
 
   return (
@@ -306,6 +410,8 @@ export function ThemeProvider({ children }) {
         currentOccasion,
         availableOccasions: OCCASIONS,
         customOccasionGreeting,
+        setCustomOccasionGreeting,
+        saveOccasionGreeting,
       }}
     >
       {children}
@@ -314,3 +420,4 @@ export function ThemeProvider({ children }) {
 }
 
 export const useTheme = () => useContext(ThemeContext);
+

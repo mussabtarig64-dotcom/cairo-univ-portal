@@ -240,6 +240,9 @@ export function AuthProvider({ children }) {
             verificationStatus: 'verified',
             status: 'approved',
           };
+          const authToken = res.data.token || `ssa_token_admin_${Date.now()}`;
+          localStorage.setItem('token', authToken);
+          localStorage.setItem('ssa_token', authToken);
           setUser(finalUser);
           return { success: true, user: finalUser };
         }
@@ -247,6 +250,9 @@ export function AuthProvider({ children }) {
         console.log('Server admin sync note, proceeding with master admin credentials:', err?.message);
       }
 
+      const defaultAdminToken = `ssa_token_admin_${Date.now()}`;
+      localStorage.setItem('token', defaultAdminToken);
+      localStorage.setItem('ssa_token', defaultAdminToken);
       setUser(adminUser);
       return { success: true, user: adminUser };
     }
@@ -310,12 +316,20 @@ export function AuthProvider({ children }) {
             localStorage.setItem('approved_users', JSON.stringify([...filteredApproved, loggedUser]));
           } catch (e) {}
 
+          if (res.data?.token) {
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('ssa_token', res.data.token);
+          }
           setUser(loggedUser);
           return { success: true, user: loggedUser };
         } else {
           // حساب جديد قيد المراجعة والتدقيق (Pending)
           loggedUser.verificationStatus = 'pending';
           loggedUser.status = 'pending';
+          if (res.data?.token) {
+            localStorage.setItem('token', res.data.token);
+            localStorage.setItem('ssa_token', res.data.token);
+          }
           setUser(loggedUser);
           return {
             success: true,
@@ -475,6 +489,8 @@ export function AuthProvider({ children }) {
     setUser(null);
     localStorage.removeItem('currentUser');
     localStorage.removeItem('user');
+    localStorage.removeItem('token');
+    localStorage.removeItem('ssa_token');
   };
 
   const isAdmin = user?.role === 'admin';

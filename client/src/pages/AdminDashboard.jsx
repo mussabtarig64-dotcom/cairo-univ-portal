@@ -51,6 +51,7 @@ export default function AdminDashboard() {
     currentOccasion,
     availableOccasions,
     customOccasionGreeting,
+    saveOccasionGreeting,
   } = useTheme();
   const { user, updateUserRole } = useAuth();
 
@@ -71,6 +72,13 @@ export default function AdminDashboard() {
   const [kbSuccessMsg, setKbSuccessMsg] = useState('');
   const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
   const [customGreetingInput, setCustomGreetingInput] = useState(customOccasionGreeting || '');
+
+  // مزامنة حقل نص العبارة تلقائياً عند وصول القيمة من الخادم أو ThemeContext
+  useEffect(() => {
+    if (customOccasionGreeting !== undefined && customOccasionGreeting !== null) {
+      setCustomGreetingInput(customOccasionGreeting);
+    }
+  }, [customOccasionGreeting]);
 
   // حالة نموذج إضافة/تعديل أسئلة المستشار الأكاديمي
   const [newKbQuestion, setNewKbQuestion] = useState('');
@@ -135,19 +143,24 @@ export default function AdminDashboard() {
     }
   }, [activeTab]);
 
-  const loadDashboardData = async () => {
+  const getAuthHeaders = () => {
     const token =
       localStorage.getItem('token') ||
       localStorage.getItem('ssa_token') ||
       (user && (user.token || user._id)) ||
       '';
 
-    const authHeaders = {
+    return {
       'Cache-Control': 'no-cache, no-store, must-revalidate',
       Pragma: 'no-cache',
       Expires: '0',
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
+  };
+
+  const loadDashboardData = async () => {
+    const authHeaders = getAuthHeaders();
+    const token = authHeaders.Authorization || 'None';
 
     const requestConfig = {
       headers: authHeaders,
@@ -432,14 +445,11 @@ export default function AdminDashboard() {
 
   // حذف سجل طالب مرفوض نهائياً
   const handleDeleteRejected = async (studentId) => {
+    if (!studentId) return;
     if (!window.confirm('هل أنت متأكد من حذف هذا السجل المرفوض نهائياً؟')) return;
     try {
       const res = await axios.delete(`${API_BASE}/admin/students/${studentId}`, {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          Pragma: 'no-cache',
-          Expires: '0',
-        },
+        headers: getAuthHeaders(),
       });
       if (res.status === 200 || res.data?.success) {
         setRejectedUsers((prev) => prev.filter((u) => (u._id || u.id) !== studentId));
@@ -452,7 +462,8 @@ export default function AdminDashboard() {
       }
     } catch (e) {
       console.error('Delete rejected error:', e);
-      alert('فشل حذف السجل من قاعدة البيانات: ' + (e.response?.data?.message || e.message));
+      const errMsg = e.response?.data?.message || e.message;
+      alert('فشل حذف السجل من قاعدة البيانات: ' + errMsg);
     }
   };
 
@@ -473,11 +484,7 @@ export default function AdminDashboard() {
         `${API_BASE}/admin/students/${userId}/role`,
         { role: newRole },
         {
-          headers: {
-            'Cache-Control': 'no-cache, no-store, must-revalidate',
-            Pragma: 'no-cache',
-            Expires: '0',
-          },
+          headers: getAuthHeaders(),
         }
       );
 
@@ -499,14 +506,11 @@ export default function AdminDashboard() {
 
   // 4. حذف سجل طالب معتمد
   const handleDeleteApproved = async (userId) => {
+    if (!userId) return;
     if (!window.confirm('هل أنت متأكد من إلغاء اعتماد هذا الحساب وحذفه نهائياً؟')) return;
     try {
       const res = await axios.delete(`${API_BASE}/admin/students/${userId}`, {
-        headers: {
-          'Cache-Control': 'no-cache, no-store, must-revalidate',
-          Pragma: 'no-cache',
-          Expires: '0',
-        },
+        headers: getAuthHeaders(),
       });
       if (res.status === 200 || res.data?.success) {
         setApprovedUsers((prev) => prev.filter((u) => (u._id || u.id) !== userId));
@@ -519,7 +523,8 @@ export default function AdminDashboard() {
       }
     } catch (e) {
       console.error('Delete approved error:', e);
-      alert('فشل حذف الحساب من قاعدة البيانات: ' + (e.response?.data?.message || e.message));
+      const errMsg = e.response?.data?.message || e.message;
+      alert('فشل حذف الحساب من قاعدة البيانات: ' + errMsg);
     }
   };
 
@@ -528,10 +533,10 @@ export default function AdminDashboard() {
     window.open(`${API_BASE}/admin/export`, '_blank');
   };
 
-  // 6. اختيار المظهر وتطبيقه عالمياً
+  // 6. اختيار المظهر وتطبيقه عالمياً بواسطة الأدمن
   const handleSelectTheme = (themeKey) => {
-    switchTheme(themeKey);
-    setThemeSuccessMsg(`تم تطبيق مظهر "${availableThemes[themeKey]?.name}" بنجاح على البوابة بالكامل لجميع المستخدمين! ✨`);
+    switchTheme(themeKey, { persistGlobally: true });
+    setThemeSuccessMsg(`تم تطبيق مظهر "${availableThemes[themeKey]?.name}" بنجاح على البوابة بالكامل لجميع المستخدمين وحفظه في قاعدة البيانات! ✨`);
     setTimeout(() => setThemeSuccessMsg(''), 4000);
   };
 
@@ -539,6 +544,17 @@ export default function AdminDashboard() {
   const handleSaveOccasion = async (modeKey) => {
     await switchOccasionMode(modeKey, customGreetingInput);
     setThemeSuccessMsg(`تم تفعيل مناسبة [${availableOccasions[modeKey]?.name || modeKey}] وحفظ المظهر والتنسيق عالمياً! 🌙✨`);
+    setTimeout(() => setThemeSuccessMsg(''), 4000);
+  };
+
+  // 6.1.1 حفظ عبارة التهنئة المخصصة فقط
+  const handleSaveGreetingPhrase = async () => {
+    if (saveOccasionGreeting) {
+      await saveOccasionGreeting(customGreetingInput);
+    } else {
+      await switchOccasionMode(occasionMode || 'none', customGreetingInput);
+    }
+    setThemeSuccessMsg('تم حفظ عبارة التهنئة المخصصة بنجاح في قاعدة البيانات وتعميمها على شريط المناسبات! ✍️✨');
     setTimeout(() => setThemeSuccessMsg(''), 4000);
   };
 
@@ -710,7 +726,7 @@ export default function AdminDashboard() {
           category: newKbCategory,
           keywords: newKbKeywords.split(',').map((k) => k.trim()).filter(Boolean),
         });
-        const updated = res.data?.prompt || (res.data?._id ? res.data : null);
+        const updated = (res.data?.prompt && typeof res.data.prompt === 'object') ? res.data.prompt : (res.data?._id ? res.data : (res.data?.item || null));
         if (updated) {
           setKbItems((prev) => prev.map((k) => ((k._id || k.id) === editingKbId ? updated : k)));
           window.dispatchEvent(new CustomEvent('advisor_prompts_updated'));
@@ -727,7 +743,7 @@ export default function AdminDashboard() {
           keywords: newKbKeywords.split(',').map((k) => k.trim()).filter(Boolean),
           isActive: true,
         });
-        const created = res.data?.prompt || (res.data?._id ? res.data : null);
+        const created = (res.data?.prompt && typeof res.data.prompt === 'object') ? res.data.prompt : (res.data?._id ? res.data : (res.data?.item || null));
         if (created) {
           setKbItems((prev) => [created, ...prev]);
           window.dispatchEvent(new CustomEvent('advisor_prompts_updated'));
@@ -752,7 +768,7 @@ export default function AdminDashboard() {
   const handleToggleKb = async (id) => {
     try {
       const res = await axios.patch(`${API_BASE}/advisor-prompts/${id}/toggle`);
-      const updated = res.data?.prompt || (res.data?._id ? res.data : null);
+      const updated = (res.data?.prompt && typeof res.data.prompt === 'object') ? res.data.prompt : (res.data?._id ? res.data : (res.data?.item || null));
       if (updated) {
         setKbItems((prev) => prev.map((k) => ((k._id || k.id) === id ? updated : k)));
         window.dispatchEvent(new CustomEvent('advisor_prompts_updated'));
@@ -2066,7 +2082,7 @@ export default function AdminDashboard() {
                 />
                 <button
                   type="button"
-                  onClick={() => handleSaveOccasion(occasionMode || 'ramadan')}
+                  onClick={handleSaveGreetingPhrase}
                   style={{
                     background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                     color: '#0b1622',

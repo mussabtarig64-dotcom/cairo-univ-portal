@@ -5,6 +5,7 @@ const Announcement = require('../models/Announcement');
 const Settings = require('../models/Settings');
 const KnowledgeBase = require('../models/KnowledgeBase');
 const AdvisorPrompt = require('../models/AdvisorPrompt');
+const mongoose = require('mongoose');
 const {
   sendStatusUpdateEmail,
   sendRoleUpdateEmail,
@@ -15,6 +16,13 @@ const {
   sendRoleUpdateSMS,
   sendAnnouncementSMS,
 } = require('../utils/smsService');
+
+// معالجة طلبات OPTIONS لكافة مسارات لوحة الإدارة لضمان نجاح Preflight
+router.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin');
+  res.sendStatus(200);
+});
 
 // 0. نقطة الصيانة الإجبارية لتنظيف قاعدة البيانات والاحتفاظ بالأدمن الأساسي فقط (Hard Reset DB Endpoint)
 router.get('/hard-reset-db', async (req, res) => {
@@ -420,22 +428,45 @@ router.patch('/students/:id/role', async (req, res) => {
   }
 });
 
-// 5. حذف سجل طالب
+// 5. حذف سجل طالب نهائياً من قاعدة البيانات
 router.delete('/students/:id', async (req, res) => {
   try {
     const { id } = req.params;
-    const deleted = await User.findByIdAndDelete(id);
-    if (!deleted) {
-      return res.status(404).json({ success: false, message: 'لم يتم العثور على الطالب لحذفه' });
+    if (!id || id === 'undefined' || id === 'null') {
+      return res.status(400).json({ success: false, message: 'معرف الطالب غير صالح للحذف' });
     }
-    res.json({ success: true, message: 'تم حذف سجل الطالب بنجاح' });
+
+    let deleted = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deleted = await User.findByIdAndDelete(id);
+    }
+    if (!deleted) {
+      deleted = await User.findOneAndDelete({
+        $or: [
+          { email: id.toLowerCase().trim() },
+          { studentId: id },
+          { academicId: id },
+        ],
+      });
+    }
+
+    if (!deleted) {
+      // إرجاع نجاح حتى لو كان محذوفاً بالفعل لتسهيل تنظيف الواجهة الأمامية بدون Network Error
+      return res.status(200).json({
+        success: true,
+        message: 'تم حذف السجل أو أنه غير موجود مسبقاً في قاعدة البيانات',
+        alreadyDeleted: true,
+      });
+    }
+
+    res.json({ success: true, message: 'تم حذف سجل الطالب بنجاح من قاعدة البيانات' });
   } catch (error) {
     console.error('Delete Student Error:', error.message, error.stack);
     res.status(500).json({
       success: false,
-      message: 'خطأ أثناء حذف الطالب',
+      message: 'خطأ أثناء حذف الطالب من قاعدة البيانات',
       error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
 });
@@ -583,12 +614,17 @@ router.delete('/announcements/:id', async (req, res) => {
 // 8. مسارات إعدادات المظهر والثيمات العامة (Admin-Exclusive Theme Settings)
 router.get('/settings', async (req, res) => {
   try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
     let settings = await Settings.findOne();
     if (!settings) {
-      settings = new Settings({ activeTheme: 'classic-gold-blue' });
+      settings = new Settings({ activeTheme: 'classic-gold-blue', occasionMode: 'none', occasionGreeting: '' });
       await settings.save();
     }
-    res.json(settings);
+    const obj = settings.toObject ? settings.toObject() : settings;
+    res.json({ success: true, settings: obj, ...obj });
   } catch (error) {
     console.error('Get Settings Error:', error.message, error.stack);
     res.status(500).json({
@@ -613,7 +649,8 @@ router.post('/settings', async (req, res) => {
     settings.updatedAt = new Date();
 
     await settings.save();
-    res.json({ success: true, settings });
+    const obj = settings.toObject ? settings.toObject() : settings;
+    res.json({ success: true, settings: obj, ...obj });
   } catch (error) {
     console.error('Save Settings Error:', error.message, error.stack);
     res.status(500).json({

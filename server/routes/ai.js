@@ -3,6 +3,14 @@ const router = express.Router();
 const Groq = require('groq-sdk');
 const KnowledgeBase = require('../models/KnowledgeBase');
 const AdvisorPrompt = require('../models/AdvisorPrompt');
+const AIConversation = require('../models/AIConversation');
+
+// Preflight options handling for AI routes
+router.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin');
+  res.sendStatus(200);
+});
 
 const groqApiKey = process.env.GROQ_API_KEY || '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';
 let groq = null;
@@ -97,6 +105,8 @@ Guidelines:
 7. Remember previous conversation context and build upon it smoothly.
 `;
 
+    let aiResponse = '';
+
     // 1. محاولة استخدام نماذج Groq المتوفرة
     if (groq) {
       for (const modelName of SUPPORTED_MODELS) {
@@ -118,98 +128,239 @@ Guidelines:
 
           const reply = completion.choices[0]?.message?.content;
           if (reply && reply.trim().length > 0) {
-            return res.json({ reply });
+            aiResponse = reply.trim();
+            break;
           }
         } catch (modelErr) {
           console.log(`Model ${modelName} attempt note:`, modelErr.message);
-          // تجربة النموذج التالي
         }
       }
     }
 
     // 2. محرك الردود الذكي التفاعلي في حالة انقطاع السحابة
-    let dynamicReply = '';
+    if (!aiResponse) {
+      let dynamicReply = '';
 
-    if (isEnglish) {
-      dynamicReply = `Hello **${name}**! 👋\n\nWelcome to your AI Academic Advisor for the Faculty of Science, Cairo University (SSA-FS-CU).\n\n`;
+      if (isEnglish) {
+        dynamicReply = `Hello **${name}**! 👋\n\nWelcome to your AI Academic Advisor for the Faculty of Science, Cairo University (SSA-FS-CU).\n\n`;
 
-      if (/residency|visa|passport|immigration/i.test(lastMessage)) {
-        dynamicReply += `### 🛂 Student Residency & Visa Guide for Cairo University:\n` +
-          `1. **Enrollment Certificate**: Obtain an official student enrollment proof from the Student Affairs Office at the Faculty of Science directed to the Immigration Authority.\n` +
-          `2. **Immigration Office**: Submit your documents at the Giza or Abbassia Passport & Immigration Complex.\n` +
-          `3. **Required Documents**: Original passport + copies, recent personal photos with white background, notarized apartment lease contract, and tuition fee receipt.\n` +
-          `4. **Tip**: Always start renewal at least 30 days before expiration. The Association team is always here to support you! ✨`;
-      } else if (/housing|apartment|rent|stay|accommodation/i.test(lastMessage)) {
-        dynamicReply += `### 🏠 Recommended Student Housing Areas Near Cairo University:\n` +
-          `- **Dokki & Mohandessin**: 5-10 minutes from the faculty gate/metro, safe, full of amenities and quiet study spots.\n` +
-          `- **Bein El-Sarayat**: Right next to the Faculty of Science campus and science laboratories.\n` +
-          `- **Faisal & Haram**: Budget-friendly student apartments with direct transportation to Cairo University main gate.\n` +
-          `💡 *You can also find Sudanese student roommates via our live chat room!*`;
-      } else if (/cs|computer|programming|python|code|algorithm/i.test(lastMessage)) {
-        dynamicReply += `### 💻 Computer Science Department & Study Track:\n` +
-          `- **Core Subjects**: Data Structures, Algorithms, Object-Oriented Programming (C++/Java/Python), Database Systems, and Operating Systems.\n` +
-          `- **Advice for ${name}**: Focus heavily on practical lab assignments and algorithmic problem-solving on platforms like LeetCode and Codeforces.\n` +
-          `- **Faculty Labs**: High-performance computer labs are available on the 3rd floor of the Mathematics & CS building.`;
-      } else if (/chemistry|chem|lab|organic|reaction/i.test(lastMessage)) {
-        dynamicReply += `### 🧪 Chemistry Department & Laboratory Guidelines:\n` +
-          `- **Key Areas**: Organic Chemistry, Inorganic, Physical, and Analytical Chemistry.\n` +
-          `- **Lab Safety**: Always wear your white lab coat and safety goggles in physical & organic chemistry labs.\n` +
-          `- **Lab Reports**: Submit your weekly volumetric & qualitative analysis reports on time to secure full practical marks.`;
-      } else if (/gpa|credit|hour|exam|grade/i.test(lastMessage)) {
-        dynamicReply += `### 📊 Credit Hours System & GPA Guide:\n` +
-          `- **GPA Scale**: From 0.0 to 4.0 (A+ = 4.0, A = 3.7, B+ = 3.3, B = 3.0, C+ = 2.7, C = 2.4).\n` +
-          `- **Passing Grade**: C (2.0) is the minimum satisfactory standard for major subjects.\n` +
-          `- **Course Load**: Typically 14 to 18 credit hours per regular semester depending on your previous semester GPA.`;
+        if (/residency|visa|passport|immigration/i.test(lastMessage)) {
+          dynamicReply += `### 🛂 Student Residency & Visa Guide for Cairo University:\n` +
+            `1. **Enrollment Certificate**: Obtain an official student enrollment proof from the Student Affairs Office at the Faculty of Science directed to the Immigration Authority.\n` +
+            `2. **Immigration Office**: Submit your documents at the Giza or Abbassia Passport & Immigration Complex.\n` +
+            `3. **Required Documents**: Original passport + copies, recent personal photos with white background, notarized apartment lease contract, and tuition fee receipt.\n` +
+            `4. **Tip**: Always start renewal at least 30 days before expiration. The Association team is always here to support you! ✨`;
+        } else if (/housing|apartment|rent|stay|accommodation/i.test(lastMessage)) {
+          dynamicReply += `### 🏠 Recommended Student Housing Areas Near Cairo University:\n` +
+            `- **Dokki & Mohandessin**: 5-10 minutes from the faculty gate/metro, safe, full of amenities and quiet study spots.\n` +
+            `- **Bein El-Sarayat**: Right next to the Faculty of Science campus and science laboratories.\n` +
+            `- **Faisal & Haram**: Budget-friendly student apartments with direct transportation to Cairo University main gate.\n` +
+            `💡 *You can also find Sudanese student roommates via our live chat room!*`;
+        } else if (/cs|computer|programming|python|code|algorithm/i.test(lastMessage)) {
+          dynamicReply += `### 💻 Computer Science Department & Study Track:\n` +
+            `- **Core Subjects**: Data Structures, Algorithms, Object-Oriented Programming (C++/Java/Python), Database Systems, and Operating Systems.\n` +
+            `- **Advice for ${name}**: Focus heavily on practical lab assignments and algorithmic problem-solving on platforms like LeetCode and Codeforces.\n` +
+            `- **Faculty Labs**: High-performance computer labs are available on the 3rd floor of the Mathematics & CS building.`;
+        } else if (/chemistry|chem|lab|organic|reaction/i.test(lastMessage)) {
+          dynamicReply += `### 🧪 Chemistry Department & Laboratory Guidelines:\n` +
+            `- **Key Areas**: Organic Chemistry, Inorganic, Physical, and Analytical Chemistry.\n` +
+            `- **Lab Safety**: Always wear your white lab coat and safety goggles in physical & organic chemistry labs.\n` +
+            `- **Lab Reports**: Submit your weekly volumetric & qualitative analysis reports on time to secure full practical marks.`;
+        } else if (/gpa|credit|hour|exam|grade/i.test(lastMessage)) {
+          dynamicReply += `### 📊 Credit Hours System & GPA Guide:\n` +
+            `- **GPA Scale**: From 0.0 to 4.0 (A+ = 4.0, A = 3.7, B+ = 3.3, B = 3.0, C+ = 2.7, C = 2.4).\n` +
+            `- **Passing Grade**: C (2.0) is the minimum satisfactory standard for major subjects.\n` +
+            `- **Course Load**: Typically 14 to 18 credit hours per regular semester depending on your previous semester GPA.`;
+        } else {
+          dynamicReply += `I received your question: *"${lastMessage}"*.\n\nAs your Academic Advisor in the **${dept}** department (${level}), I am here to help you excel in your lectures, lab exams, coursework, and daily life in Cairo.\n\nFeel free to ask any specific question about your syllabus, problem sets, or university procedures! ✨`;
+        }
       } else {
-        dynamicReply += `I received your question: *"${lastMessage}"*.\n\nAs your Academic Advisor in the **${dept}** department (${level}), I am here to help you excel in your lectures, lab exams, coursework, and daily life in Cairo.\n\nFeel free to ask any specific question about your syllabus, problem sets, or university procedures! ✨`;
+        dynamicReply = `أهلاً وسهلاً بيك يا دكتورنا **${name}** في رحاب كلية العلوم جامعة القاهرة! 🌿🇸🇩\n\n`;
+
+        if (/إقامة|جواز|فيزا|تجديد|سفر|مجمع/.test(lastMessage)) {
+          dynamicReply += `### 🛂 دليل استخراج وتجديد الإقامة الدراسية للطلاب السودانيين بمصر:\n` +
+            `1. **إفادة القيد الأكاديمي**: استخرج إفادة قيد رسمية موجهة لمصلحة الجوازات من إدارة شؤون الطلاب بكلية العلوم.\n` +
+            `2. **مقر التقديم**: التوجه إلى مجمع الجوازات المختص (مجمع الجيزة أو مجمع العباسية).\n` +
+            `3. **المستندات المطلوبة**:\n` +
+            `   - أصل جواز السفر وصور واضحة منه.\n` +
+            `   - صور شخصية حديثة بخلفية بيضاء.\n` +
+            `   - عقد إيجار سكن موثق بالشهر العقاري أو إيصال مرافق.\n` +
+            `   - إيصال سداد المصروفات الدراسية الجامعية.\n` +
+            `4. **نصيحة الرابطة لك يا ${name}**: ابدأ إجراءات التجديد قبل انتهاء إقامتك بـ 30 يوماً على الأقل. ولا تشيل هم، فريق شؤون الطلاب بالرابطة جاهز لمرافقتك! ✨`;
+        } else if (/سكن|شقة|إيجار|منطقة|عايز أسكن|غرفة/.test(lastMessage)) {
+          dynamicReply += `### 🏠 دليل السكن للطلاب السودانيين بالقرب من جامعة القاهرة:\n` +
+            `- **الدقي والمهندسين**: الأقرب لبوابة الكلية (5-10 دقائق بالمواصلات أو مترو جامعة القاهرة/الدقي)، خدمات ممتازة وأمان.\n` +
+            `- **بين السرايات**: ملاصقة تماماً لسور كلية العلوم، توفر الوقت وتناسبك إذا كنت تقضي أوقاتاً طويلة بالمعامل.\n` +
+            `- **شارع فيصل والهرم**: خيار اقتصادي ومناسب جداً للطلاب، ومواصلات مباشرة إلى بوابة الجامعة.\n` +
+            `💡 *إذا كنت تبحث عن زملاء سكن من الطلاب السودانيين، يمكنك التواصل عبر غرفة الدردشة بالمنصة!*`;
+        } else if (/حاسب|برمجة|بايثون|كود|خوارزميات|كمبيوتر/.test(lastMessage)) {
+          dynamicReply += `### 💻 إرشادات قسم علوم الحاسب والمعلومات:\n` +
+            `- **المقررات الأساسية**: هياكل البيانات (Data Structures)، الخوارزميات، البرمجة كائنية التوجه (OOP)، وقواعد البيانات.\n` +
+            `- **نصيحة أكاديمية لك يا ${name}**: ركز على التطبيق العملي المستمر وبناء مشاريع برمجية حقيقية بجانب المقررات النظرية.\n` +
+            `- معامل الحاسب متاحة في الدور الثالث بمبنى الرياضيات وعلوم الحاسب بالكلية.`;
+        } else if (/كيمياء|معمل|عضوية|تفاعلات|سكشن|تقارير/.test(lastMessage)) {
+          dynamicReply += `### 🧪 إرشادات قسم الكيمياء والمعامل:\n` +
+            `- **الفروع الرئيسية**: الكيمياء العضوية، الكيمياء غير العضوية، الكيمياء الفيزيائية، والتحليلية.\n` +
+            `- **السلامة المعملية**: ارتداء البالطو الأبيض ونظارة الأمان إلزامي في جميع معامل الكيمياء.\n` +
+            `- **تقارير السكاشن**: احرص على تسليم تقارير التجارب أسبوعياً لأخذ الدرجات العملية كاملة.`;
+        } else if (/معدل|ساعات|gpa|امتحانات|درجات|تسجيل/.test(lastMessage)) {
+          dynamicReply += `### 📊 نظام الساعات المعتمدة وحساب المعدل التراكمي (GPA):\n` +
+            `- **مقياس المعدل**: من 0.0 إلى 4.0 (A+ = 4.0, A = 3.7, B+ = 3.3, B = 3.0, C+ = 2.7, C = 2.4).\n` +
+            `- **العبء الدراسي**: يمكنك تسجيل بين 14 إلى 18 ساعة معتمدة في الفصل الدراسي العادي بناءً على معدلك السابق.\n` +
+            `- **نصيحة**: ركز على المقررات ذات الساعات المعتمدة الأعلى لأنها تؤثر بشكل أكبر على رفع الـ GPA.`;
+        } else {
+          dynamicReply += `أهلاً بيك يا دكتورنا ${name}! قرأت سؤالك بخصوص: *"${lastMessage}"*.\n\nبصفتي مستشارك الأكاديمي في تخصص **${dept}** (${level})، أنا معاك خطوة بخطوة لمساعدتك في المذاكرة، فهم المسائل العلمية، متابعة جداول الامتحانات والمعامل، وأي استفسار تريده في القاهرة.\n\nأبشر بالخير، اسألني بالتفصيل عن أي مادة أو مسألة ويسعدني توضيحها لك فوراً! ✨`;
+        }
       }
-    } else {
-      dynamicReply = `أهلاً وسهلاً بيك يا دكتورنا **${name}** في رحاب كلية العلوم جامعة القاهرة! 🌿🇸🇩\n\n`;
+      aiResponse = dynamicReply;
+    }
 
-      if (/إقامة|جواز|فيزا|تجديد|سفر|مجمع/.test(lastMessage)) {
-        dynamicReply += `### 🛂 دليل استخراج وتجديد الإقامة الدراسية للطلاب السودانيين بمصر:\n` +
-          `1. **إفادة القيد الأكاديمي**: استخرج إفادة قيد رسمية موجهة لمصلحة الجوازات من إدارة شؤون الطلاب بكلية العلوم.\n` +
-          `2. **مقر التقديم**: التوجه إلى مجمع الجوازات المختص (مجمع الجيزة أو مجمع العباسية).\n` +
-          `3. **المستندات المطلوبة**:\n` +
-          `   - أصل جواز السفر وصور واضحة منه.\n` +
-          `   - صور شخصية حديثة بخلفية بيضاء.\n` +
-          `   - عقد إيجار سكن موثق بالشهر العقاري أو إيصال مرافق.\n` +
-          `   - إيصال سداد المصروفات الدراسية الجامعية.\n` +
-          `4. **نصيحة الرابطة لك يا ${name}**: ابدأ إجراءات التجديد قبل انتهاء إقامتك بـ 30 يوماً على الأقل. ولا تشيل هم، فريق شؤون الطلاب بالرابطة جاهز لمرافقتك! ✨`;
-      } else if (/سكن|شقة|إيجار|منطقة|عايز أسكن|غرفة/.test(lastMessage)) {
-        dynamicReply += `### 🏠 دليل السكن للطلاب السودانيين بالقرب من جامعة القاهرة:\n` +
-          `- **الدقي والمهندسين**: الأقرب لبوابة الكلية (5-10 دقائق بالمواصلات أو مترو جامعة القاهرة/الدقي)، خدمات ممتازة وأمان.\n` +
-          `- **بين السرايات**: ملاصقة تماماً لسور كلية العلوم، توفر الوقت وتناسبك إذا كنت تقضي أوقاتاً طويلة بالمعامل.\n` +
-          `- **شارع فيصل والهرم**: خيار اقتصادي ومناسب جداً للطلاب، ومواصلات مباشرة إلى بوابة الجامعة.\n` +
-          `💡 *إذا كنت تبحث عن زملاء سكن من الطلاب السودانيين، يمكنك التواصل عبر غرفة الدردشة بالمنصة!*`;
-      } else if (/حاسب|برمجة|بايثون|كود|خوارزميات|كمبيوتر/.test(lastMessage)) {
-        dynamicReply += `### 💻 إرشادات قسم علوم الحاسب والمعلومات:\n` +
-          `- **المقررات الأساسية**: هياكل البيانات (Data Structures)، الخوارزميات، البرمجة كائنية التوجه (OOP)، وقواعد البيانات.\n` +
-          `- **نصيحة أكاديمية لك يا ${name}**: ركز على التطبيق العملي المستمر وبناء مشاريع برمجية حقيقية بجانب المقررات النظرية.\n` +
-          `- معامل الحاسب متاحة في الدور الثالث بمبنى الرياضيات وعلوم الحاسب بالكلية.`;
-      } else if (/كيمياء|معمل|عضوية|تفاعلات|سكشن|تقارير/.test(lastMessage)) {
-        dynamicReply += `### 🧪 إرشادات قسم الكيمياء والمعامل:\n` +
-          `- **الفروع الرئيسية**: الكيمياء العضوية، الكيمياء غير العضوية، الكيمياء الفيزيائية، والتحليلية.\n` +
-          `- **السلامة المعملية**: ارتداء البالطو الأبيض ونظارة الأمان إلزامي في جميع معامل الكيمياء.\n` +
-          `- **تقارير السكاشن**: احرص على تسليم تقارير التجارب أسبوعياً لأخذ الدرجات العملية كاملة.`;
-      } else if (/معدل|ساعات|gpa|امتحانات|درجات|تسجيل/.test(lastMessage)) {
-        dynamicReply += `### 📊 نظام الساعات المعتمدة وحساب المعدل التراكمي (GPA):\n` +
-          `- **مقياس المعدل**: من 0.0 إلى 4.0 (A+ = 4.0, A = 3.7, B+ = 3.3, B = 3.0, C+ = 2.7, C = 2.4).\n` +
-          `- **العبء الدراسي**: يمكنك تسجيل بين 14 إلى 18 ساعة معتمدة في الفصل الدراسي العادي بناءً على معدلك السابق.\n` +
-          `- **نصيحة**: ركز على المقررات ذات الساعات المعتمدة الأعلى لأنها تؤثر بشكل أكبر على رفع الـ GPA.`;
-      } else {
-        dynamicReply += `أهلاً بيك يا دكتورنا ${name}! قرأت سؤالك بخصوص: *"${lastMessage}"*.\n\nبصفتي مستشارك الأكاديمي في تخصص **${dept}** (${level})، أنا معاك خطوة بخطوة لمساعدتك في المذاكرة، فهم المسائل العلمية، متابعة جداول الامتحانات والمعامل، وأي استفسار تريده في القاهرة.\n\nأبشر بالخير، اسألني بالتفصيل عن أي مادة أو مسألة ويسعدني توضيحها لك فوراً! ✨`;
+    // 3. حفظ المحادثة والرسائل في قاعدة بيانات MongoDB Atlas لضمان الاستمرارية
+    const resolvedEmail = (req.body.userEmail || req.body.email || '').toLowerCase().trim();
+    const resolvedUserId = req.body.userId || '';
+
+    if (resolvedEmail || resolvedUserId) {
+      try {
+        const query = resolvedEmail ? { userEmail: resolvedEmail } : { userId: resolvedUserId };
+        let conversation = await AIConversation.findOne(query);
+        if (!conversation) {
+          conversation = new AIConversation({
+            userId: resolvedUserId,
+            userEmail: resolvedEmail,
+            studentName: name,
+            department: dept,
+            academicLevel: level,
+            messages: [],
+          });
+        }
+        conversation.studentName = name;
+        conversation.department = dept;
+        conversation.academicLevel = level;
+
+        const updatedHistory = [
+          ...messages.map((m) => ({
+            sender: m.sender === 'user' ? 'user' : 'ai',
+            text: m.text,
+            timestamp: m.timestamp || new Date(),
+          })),
+          {
+            sender: 'ai',
+            text: aiResponse,
+            timestamp: new Date(),
+          },
+        ];
+
+        // الاحتفاظ بآخر 100 رسالة لضمان كفاءة الأداء
+        conversation.messages = updatedHistory.slice(-100);
+        conversation.lastInteraction = new Date();
+        conversation.updatedAt = new Date();
+        await conversation.save();
+        console.log(`✅ [MongoDB Atlas] AI Conversation history saved for ${resolvedEmail || resolvedUserId}`);
+      } catch (convErr) {
+        console.error('Save AI Conversation Error:', convErr.message);
       }
     }
 
-    return res.json({ reply: dynamicReply });
+    return res.json({ success: true, reply: aiResponse });
   } catch (error) {
     console.error('AI Route Error:', error.message, error.stack);
-    return res.json({
+    return res.status(500).json({
+      success: false,
       reply: 'أهلاً بك يا زميلنا العزيز في كلية العلوم! 🌿\nفريق الرابطة الأكاديمي دائماً في عونك. يمكنك إعادة إرسال سؤالك وسأجيبك فوراً.',
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });
+  }
+});
+
+// مسار جلب سجل المحادثة المحفوظ في MongoDB للطالب
+router.get('/history', async (req, res) => {
+  try {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+    res.setHeader('Pragma', 'no-cache');
+    res.setHeader('Expires', '0');
+
+    const email = (req.query.email || req.query.userEmail || '').toLowerCase().trim();
+    const userId = req.query.userId || req.query.id || '';
+
+    if (!email && !userId) {
+      return res.json({ success: true, messages: [] });
+    }
+
+    const query = email ? { userEmail: email } : { userId };
+    const conversation = await AIConversation.findOne(query);
+
+    if (!conversation || !Array.isArray(conversation.messages)) {
+      return res.json({ success: true, messages: [] });
+    }
+
+    res.json({
+      success: true,
+      messages: conversation.messages,
+      lastInteraction: conversation.lastInteraction,
+    });
+  } catch (err) {
+    console.error('Fetch AI History Error:', err.message);
+    res.status(500).json({ success: false, message: 'فشل جلب سجل المحادثات من قاعدة البيانات', error: err.message });
+  }
+});
+
+// مسار مسح سجل المحادثة المحفوظ في MongoDB
+router.delete('/history', async (req, res) => {
+  try {
+    const email = (req.query.email || req.query.userEmail || req.body?.email || req.body?.userEmail || '').toLowerCase().trim();
+    const userId = req.query.userId || req.query.id || req.body?.userId || '';
+
+    if (email || userId) {
+      const query = email ? { userEmail: email } : { userId };
+      await AIConversation.findOneAndDelete(query);
+      console.log(`🗑️ [MongoDB Atlas] Cleared AI Conversation history for ${email || userId}`);
+    }
+
+    res.json({ success: true, message: 'تم مسح سجل المحادثة بنجاح من قاعدة البيانات' });
+  } catch (err) {
+    console.error('Clear AI History Error:', err.message);
+    res.status(500).json({ success: false, message: 'فشل مسح المحادثة من قاعدة البيانات', error: err.message });
+  }
+});
+
+// مسار حفظ عنصر جديد في قاعدة المعرفة للمستشار الذكي (Knowledge Base Item Persistence)
+router.post('/knowledge', async (req, res) => {
+  try {
+    const rawQuestion = req.body.question || req.body.prompt || req.body.title;
+    const answer = req.body.answer || '';
+    const category = req.body.category || 'general';
+    const keywords = Array.isArray(req.body.keywords)
+      ? req.body.keywords
+      : (req.body.keywords || '').split(',').map((k) => k.trim()).filter(Boolean);
+
+    if (!rawQuestion || !rawQuestion.trim()) {
+      return res.status(400).json({ success: false, message: 'نص السؤال مطلوب ولا يمكن أن يكون فارغاً' });
+    }
+
+    const promptDoc = new AdvisorPrompt({
+      prompt: rawQuestion.trim(),
+      question: rawQuestion.trim(),
+      answer: answer.trim(),
+      category: category.trim(),
+      keywords,
+      isActive: true,
+    });
+
+    const saved = await promptDoc.save();
+    console.log(`✅ [MongoDB Atlas] Saved Knowledge Prompt: ${saved._id}`);
+
+    res.status(201).json({
+      success: true,
+      message: 'تم حفظ السؤال بقاعدة المعرفة بنجاح',
+      prompt: saved,
+      item: saved,
+      _id: saved._id,
+      ...saved.toObject(),
+    });
+  } catch (err) {
+    console.error('Save Knowledge Error:', err.message);
+    res.status(500).json({ success: false, message: 'فشل حفظ المعرفة في قاعدة البيانات', error: err.message });
   }
 });
 

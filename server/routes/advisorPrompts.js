@@ -1,6 +1,14 @@
 const express = require('express');
 const router = express.Router();
+const mongoose = require('mongoose');
 const AdvisorPrompt = require('../models/AdvisorPrompt');
+
+// Preflight options handling for advisor prompts
+router.options('*', (req, res) => {
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin');
+  res.sendStatus(200);
+});
 
 const DEFAULT_SEED_PROMPTS = [
   {
@@ -86,7 +94,15 @@ router.post('/', async (req, res) => {
     const savedDoc = await newPrompt.save();
     console.log(`✅ [MongoDB] Saved AdvisorPrompt: ${savedDoc._id} - "${savedDoc.prompt}"`);
 
-    res.status(201).json(savedDoc);
+    const docObj = savedDoc.toObject ? savedDoc.toObject() : savedDoc;
+    res.status(201).json({
+      success: true,
+      message: 'تم حفظ السؤال في قاعدة البيانات بنجاح',
+      prompt: docObj,
+      item: docObj,
+      _id: savedDoc._id,
+      ...docObj,
+    });
   } catch (error) {
     console.error('Create Advisor Prompt Error:', error.message);
     res.status(500).json({
@@ -121,12 +137,31 @@ router.put('/:id', async (req, res) => {
     }
     if (isActive !== undefined) updateData.isActive = isActive;
 
-    const updated = await AdvisorPrompt.findByIdAndUpdate(id, updateData, { new: true });
+    let updated = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      updated = await AdvisorPrompt.findByIdAndUpdate(id, updateData, { new: true });
+    }
+    if (!updated) {
+      updated = await AdvisorPrompt.findOneAndUpdate(
+        { $or: [{ prompt: id }, { question: id }] },
+        updateData,
+        { new: true }
+      );
+    }
+
     if (!updated) {
       return res.status(404).json({ success: false, message: 'السؤال غير موجود' });
     }
 
-    res.status(200).json(updated);
+    const docObj = updated.toObject ? updated.toObject() : updated;
+    res.status(200).json({
+      success: true,
+      message: 'تم تحديث السؤال بنجاح',
+      prompt: docObj,
+      item: docObj,
+      _id: updated._id,
+      ...docObj,
+    });
   } catch (error) {
     console.error('Update Advisor Prompt Error:', error.message);
     res.status(500).json({
@@ -140,7 +175,14 @@ router.put('/:id', async (req, res) => {
 // 4. PATCH /api/advisor-prompts/:id/toggle - تبديل حالة التفعيل في MongoDB
 router.patch('/:id/toggle', async (req, res) => {
   try {
-    const item = await AdvisorPrompt.findById(req.params.id);
+    let item = null;
+    if (mongoose.Types.ObjectId.isValid(req.params.id)) {
+      item = await AdvisorPrompt.findById(req.params.id);
+    }
+    if (!item) {
+      item = await AdvisorPrompt.findOne({ $or: [{ prompt: req.params.id }, { question: req.params.id }] });
+    }
+
     if (!item) {
       return res.status(404).json({ success: false, message: 'السؤال غير موجود' });
     }
@@ -149,7 +191,15 @@ router.patch('/:id/toggle', async (req, res) => {
     item.updatedAt = new Date();
     await item.save();
 
-    res.status(200).json(item);
+    const docObj = item.toObject ? item.toObject() : item;
+    res.status(200).json({
+      success: true,
+      message: 'تم تغيير حالة التفعيل بنجاح',
+      prompt: docObj,
+      item: docObj,
+      _id: item._id,
+      ...docObj,
+    });
   } catch (error) {
     console.error('Toggle Advisor Prompt Error:', error.message);
     res.status(500).json({
@@ -172,12 +222,20 @@ router.delete('/:id', async (req, res) => {
       });
     }
 
-    const deletedPrompt = await AdvisorPrompt.findByIdAndDelete(id);
+    let deletedPrompt = null;
+    if (mongoose.Types.ObjectId.isValid(id)) {
+      deletedPrompt = await AdvisorPrompt.findByIdAndDelete(id);
+    }
+    if (!deletedPrompt) {
+      deletedPrompt = await AdvisorPrompt.findOneAndDelete({ $or: [{ prompt: id }, { question: id }] });
+    }
 
     if (!deletedPrompt) {
-      return res.status(404).json({
-        success: false,
+      return res.status(200).json({
+        success: true,
         message: 'السؤال المطلوب حذفه غير موجود أو تم حذفه مسبقاً',
+        alreadyDeleted: true,
+        id,
       });
     }
 
@@ -185,7 +243,7 @@ router.delete('/:id', async (req, res) => {
     res.status(200).json({
       success: true,
       message: 'تم حذف السؤال من قاعدة البيانات بنجاح',
-      id,
+      id: deletedPrompt._id || id,
     });
   } catch (error) {
     console.error('Delete Advisor Prompt Error:', error.message);

@@ -3,11 +3,16 @@ const mongoose = require('mongoose');
 const advisorPromptSchema = new mongoose.Schema({
   prompt: {
     type: String,
-    required: true,
+    required: function () {
+      return !this.question;
+    },
     trim: true,
   },
   question: {
     type: String,
+    required: function () {
+      return !this.prompt;
+    },
     trim: true,
   },
   answer: {
@@ -40,7 +45,16 @@ const advisorPromptSchema = new mongoose.Schema({
   },
 });
 
-// مزامنة حقل prompt و question تلقائياً قبل الحفظ
+// مزامنة حقلي prompt و question قبل التحقق والتحقق من الصحة لضمان الحفظ الموثوق في MongoDB
+advisorPromptSchema.pre('validate', function () {
+  if (this.prompt && !this.question) {
+    this.question = this.prompt;
+  }
+  if (this.question && !this.prompt) {
+    this.prompt = this.question;
+  }
+});
+
 advisorPromptSchema.pre('save', function () {
   if (this.prompt && !this.question) {
     this.question = this.prompt;

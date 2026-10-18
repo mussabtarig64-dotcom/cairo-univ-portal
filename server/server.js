@@ -76,6 +76,7 @@ const corsOptions = {
   optionsSuccessStatus: 200
 };
 app.use(cors(corsOptions));
+app.options('*', cors(corsOptions));
 
 
 // 2. إعداد Socket.IO للتواصل الحي مع نفس إعدادات الـ CORS تماماً

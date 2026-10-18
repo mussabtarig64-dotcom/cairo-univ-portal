@@ -6,14 +6,19 @@ const knowledgeBaseSchema = new mongoose.Schema({
     required: true,
     trim: true,
   },
+  prompt: {
+    type: String,
+    trim: true,
+  },
   answer: {
     type: String,
-    required: true,
+    default: '',
+    trim: true,
   },
   category: {
     type: String,
-    enum: ['academic', 'residency', 'housing', 'registration', 'general'],
     default: 'general',
+    trim: true,
   },
   keywords: [
     {

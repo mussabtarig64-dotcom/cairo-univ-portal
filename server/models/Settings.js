@@ -12,7 +12,7 @@ const settingsSchema = new mongoose.Schema({
   occasionMode: {
     type: String,
     enum: ['auto', 'none', 'ramadan', 'eid-fitr', 'eid-adha', 'sudan-national'],
-    default: 'auto',
+    default: 'none',
   },
   occasionGreeting: {
     type: String,

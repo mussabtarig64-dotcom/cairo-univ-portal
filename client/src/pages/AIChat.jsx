@@ -93,6 +93,41 @@ export default function AIChat() {
     }
   }, [messages]);
 
+  // استرجاع سجل المحادثة مباشرة من قاعدة بيانات MongoDB Atlas عند فتح الصفحة
+  useEffect(() => {
+    let isMounted = true;
+    const loadHistoryFromDB = async () => {
+      const email = user?.email || '';
+      const uId = user?._id || user?.id || '';
+      if (!email && !uId) return;
+
+      try {
+        const res = await axios.get(`${API_BASE}/ai/history`, {
+          params: { email, userId: uId, _t: Date.now() },
+          headers: {
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            Pragma: 'no-cache',
+            Expires: '0',
+          },
+        });
+
+        if (isMounted && res.data?.success && Array.isArray(res.data.messages) && res.data.messages.length > 0) {
+          setMessages(res.data.messages);
+          try {
+            localStorage.setItem(STORAGE_PAGE_MESSAGES_KEY, JSON.stringify(res.data.messages));
+          } catch (e) {}
+        }
+      } catch (err) {
+        console.warn('Load AI history note:', err.message);
+      }
+    };
+
+    loadHistoryFromDB();
+    return () => {
+      isMounted = false;
+    };
+  }, [user?.email, user?._id]);
+
   // مزامنة مسودة السؤال مع localStorage
   useEffect(() => {
     try {
@@ -134,6 +169,9 @@ export default function AIChat() {
         studentName: studentName,
         department: studentDept,
         academicLevel: studentLevel,
+        userId: user?._id || user?.id,
+        userEmail: user?.email,
+        email: user?.email,
       });
 
       if (res.data && res.data.reply) {
@@ -176,6 +214,15 @@ export default function AIChat() {
         localStorage.removeItem(STORAGE_PAGE_DRAFT_KEY);
       } catch (e) {
         console.error('Error clearing localStorage:', e);
+      }
+
+      // مسح من قاعدة بيانات MongoDB أيضاً
+      const email = user?.email || '';
+      const uId = user?._id || user?.id || '';
+      if (email || uId) {
+        axios.delete(`${API_BASE}/ai/history`, {
+          params: { email, userId: uId },
+        }).catch((e) => console.warn('Clear AI history note:', e.message));
       }
     }
   };
