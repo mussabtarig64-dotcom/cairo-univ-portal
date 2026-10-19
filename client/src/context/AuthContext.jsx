@@ -5,6 +5,74 @@ const AuthContext = createContext();
 
 import { API_BASE } from '../config/api';
 
+/**
+ * دالة تعقيم كائن المستخدم قبل تخزينه في localStorage لمنع حدوث QuotaExceededError
+ * تقوم بحذف أي سلاسل بيانات Base64 كبيرة (receiptImage, idCardImage, إلخ)
+ * وتحافظ فقط على الروابط السحابية الآمنة (Cloudinary Secure URLs).
+ */
+export const sanitizeUserForStorage = (userData) => {
+  if (!userData || typeof userData !== 'object') return null;
+
+  const sanitized = { ...userData };
+
+  // حذف الحقول القديمة التي كانت تحفظ Base64
+  delete sanitized.receiptImage;
+  delete sanitized.idCardImage;
+  delete sanitized.academicProof;
+  delete sanitized.academicProofImage;
+  delete sanitized.nationalIdPhoto;
+
+  // فحص كافة الحقول وحذف أي نص يبدأ بـ data: أو يزيد طوله عن 1000 حرف
+  for (const key of Object.keys(sanitized)) {
+    const val = sanitized[key];
+    if (typeof val === 'string') {
+      if (val.startsWith('data:') || val.length > 1000) {
+        delete sanitized[key];
+      }
+    }
+  }
+
+  // الاحتفاظ بالروابط السحابية الصحيحة فقط
+  if (userData.receiptUrl && typeof userData.receiptUrl === 'string' && userData.receiptUrl.startsWith('http')) {
+    sanitized.receiptUrl = userData.receiptUrl;
+  }
+  if (userData.idCardUrl && typeof userData.idCardUrl === 'string' && userData.idCardUrl.startsWith('http')) {
+    sanitized.idCardUrl = userData.idCardUrl;
+  }
+  if (userData.academicProofUrl && typeof userData.academicProofUrl === 'string' && userData.academicProofUrl.startsWith('http')) {
+    sanitized.academicProofUrl = userData.academicProofUrl;
+  }
+
+  return sanitized;
+};
+
+/**
+ * غلاف آمن لـ localStorage.setItem مع معالجة استثناءات المتصفح وحصص التخزين
+ */
+export const safeSetLocalStorage = (key, value) => {
+  try {
+    const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+    localStorage.setItem(key, serialized);
+    return true;
+  } catch (err) {
+    console.warn(`[safeSetLocalStorage] Failed to set "${key}":`, err.message);
+    if (err.name === 'QuotaExceededError' || err.code === 22 || err.number === -2147024882) {
+      try {
+        // تفريغ القوائم الثانوية المحفوظة محلياً لإنقاذ الجلسة الحالية
+        localStorage.removeItem('pending_users');
+        localStorage.removeItem('rejected_users');
+        localStorage.removeItem('approved_users');
+        const serialized = typeof value === 'string' ? value : JSON.stringify(value);
+        localStorage.setItem(key, serialized);
+        return true;
+      } catch (retryErr) {
+        console.error('[safeSetLocalStorage] Retry after cleanup also failed:', retryErr.message);
+      }
+    }
+    return false;
+  }
+};
+
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
     try {
@@ -15,14 +83,17 @@ export function AuthProvider({ children }) {
     }
   });
 
-  // مزامنة دورية وحفظ بيانات المستخدم
+  // مزامنة دورية وحفظ بيانات المستخدم بعد تعقيمها وحمايتها من تجاوز حصة التخزين
   useEffect(() => {
     if (user) {
-      localStorage.setItem('currentUser', JSON.stringify(user));
-      localStorage.setItem('user', JSON.stringify(user));
+      const sanitized = sanitizeUserForStorage(user);
+      safeSetLocalStorage('currentUser', sanitized);
+      safeSetLocalStorage('user', sanitized);
     } else {
-      localStorage.removeItem('currentUser');
-      localStorage.removeItem('user');
+      try {
+        localStorage.removeItem('currentUser');
+        localStorage.removeItem('user');
+      } catch (e) {}
     }
   }, [user]);
 
@@ -446,8 +517,9 @@ export function AuthProvider({ children }) {
     if (user && (user._id === userId || user.id === userId || user.email === userId)) {
       const updatedCurrentUser = { ...user, role: newRole };
       setUser(updatedCurrentUser);
-      localStorage.setItem('currentUser', JSON.stringify(updatedCurrentUser));
-      localStorage.setItem('user', JSON.stringify(updatedCurrentUser));
+      const sanitized = sanitizeUserForStorage(updatedCurrentUser);
+      safeSetLocalStorage('currentUser', sanitized);
+      safeSetLocalStorage('user', sanitized);
     }
 
     // تحديث في قائمة الطلاب المعتمدين محلياً

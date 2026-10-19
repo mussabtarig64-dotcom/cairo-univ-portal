@@ -124,6 +124,62 @@ export default function PendingApproval() {
             </div>
           </div>
 
+          {/* معاينة إيصال السداد وإثبات الهوية */}
+          {((user?.receiptUrl || user?.receiptImage) || (user?.idCardUrl || user?.idCardImage || user?.idDocument)) && (
+            <div
+              style={{
+                marginTop: '18px',
+                backgroundColor: 'rgba(0,0,0,0.25)',
+                borderRadius: '14px',
+                padding: '20px',
+                textAlign: 'right',
+                border: `1px solid ${activeTheme.border}`,
+              }}
+            >
+              <h4 style={{ marginBottom: '14px', fontSize: '15px', fontWeight: 'bold', color: activeTheme.accentLight }}>
+                📸 الوثائق والمستندات المرفقة:
+              </h4>
+              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))', gap: '16px' }}>
+                {(user?.receiptUrl || user?.receiptImage) && (
+                  <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: activeTheme.accent, marginBottom: '8px' }}>
+                      🧾 إيصال سداد الرسوم / الاشتراك
+                    </div>
+                    <img
+                      src={user.receiptUrl || user.receiptImage}
+                      alt="إيصال السداد"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '220px',
+                        objectFit: 'contain',
+                        borderRadius: '8px',
+                        border: `1px solid ${activeTheme.border}`,
+                      }}
+                    />
+                  </div>
+                )}
+                {(user?.idCardUrl || user?.idCardImage || user?.idDocument) && (
+                  <div style={{ textAlign: 'center', backgroundColor: 'rgba(0,0,0,0.2)', padding: '12px', borderRadius: '10px' }}>
+                    <div style={{ fontSize: '13px', fontWeight: 'bold', color: activeTheme.accent, marginBottom: '8px' }}>
+                      🪪 وثيقة إثبات الهوية (جواز السفر / البطاقة)
+                    </div>
+                    <img
+                      src={user.idCardUrl || user.idCardImage || user.idDocument}
+                      alt="وثيقة إثبات الهوية"
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '220px',
+                        objectFit: 'contain',
+                        borderRadius: '8px',
+                        border: `1px solid ${activeTheme.border}`,
+                      }}
+                    />
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
           <div style={{ marginTop: '24px', display: 'flex', justifyContent: 'center', gap: '12px' }}>
             <button
               onClick={() => window.location.reload()}

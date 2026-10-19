@@ -6,18 +6,44 @@ const User = require('../models/User');
 const { sendWelcomeEmail } = require('../utils/emailService');
 const { sendRegistrationSMS } = require('../utils/smsService');
 
+const {
+  isCloudinaryConfigured,
+  uploadDocument,
+  ALLOWED_DOCUMENT_MIME_TYPES,
+} = require('../utils/cloudinary');
+
 const JWT_SECRET = process.env.JWT_SECRET || 'ssa_default_fallback_jwt_secret_key_2026';
 
-// إعداد Multer في الذاكرة لبيئات Serverless و Vercel لمنع أي كتابة على القرص ومعالجة رفع الملفات بمرونة تامة
+// إعداد Multer في الذاكرة لدعم رفع وثائق الكاميرا عالية الدقة حتى 20MB مع الفحص الصارم لـ MIME
 const memoryUpload = multer({
   storage: multer.memoryStorage(),
-  limits: { fileSize: 10 * 1024 * 1024 },
+  limits: { fileSize: 20 * 1024 * 1024 }, // دعم كاميرات الهواتف حتى 20 ميجابايت
+  fileFilter: (req, file, cb) => {
+    const mime = (file.mimetype || '').toLowerCase().trim();
+    if (ALLOWED_DOCUMENT_MIME_TYPES.includes(mime)) {
+      cb(null, true);
+    } else {
+      cb(new Error(`نوع الملف غير مدعوم (${file.mimetype}). يرجى رفع ملف بصيغة JPG, PNG, WEBP, أو PDF فقط.`));
+    }
+  },
 });
 
 const handleMemoryUpload = (req, res, next) => {
   memoryUpload.any()(req, res, (err) => {
     if (err) {
-      console.warn('Memory upload notice (handled gracefully):', err.message);
+      console.warn('Memory upload note/error:', err.message);
+      if (err.code === 'LIMIT_FILE_SIZE') {
+        return res.status(400).json({
+          success: false,
+          message: 'حجم الملف المرفق يتجاوز الحد الأقصى المسموح به (20 ميجابايت).',
+          error: err.message,
+        });
+      }
+      return res.status(400).json({
+        success: false,
+        message: err.message || 'خطأ أثناء استلام الملف المرفق.',
+        error: err.message,
+      });
     }
     next();
   });
@@ -185,7 +211,107 @@ router.post(
     const salt = await bcrypt.genSalt(10);
     const hashedPassword = await bcrypt.hash(cleanPassword, salt);
 
-    // إنشاء وحفظ المستخدم مع كافة بيانات الاستمارة الشاملة
+    // معالجة الوثائق وإيصالات السداد (receipt, idCard, academicProof) عبر Streaming Chunked Upload
+    let receiptUrl = '';
+    let idCardUrl = '';
+    let academicProofUrl = '';
+
+    // 1. معالجة الملفات المرفوعة عبر Multer في الذاكرة (Memory Streams)
+    if (req.files && Array.isArray(req.files) && req.files.length > 0) {
+      for (const file of req.files) {
+        const field = (file.fieldname || '').toLowerCase();
+        let docCategory = 'idCard';
+        if (field.includes('receipt') || field.includes('payment')) {
+          docCategory = 'receipt';
+        } else if (field.includes('proof') || field.includes('academic')) {
+          docCategory = 'academicProof';
+        } else if (field.includes('id') || field.includes('card') || field.includes('national') || field.includes('doc')) {
+          docCategory = 'idCard';
+        }
+
+        try {
+          if (isCloudinaryConfigured()) {
+            const uploaded = await uploadDocument(file, {
+              folder: `cairo_univ_portal/${docCategory}`,
+              filename: `${docCategory}_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+            });
+            if (docCategory === 'receipt') receiptUrl = uploaded.secure_url;
+            else if (docCategory === 'idCard') idCardUrl = uploaded.secure_url;
+            else if (docCategory === 'academicProof') academicProofUrl = uploaded.secure_url;
+          }
+        } catch (uploadErr) {
+          console.error(`[Upload Error for ${field}]:`, uploadErr.message);
+          return res.status(400).json({
+            success: false,
+            message: `خطأ أثناء رفع ملف ${field}: ${uploadErr.message}`,
+          });
+        }
+      }
+    }
+
+    // 2. معالجة الروابط أو Base64 الممررة في جسم الطلب (req.body)
+    const rawReceipt = req.body?.receiptUrl || req.body?.receiptImage || req.body?.receipt;
+    const rawIdCard = req.body?.idCardUrl || req.body?.idDocument || req.body?.nationalIdPhoto || req.body?.idCard;
+    const rawAcademicProof = req.body?.academicProofUrl || req.body?.academicProof;
+
+    if (!receiptUrl && rawReceipt) {
+      if (typeof rawReceipt === 'string' && rawReceipt.startsWith('http')) {
+        receiptUrl = rawReceipt;
+      } else if (typeof rawReceipt === 'string' && rawReceipt.startsWith('data:')) {
+        if (isCloudinaryConfigured()) {
+          try {
+            const uploaded = await uploadDocument(rawReceipt, {
+              folder: 'cairo_univ_portal/receipt',
+              filename: `receipt_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+            });
+            receiptUrl = uploaded.secure_url;
+          } catch (e) {
+            console.error('[Base64 Receipt Upload Error]:', e.message);
+            return res.status(400).json({ success: false, message: e.message });
+          }
+        }
+      }
+    }
+
+    if (!idCardUrl && rawIdCard) {
+      if (typeof rawIdCard === 'string' && rawIdCard.startsWith('http')) {
+        idCardUrl = rawIdCard;
+      } else if (typeof rawIdCard === 'string' && rawIdCard.startsWith('data:')) {
+        if (isCloudinaryConfigured()) {
+          try {
+            const uploaded = await uploadDocument(rawIdCard, {
+              folder: 'cairo_univ_portal/idCard',
+              filename: `idCard_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+            });
+            idCardUrl = uploaded.secure_url;
+          } catch (e) {
+            console.error('[Base64 ID Card Upload Error]:', e.message);
+            return res.status(400).json({ success: false, message: e.message });
+          }
+        }
+      }
+    }
+
+    if (!academicProofUrl && rawAcademicProof) {
+      if (typeof rawAcademicProof === 'string' && rawAcademicProof.startsWith('http')) {
+        academicProofUrl = rawAcademicProof;
+      } else if (typeof rawAcademicProof === 'string' && rawAcademicProof.startsWith('data:')) {
+        if (isCloudinaryConfigured()) {
+          try {
+            const uploaded = await uploadDocument(rawAcademicProof, {
+              folder: 'cairo_univ_portal/academicProof',
+              filename: `academicProof_${cleanEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+            });
+            academicProofUrl = uploaded.secure_url;
+          } catch (e) {
+            console.error('[Base64 Academic Proof Upload Error]:', e.message);
+            return res.status(400).json({ success: false, message: e.message });
+          }
+        }
+      }
+    }
+
+    // إنشاء وحفظ المستخدم مع تخزين الروابط السحابية الآمنة فقط (بدون أي سلاسل Base64 في MongoDB)
     const newUser = new User({
       name: cleanName,
       fullName: cleanName,
@@ -206,8 +332,10 @@ router.post(
       emergencyContactName: cleanEmergencyName,
       emergencyContactRelation: cleanEmergencyRelation,
       emergencyContactPhone: cleanEmergencyPhone,
-      idCardUrl: cleanIdDoc,
-      idDocument: cleanIdDoc,
+      idCardUrl: idCardUrl,
+      idDocument: idCardUrl,
+      receiptUrl: receiptUrl,
+      academicProofUrl: academicProofUrl,
       role: 'user',
       status: 'pending',
       verificationStatus: 'pending',
@@ -243,6 +371,45 @@ router.post(
     return res.status(500).json({
       success: false,
       message: error.message || 'حدث خطأ أثناء التسجيل. يرجى المحاولة مرة أخرى.',
+    });
+  }
+});
+
+// مسار رفع الوثائق المستقل عبر Chunked Streaming (Standalone Document Upload Endpoint)
+router.post('/upload-doc', handleMemoryUpload, async (req, res) => {
+  try {
+    let fileToUpload = req.file;
+    if (!fileToUpload && req.files && req.files.length > 0) {
+      fileToUpload = req.files[0];
+    }
+    const rawFile = fileToUpload || req.body?.file || req.body?.document || req.body?.image;
+    if (!rawFile) {
+      return res.status(400).json({ success: false, message: 'لم يتم إرسال أي ملف للرفع.' });
+    }
+
+    if (!isCloudinaryConfigured()) {
+      return res.status(500).json({ success: false, message: 'Cloudinary غير مهيأ في الخادم.' });
+    }
+
+    const folder = req.body?.folder || 'cairo_univ_portal/documents';
+    const uploaded = await uploadDocument(rawFile, {
+      folder,
+      filename: `doc_${Date.now()}`,
+    });
+
+    return res.status(200).json({
+      success: true,
+      message: 'تم رفع الوثيقة بنجاح!',
+      url: uploaded.secure_url,
+      secure_url: uploaded.secure_url,
+      format: uploaded.format,
+      bytes: uploaded.bytes,
+    });
+  } catch (err) {
+    console.error('Upload Doc Error:', err.message);
+    return res.status(400).json({
+      success: false,
+      message: err.message || 'خطأ أثناء رفع الوثيقة.',
     });
   }
 });

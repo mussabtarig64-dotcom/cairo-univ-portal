@@ -73,12 +73,32 @@ const userSchema = new mongoose.Schema(
       default: 'المستوى الأول',
     },
 
-    // وثيقة إثبات الهوية (جواز السفر / الرقم الوطني / بطاقة الكلية)
+    // وثائق وإثباتات الهوية والسداد (Secure Cloudinary URLs)
     idDocument: {
       type: String,
       default: '',
     },
     idCardUrl: {
+      type: String,
+      default: '',
+    },
+    idCardImage: {
+      type: String,
+      default: '',
+    },
+    receiptUrl: {
+      type: String,
+      default: '',
+    },
+    receiptImage: {
+      type: String,
+      default: '',
+    },
+    academicProofUrl: {
+      type: String,
+      default: '',
+    },
+    academicProof: {
       type: String,
       default: '',
     },
@@ -173,13 +193,27 @@ userSchema.pre('save', function () {
       this.academicId = this.studentId;
     }
 
-    // 4. مزامنة وثيقة إثبات الهوية والبطاقة
-    if (!this.idDocument && this.idCardUrl) {
-      this.idDocument = this.idCardUrl;
+    // 4. تعقيم وثائق الهوية والسداد ومنع تخزين سلاسل Base64 الخام في قاعدة البيانات
+    const docFields = ['receiptUrl', 'receiptImage', 'idCardUrl', 'idCardImage', 'idDocument', 'academicProofUrl', 'academicProof'];
+    for (const f of docFields) {
+      if (typeof this[f] === 'string' && this[f].startsWith('data:')) {
+        this[f] = '';
+      }
     }
-    if (!this.idCardUrl && this.idDocument) {
-      this.idCardUrl = this.idDocument;
-    }
+
+    // مزامنة وثيقة إثبات الهوية والبطاقة
+    if (!this.idDocument && this.idCardUrl) this.idDocument = this.idCardUrl;
+    if (!this.idCardUrl && this.idDocument) this.idCardUrl = this.idDocument;
+    if (!this.idCardImage && this.idCardUrl) this.idCardImage = this.idCardUrl;
+    if (!this.idCardUrl && this.idCardImage) this.idCardUrl = this.idCardImage;
+
+    // مزامنة إيصال السداد
+    if (!this.receiptUrl && this.receiptImage) this.receiptUrl = this.receiptImage;
+    if (!this.receiptImage && this.receiptUrl) this.receiptImage = this.receiptUrl;
+
+    // مزامنة الإثبات الأكاديمي
+    if (!this.academicProofUrl && this.academicProof) this.academicProofUrl = this.academicProof;
+    if (!this.academicProof && this.academicProofUrl) this.academicProof = this.academicProofUrl;
 
     // 5. مزامنة الهاتف ورقم الواتساب
     if (!this.whatsapp && this.phone) {

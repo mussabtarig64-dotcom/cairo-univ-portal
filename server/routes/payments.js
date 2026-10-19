@@ -7,14 +7,21 @@ const Payment = require('../models/Payment');
 const User = require('../models/User');
 const { sendPaymentStatusEmail } = require('../utils/emailService');
 
-// إعداد Multer لتخزين الملفات في الذاكرة (Serverless-Safe Memory Storage) وتجنب تجاوز حد الـ 4.5MB
+const {
+  uploadDocument,
+  isCloudinaryConfigured,
+  ALLOWED_DOCUMENT_MIME_TYPES,
+} = require('../utils/cloudinary');
+
+// إعداد Multer لتخزين الملفات في الذاكرة حتى 20MB واستخدام Streaming Chunked Upload
 const storage = multer.memoryStorage();
 
 const upload = multer({
   storage: storage,
-  limits: { fileSize: 4.5 * 1024 * 1024 }, // 4.5MB limit
+  limits: { fileSize: 20 * 1024 * 1024 }, // 20MB limit
   fileFilter: (req, file, cb) => {
-    if (file.mimetype.startsWith('image/') || file.mimetype === 'application/pdf') {
+    const mime = (file.mimetype || '').toLowerCase().trim();
+    if (ALLOWED_DOCUMENT_MIME_TYPES.includes(mime)) {
       cb(null, true);
     } else {
       cb(new Error('الملف يجب أن يكون صورة (JPG, PNG, WEBP) أو مستند PDF'));
@@ -62,18 +69,33 @@ router.post('/', (req, res, next) => {
     }
 
     let receiptUrl = '';
-    if (req.file) {
-      receiptUrl = `data:${req.file.mimetype};base64,${req.file.buffer.toString('base64')}`;
-    } else if (receiptBase64) {
-      receiptUrl = receiptBase64;
-    } else if (req.body && req.body.receiptUrl) {
-      receiptUrl = req.body.receiptUrl;
-    } else {
-      receiptUrl = 'https://placehold.co/400?text=Receipt';
+    const fileToUpload = req.file || receiptBase64;
+    if (fileToUpload && isCloudinaryConfigured()) {
+      try {
+        const uploaded = await uploadDocument(fileToUpload, {
+          folder: 'cairo_univ_portal/receipt',
+          filename: `receipt_${studentEmail.replace(/[^a-zA-Z0-9]/g, '_')}_${Date.now()}`,
+        });
+        receiptUrl = uploaded.secure_url;
+      } catch (uploadErr) {
+        console.error('[Payment Receipt Upload Error]:', uploadErr.message);
+      }
     }
 
-    // محاولة ربط الدفعة بحساب الطالب إن وجد في قاعدة البيانات
+    if (!receiptUrl && req.body && req.body.receiptUrl && typeof req.body.receiptUrl === 'string' && req.body.receiptUrl.startsWith('http')) {
+      receiptUrl = req.body.receiptUrl;
+    }
+
+    if (!receiptUrl) {
+      receiptUrl = 'https://res.cloudinary.com/demo/image/upload/sample.jpg';
+    }
+
+    // محاولة ربط الدفعة بحساب الطالب وتحديث رابط الإيصال السحابي في حسابه
     let studentObj = await User.findOne({ email: studentEmail.toLowerCase().trim() });
+    if (studentObj && receiptUrl && receiptUrl.startsWith('http')) {
+      studentObj.receiptUrl = receiptUrl;
+      await studentObj.save().catch(() => {});
+    }
 
     const newPayment = new Payment({
       student: studentObj ? studentObj._id : null,

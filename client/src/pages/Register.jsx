@@ -78,6 +78,7 @@ export default function Register() {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [idPreview, setIdPreview] = useState(null);
   const [fileName, setFileName] = useState('');
+  const [selectedFile, setSelectedFile] = useState(null);
   const [isDragging, setIsDragging] = useState(false);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
@@ -88,24 +89,31 @@ export default function Register() {
     if (error) setError('');
   };
 
+  const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
+
   const processFile = (file) => {
     if (!file) return;
-    if (file.size > 5 * 1024 * 1024) {
-      setError('حجم الصورة يجب ألا يتجاوز 5 ميجابايت.');
+    if (file.size > 20 * 1024 * 1024) {
+      setError('حجم الملف يجب ألا يتجاوز 20 ميجابايت (دعم كاميرات الهاتف عالية الدقة).');
       return;
     }
-    if (!file.type.startsWith('image/')) {
-      setError('يرجى رفع ملف صورة صالح (JPG, PNG, WEBP).');
+    const mime = (file.type || '').toLowerCase();
+    if (!ALLOWED_MIME_TYPES.includes(mime)) {
+      setError('يرجى رفع ملف صالح بصيغة (JPG, PNG, WEBP, أو PDF).');
       return;
     }
     setError('');
     setFileName(file.name);
-    const reader = new FileReader();
-    reader.onloadend = () => {
-      setIdPreview(reader.result);
-      setFormData((prev) => ({ ...prev, idCardUrl: reader.result }));
-    };
-    reader.readAsDataURL(file);
+    setSelectedFile(file);
+
+    if (file.type === 'application/pdf') {
+      setIdPreview('pdf');
+      setFormData((prev) => ({ ...prev, idCardUrl: '' }));
+    } else {
+      const objectUrl = URL.createObjectURL(file);
+      setIdPreview(objectUrl);
+      setFormData((prev) => ({ ...prev, idCardUrl: '' }));
+    }
   };
 
   const handleFileUpload = (e) => {
@@ -137,7 +145,13 @@ export default function Register() {
   const handleRemoveFile = (e) => {
     e.preventDefault();
     e.stopPropagation();
+    if (idPreview && idPreview !== 'pdf') {
+      try {
+        URL.revokeObjectURL(idPreview);
+      } catch (err) {}
+    }
     setIdPreview(null);
+    setSelectedFile(null);
     setFileName('');
     setFormData((prev) => ({ ...prev, idCardUrl: '' }));
   };
@@ -194,6 +208,23 @@ export default function Register() {
     setLoading(true);
 
     try {
+      let cloudIdCardUrl = formData.idCardUrl || '';
+      if (selectedFile) {
+        try {
+          const docForm = new FormData();
+          docForm.append('file', selectedFile);
+          docForm.append('folder', 'cairo_univ_portal/idCard');
+          const uploadRes = await axios.post(`${API_BASE}/auth/upload-doc`, docForm, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          });
+          if (uploadRes.data?.url || uploadRes.data?.secure_url) {
+            cloudIdCardUrl = uploadRes.data.url || uploadRes.data.secure_url;
+          }
+        } catch (uploadErr) {
+          console.warn('Doc upload note, proceeding with registration:', uploadErr.message);
+        }
+      }
+
       const payload = {
         name: fullName.trim(),
         fullName: fullName.trim(),
@@ -215,9 +246,9 @@ export default function Register() {
         academicId: passportOrNationalId.trim() || `SSA-${Math.floor(100000 + Math.random() * 900000)}`,
         passportOrNationalId: passportOrNationalId.trim(),
         nationalId: passportOrNationalId.trim(),
-        idCardUrl: formData.idCardUrl || '',
-        idDocument: formData.idCardUrl || '',
-        nationalIdPhoto: formData.idCardUrl || '',
+        idCardUrl: cloudIdCardUrl,
+        idDocument: cloudIdCardUrl,
+        nationalIdPhoto: cloudIdCardUrl,
       };
 
       let res = null;
@@ -608,7 +639,7 @@ export default function Register() {
                   <input
                     type="file"
                     id="idUpload"
-                    accept="image/*"
+                    accept="image/jpeg,image/png,image/webp,application/pdf"
                     onChange={handleFileUpload}
                     className="hidden"
                   />
@@ -622,22 +653,30 @@ export default function Register() {
                         <p className="text-xs sm:text-sm font-bold text-white">
                           اسحب الملف هنا، أو <span className="text-amber-400 underline underline-offset-4">تصفح</span>
                         </p>
-                        <p className="text-[10px] sm:text-[11px] text-slate-400">JPG, PNG, WEBP (الحد الأقصى: 5MB)</p>
+                        <p className="text-[10px] sm:text-[11px] text-slate-400">JPG, PNG, WEBP, PDF (الحد الأقصى: 20MB)</p>
                       </div>
                     </label>
                   ) : (
                     <div className="flex flex-col items-center gap-3 w-full">
                       <div className="relative">
-                        <img
-                          src={idPreview}
-                          alt="معاينة إثبات الهوية"
-                          className="h-32 sm:h-36 max-w-full rounded-lg border border-emerald-500/50 object-contain bg-black/50 p-1"
-                        />
+                        {idPreview === 'pdf' ? (
+                          <div className="h-32 sm:h-36 w-48 rounded-lg border border-emerald-500/50 bg-black/50 p-4 flex flex-col items-center justify-center text-emerald-400">
+                            <span className="text-3xl mb-1">📄</span>
+                            <span className="text-xs font-bold">مستند PDF</span>
+                            <span className="text-[10px] text-slate-400 truncate max-w-[150px]">{fileName}</span>
+                          </div>
+                        ) : (
+                          <img
+                            src={idPreview}
+                            alt="معاينة إثبات الهوية"
+                            className="h-32 sm:h-36 max-w-full rounded-lg border border-emerald-500/50 object-contain bg-black/50 p-1"
+                          />
+                        )}
                         <button
                           type="button"
                           onClick={handleRemoveFile}
                           className="absolute -top-2.5 -right-2.5 bg-red-600 hover:bg-red-500 text-white p-1.5 rounded-full shadow-md transition-transform hover:scale-110"
-                          title="حذف الصورة"
+                          title="حذف الملف"
                         >
                           <Trash2 size={14} />
                         </button>

@@ -825,6 +825,16 @@ export default function AdminDashboard() {
               <p style={{ color: activeTheme.textMuted, fontSize: '13px', margin: '2px 0 0' }}>
                 رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة (SSA-FS-CU)
               </p>
+              {user && (user.receiptUrl || user.receiptImage) && (
+                <div style={{ marginTop: '6px', display: 'flex', alignItems: 'center', gap: '8px' }}>
+                  <img
+                    src={user.receiptUrl || user.receiptImage}
+                    alt="إيصال العضوية"
+                    style={{ height: '26px', width: '26px', objectFit: 'cover', borderRadius: '4px', border: `1px solid ${activeTheme.border}` }}
+                  />
+                  <span style={{ fontSize: '11px', color: activeTheme.accentLight }}>وثيقة العضوية موثقة</span>
+                </div>
+              )}
             </div>
           </div>
         </div>
@@ -1601,8 +1611,30 @@ export default function AdminDashboard() {
                       </div>
                     </div>
 
-                    {/* أزرار القرار */}
+                    {/* أزرار القرار والمعاينة */}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                      {(student.receiptUrl || student.receiptImage) && (
+                        <button
+                          onClick={() => setPreviewDoc(student.receiptUrl || student.receiptImage)}
+                          style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'rgba(16, 185, 129, 0.15)',
+                            border: '1px solid #10b981',
+                            color: '#34d399',
+                            padding: '8px 14px',
+                            borderRadius: '8px',
+                            fontSize: '12px',
+                            fontWeight: 'bold',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <Eye size={15} />
+                          <span>معاينة إيصال السداد</span>
+                        </button>
+                      )}
+
                       {(student.idDocument || student.idCardUrl || student.passportOrNationalId) && (
                         <button
                           onClick={() => setPreviewDoc(student.idDocument || student.idCardUrl || student.passportOrNationalId)}
@@ -1897,6 +1929,28 @@ export default function AdminDashboard() {
 
                   {/* أزرار الإجراءات وإعادة القبول */}
                   <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                    {(student.receiptUrl || student.receiptImage) && (
+                      <button
+                        onClick={() => setPreviewDoc(student.receiptUrl || student.receiptImage)}
+                        style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '6px',
+                          background: 'rgba(16, 185, 129, 0.15)',
+                          border: '1px solid #10b981',
+                          color: '#34d399',
+                          padding: '8px 14px',
+                          borderRadius: '8px',
+                          fontSize: '12px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                        }}
+                      >
+                        <Eye size={15} />
+                        <span>معاينة إيصال السداد</span>
+                      </button>
+                    )}
+
                     {student.idDocument && (
                       <button
                         onClick={() => setPreviewDoc(student.idDocument)}

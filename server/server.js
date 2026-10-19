@@ -275,6 +275,43 @@ app.get('/api/setup-admin', async (req, res) => {
   }
 });
 
+// معالج الأخطاء العام لضمان استجابة JSON مع ترويسات CORS وتفادي انهيار الخادم (Global Error Handler)
+app.use((err, req, res, next) => {
+  console.error('❌ [Global Express Error]:', err.message, err.stack);
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin, Range');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+
+  if (res.headersSent) {
+    return next(err);
+  }
+  return res.status(err.status || 500).json({
+    success: false,
+    message: err.message || 'حدث خطأ غير متوقع في الخادم',
+    students: [],
+    users: [],
+    error: err.message,
+    stack: process.env.NODE_ENV !== 'production' ? err.stack : undefined,
+  });
+});
+
+// الحماية من الانهيار الناتج عن Uncaught Exceptions أو Unhandled Promise Rejections لمنع خطأ 502 Bad Gateway
+process.on('uncaughtException', (err) => {
+  console.error('💥 [Server SafeGuard] Uncaught Exception intercepted:', err.message, err.stack);
+});
+
+process.on('unhandledRejection', (reason, promise) => {
+  console.error('💥 [Server SafeGuard] Unhandled Rejection intercepted at:', promise, 'reason:', reason);
+});
+
+
 // إدارة اتصالات Socket.IO
 io.on('connection', (socket) => {
   socket.on('join_room', (roomId) => {

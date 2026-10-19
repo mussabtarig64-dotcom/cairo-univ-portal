@@ -312,22 +312,41 @@ export function ThemeProvider({ children }) {
     document.body.style.color = themeObj.textMain;
   }, [currentThemeKey]);
 
+  const getAuthHeaders = () => {
+    const token =
+      localStorage.getItem('token') ||
+      localStorage.getItem('ssa_token') ||
+      '';
+    return {
+      'Content-Type': 'application/json',
+      ...(token ? { Authorization: `Bearer ${token}` } : {}),
+    };
+  };
+
   // دالة تبديل المظهر: تدعم التبديل المحلي الشخصي أو الحفظ العالمي للأدمن
   const switchTheme = async (themeKey, options = {}) => {
     const { persistGlobally = false } = options;
     if (THEMES[themeKey]) {
       setCurrentThemeKey(themeKey);
-      localStorage.setItem('ssa_active_theme', themeKey);
+      try {
+        localStorage.setItem('ssa_active_theme', themeKey);
+      } catch (e) {}
 
       // حفظ في خادم MongoDB فقط إذا كان التغيير مخصصاً للنشر العام بواسطة الأدمن
       if (persistGlobally) {
         try {
-          await axios.post(`${API_BASE}/admin/settings`, {
-            activeTheme: themeKey,
-            themeTitle: THEMES[themeKey].name,
-            occasionMode,
-            occasionGreeting: customOccasionGreeting,
-          });
+          await axios.post(
+            `${API_BASE}/admin/settings`,
+            {
+              activeTheme: themeKey,
+              themeTitle: THEMES[themeKey].name,
+              occasionMode,
+              occasionGreeting: customOccasionGreeting,
+            },
+            {
+              headers: getAuthHeaders(),
+            }
+          );
         } catch (e) {
           console.log('Settings save note:', e.message);
         }
@@ -338,12 +357,16 @@ export function ThemeProvider({ children }) {
   // دالة تبديل وضع المناسبات وتحديثها
   const switchOccasionMode = async (modeKey, greeting = undefined) => {
     setOccasionMode(modeKey);
-    localStorage.setItem('ssa_occasion_mode', modeKey);
+    try {
+      localStorage.setItem('ssa_occasion_mode', modeKey);
+    } catch (e) {}
 
     const updatedGreeting = greeting !== undefined ? greeting : customOccasionGreeting;
     if (greeting !== undefined) {
       setCustomOccasionGreeting(greeting);
-      localStorage.setItem('ssa_occasion_greeting', greeting);
+      try {
+        localStorage.setItem('ssa_occasion_greeting', greeting);
+      } catch (e) {}
     }
 
     // إذا تم اختيار مناسبة يدوية محددة ولها ثيم مرتبط بها، نقوم بتطبيقه
@@ -351,52 +374,76 @@ export function ThemeProvider({ children }) {
     if (modeKey !== 'auto' && OCCASIONS[modeKey] && OCCASIONS[modeKey].themeId) {
       targetThemeId = OCCASIONS[modeKey].themeId;
       setCurrentThemeKey(targetThemeId);
-      localStorage.setItem('ssa_active_theme', targetThemeId);
-    } else if (modeKey === 'none') {
-      targetThemeId = 'classic-gold-blue';
-      setCurrentThemeKey(targetThemeId);
-      localStorage.setItem('ssa_active_theme', targetThemeId);
+      try {
+        localStorage.setItem('ssa_active_theme', targetThemeId);
+      } catch (e) {}
     }
 
     try {
-      await axios.post(`${API_BASE}/admin/settings`, {
-        occasionMode: modeKey,
-        occasionGreeting: updatedGreeting,
-        activeTheme: targetThemeId,
-        themeTitle: THEMES[targetThemeId]?.name || 'الكحلي والذهب الكلاسيكي',
-      });
+      await axios.post(
+        `${API_BASE}/admin/settings`,
+        {
+          occasionMode: modeKey,
+          occasionGreeting: updatedGreeting,
+          activeTheme: targetThemeId,
+          themeTitle: THEMES[targetThemeId]?.name || 'الكحلي والذهب الكلاسيكي',
+        },
+        {
+          headers: getAuthHeaders(),
+        }
+      );
     } catch (e) {
       console.log('Occasion save note:', e.message);
     }
   };
 
-  // دالة مخصصة وموثوقة لحفظ نص عبارة التهنئة المخصصة في قاعدة البيانات و localStorage
+  // دالة مخصصة وموثوقة لحفظ نص عبارة التهنئة المخصصة في قاعدة البيانات و localStorage مع توكن المصادقة
   const saveOccasionGreeting = async (greeting) => {
     const text = typeof greeting === 'string' ? greeting : '';
     setCustomOccasionGreeting(text);
-    localStorage.setItem('ssa_occasion_greeting', text);
+    try {
+      localStorage.setItem('ssa_occasion_greeting', text);
+    } catch (e) {}
 
     try {
-      await axios.post(`${API_BASE}/admin/settings`, {
-        occasionGreeting: text,
-        occasionMode,
-        activeTheme: currentThemeKey,
-        themeTitle: THEMES[currentThemeKey]?.name || 'الكحلي والذهب الكلاسيكي',
-      });
+      const res = await axios.post(
+        `${API_BASE}/admin/settings`,
+        {
+          occasionGreeting: text,
+          occasionMode,
+          activeTheme: currentThemeKey,
+          themeTitle: THEMES[currentThemeKey]?.name || 'الكحلي والذهب الكلاسيكي',
+        },
+        {
+          headers: getAuthHeaders(),
+        }
+      );
+      if (res.data?.settings && res.data.settings.occasionGreeting !== undefined) {
+        setCustomOccasionGreeting(res.data.settings.occasionGreeting);
+      }
       return { success: true };
     } catch (e) {
       console.warn('Occasion greeting save note:', e.message);
-      return { success: true };
+      return { success: false, error: e.message };
     }
   };
 
-  // تحديد المناسبة النشطة بدقة: الأولوية لقرار الأدمن اليدوي، وفي حال auto نعتمد التقويم الفعلي
-  let resolvedOccasionKey = occasionMode;
+  // تحديد المناسبة النشطة بدقة مع فرض الأولوية الصارمة:
+  // إذا تم ضبط occasionMode صراحة (مثل 'none' أو 'ramadan' أو وضع مخصص)،
+  // يتم تجاوز وإيقاف الكشف التلقائي القائم على التقويم تماماً، ولا يُفعّل الفحص التقويمي إلا إذا كانت القيمة صراحة 'auto'.
+  let resolvedOccasionKey = 'none';
   if (occasionMode === 'auto') {
     resolvedOccasionKey = detectCurrentOccasionFromCalendar();
+  } else if (occasionMode) {
+    resolvedOccasionKey = occasionMode;
   }
 
-  const currentOccasion = OCCASIONS[resolvedOccasionKey] || OCCASIONS['none'];
+  const currentOccasion = OCCASIONS[resolvedOccasionKey] || {
+    id: resolvedOccasionKey,
+    name: resolvedOccasionKey,
+    icon: '✨',
+    bannerText: '',
+  };
 
   return (
     <ThemeContext.Provider

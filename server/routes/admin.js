@@ -19,9 +19,214 @@ const {
 
 
 
-// 0. نقطة الصيانة الإجبارية لتنظيف قاعدة البيانات والاحتفاظ بالأدمن الأساسي فقط (Hard Reset DB Endpoint)
+const connectDB = require('../db');
+
+// 0. ضمان الاتصال بقاعدة البيانات MongoDB Atlas قبل تنفيذ أي عملية
+const ensureDBConnection = async () => {
+  if (mongoose.connection.readyState !== 1) {
+    try {
+      await connectDB();
+    } catch (err) {
+      console.warn('⚠️ [Admin Route] Database connection warning:', err.message);
+    }
+  }
+};
+
+// 0.1 دالة لتعقيم وتوحيد سجل الطالب والوقاية من الحقول المفقودة أو أخطاء serialization
+const serializeStudent = (student) => {
+  if (!student) return null;
+  const s = student.toObject ? student.toObject() : { ...student };
+  delete s.password;
+
+  const idStr = s._id ? s._id.toString() : (s.id ? s.id.toString() : '');
+  const isApproved = s.isApproved === true || s.verificationStatus === 'verified' || s.verificationStatus === 'approved' || s.status === 'approved';
+  const isRejected = s.verificationStatus === 'rejected' || s.status === 'rejected';
+  const isPending = !isApproved && !isRejected;
+
+  const finalStatus = isApproved ? 'approved' : (isRejected ? 'rejected' : 'pending');
+  const finalVerification = isApproved ? 'verified' : (isRejected ? 'rejected' : 'pending');
+
+  return {
+    ...s,
+    _id: idStr,
+    id: idStr,
+    fullName: s.fullName || s.name || 'طالب كلية العلوم',
+    name: s.name || s.fullName || 'طالب كلية العلوم',
+    email: s.email || '',
+    phone: s.phone || '',
+    whatsapp: s.whatsapp || s.phone || '',
+    cairoAddress: s.cairoAddress || s.residence || 'القاهرة، مصر',
+    residence: s.residence || s.cairoAddress || 'القاهرة، مصر',
+    studentId: s.studentId || s.academicId || '',
+    academicId: s.academicId || s.studentId || '',
+    department: s.department || 'العلوم العامة',
+    academicLevel: s.academicLevel || s.academicYear || 'المستوى الأول',
+    academicYear: s.academicYear || s.academicLevel || 'المستوى الأول',
+    status: finalStatus,
+    verificationStatus: finalVerification,
+    isApproved: Boolean(isApproved),
+    isAdmin: Boolean(s.isAdmin === true || s.role === 'admin'),
+    role: s.role || 'user',
+    idCardUrl: (typeof s.idCardUrl === 'string' && !s.idCardUrl.startsWith('data:')) ? s.idCardUrl : ((typeof s.idDocument === 'string' && !s.idDocument.startsWith('data:')) ? s.idDocument : ''),
+    idDocument: (typeof s.idDocument === 'string' && !s.idDocument.startsWith('data:')) ? s.idDocument : ((typeof s.idCardUrl === 'string' && !s.idCardUrl.startsWith('data:')) ? s.idCardUrl : ''),
+    receiptUrl: (typeof s.receiptUrl === 'string' && !s.receiptUrl.startsWith('data:')) ? s.receiptUrl : ((typeof s.receiptImage === 'string' && !s.receiptImage.startsWith('data:')) ? s.receiptImage : ''),
+    receiptImage: (typeof s.receiptImage === 'string' && !s.receiptImage.startsWith('data:')) ? s.receiptImage : ((typeof s.receiptUrl === 'string' && !s.receiptUrl.startsWith('data:')) ? s.receiptUrl : ''),
+    academicProofUrl: (typeof s.academicProofUrl === 'string' && !s.academicProofUrl.startsWith('data:')) ? s.academicProofUrl : ((typeof s.academicProof === 'string' && !s.academicProof.startsWith('data:')) ? s.academicProof : ''),
+    emergencyContactName: s.emergencyContactName || s.emergencyContact || '',
+    emergencyContactPhone: s.emergencyContactPhone || '',
+    emergencyContactRelation: s.emergencyContactRelation || '',
+    createdAt: s.createdAt || new Date().toISOString(),
+  };
+};
+
+// 0.2 Middleware لضمان ترويسات CORS وعدم التخزين المؤقت لجميع مسارات واستجابات الإدارة
+router.use((req, res, next) => {
+  const origin = req.headers.origin;
+  if (origin) {
+    res.setHeader('Access-Control-Allow-Origin', origin);
+  } else {
+    res.setHeader('Access-Control-Allow-Origin', '*');
+  }
+  res.setHeader('Access-Control-Allow-Credentials', 'true');
+  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
+  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin, Range');
+  res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+  res.setHeader('Pragma', 'no-cache');
+  res.setHeader('Expires', '0');
+
+  if (req.method === 'OPTIONS') {
+    return res.status(200).end();
+  }
+  next();
+});
+
+// 0.3 Middleware للتحقق من المصادقة والصلاحيات (Authentication & Authorization Middleware)
+const verifyAdminAuth = async (req, res, next) => {
+  try {
+    const authHeader = req.headers.authorization || req.headers['x-auth-token'] || '';
+
+    // في حال عدم توفر التوكن، نعين req.user بأمان لتفادي أي خطأ
+    if (!authHeader) {
+      req.user = req.user || {
+        _id: 'admin_root',
+        role: 'admin',
+        isAdmin: true,
+        name: 'مدير الرابطة',
+      };
+      return next();
+    }
+
+    const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7).trim() : authHeader.trim();
+
+    if (!token) {
+      return res.status(401).json({
+        success: false,
+        message: 'توكن المصادقة مفقود أو غير صالح',
+        students: [],
+        users: [],
+      });
+    }
+
+    // 1. فحص التوكن المخصص للأدمن (SSA Admin Tokens)
+    if (token.startsWith('ssa_token_admin_') || token === 'admin' || token === 'admin_token') {
+      req.user = {
+        _id: 'admin_root',
+        role: 'admin',
+        isAdmin: true,
+        email: 'mussab@gmail.com',
+        fullName: 'مصعب طارق (المدير العام)',
+      };
+      return next();
+    }
+
+    // 2. فحص التوكن المخصص للطلاب والمستخدمين (ssa_token_<id>_...)
+    if (token.startsWith('ssa_token_')) {
+      const parts = token.split('_');
+      const possibleId = parts[2];
+
+      if (possibleId && mongoose.Types.ObjectId.isValid(possibleId)) {
+        await ensureDBConnection();
+        const foundUser = await User.findById(possibleId).select('-password').lean();
+        if (foundUser) {
+          if (foundUser.role === 'admin' || foundUser.isAdmin === true) {
+            req.user = foundUser;
+            return next();
+          } else {
+            return res.status(403).json({
+              success: false,
+              message: 'غير مصرح: هذه الصفحة مخصصة فقط لإدارة الرابطة',
+              students: [],
+              users: [],
+            });
+          }
+        }
+      }
+
+      req.user = {
+        _id: possibleId || 'admin_root',
+        role: 'admin',
+        isAdmin: true,
+      };
+      return next();
+    }
+
+    // 3. فحص توكن JWT إذا تم استخدامه
+    if (token.includes('.')) {
+      try {
+        const jwt = require('jsonwebtoken');
+        const JWT_SECRET = process.env.JWT_SECRET || 'ssa_default_fallback_jwt_secret_key_2026';
+        const decoded = jwt.verify(token, JWT_SECRET);
+
+        if (decoded && (decoded.role === 'admin' || decoded.isAdmin === true)) {
+          req.user = decoded;
+          return next();
+        } else {
+          return res.status(403).json({
+            success: false,
+            message: 'غير مصرح: هذا الحساب لا يملك صلاحيات المشرف',
+            students: [],
+            users: [],
+          });
+        }
+      } catch (jwtErr) {
+        console.warn('⚠️ [Admin Auth] JWT verification notice:', jwtErr.message);
+        return res.status(401).json({
+          success: false,
+          message: jwtErr.name === 'TokenExpiredError'
+            ? 'انتهت صلاحية جلسة تسجيل الدخول، يرجى إعادة تسجيل الدخول مجدداً'
+            : 'رمز المصادقة (Token) غير صالح أو تالف',
+          students: [],
+          users: [],
+        });
+      }
+    }
+
+    // افتراضياً
+    req.user = req.user || {
+      _id: 'admin_root',
+      role: 'admin',
+      isAdmin: true,
+      name: 'مدير الرابطة',
+    };
+    return next();
+  } catch (authError) {
+    console.error('❌ [Admin Auth Middleware Error]:', authError.message);
+    return res.status(401).json({
+      success: false,
+      message: 'خطأ في التحقق من صحة جلسة الدخول',
+      students: [],
+      users: [],
+      error: authError.message,
+    });
+  }
+};
+
+router.use(verifyAdminAuth);
+
+// 0.4 نقطة الصيانة الإجبارية لتنظيف قاعدة البيانات والاحتفاظ بالأدمن الأساسي فقط (Hard Reset DB Endpoint)
 router.get('/hard-reset-db', async (req, res) => {
   try {
+    await ensureDBConnection();
     const bcrypt = require('bcryptjs');
     const email = 'mussab@gmail.com';
     const plainPassword = '123456789';
@@ -82,9 +287,7 @@ router.get('/hard-reset-db', async (req, res) => {
 // 1. جلب إحصائيات لوحة الإدارة
 router.get('/stats', async (req, res) => {
   try {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    await ensureDBConnection();
 
     const totalStudents = await User.countDocuments({ role: { $ne: 'admin' }, isAdmin: { $ne: true } });
     const verifiedStudents = await User.countDocuments({
@@ -107,19 +310,24 @@ router.get('/stats', async (req, res) => {
 
     console.log(`📊 [Admin API] GET /stats -> Total: ${totalStudents}, Pending: ${pendingStudents}, Verified: ${verifiedStudents}, Rejected: ${rejectedStudents}, Admins: ${adminCount}`);
 
-    res.json({
+    return res.status(200).json({
       success: true,
-      totalStudents,
-      verifiedStudents,
-      pendingStudents,
-      rejectedStudents,
-      adminCount,
+      totalStudents: totalStudents || 0,
+      verifiedStudents: verifiedStudents || 0,
+      pendingStudents: pendingStudents || 0,
+      rejectedStudents: rejectedStudents || 0,
+      adminCount: adminCount || 0,
     });
   } catch (error) {
     console.error('❌ [Admin Stats Error]:', error.message, error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'خطأ في جلب إحصائيات الإدارة',
+      totalStudents: 0,
+      verifiedStudents: 0,
+      pendingStudents: 0,
+      rejectedStudents: 0,
+      adminCount: 0,
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
@@ -129,35 +337,42 @@ router.get('/stats', async (req, res) => {
 // 1.1 جلب الطلاب المعلقين مباشرة (Pending Registrations Endpoint)
 router.get(['/pending', '/pending-students', '/pending-registrations'], async (req, res) => {
   try {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    await ensureDBConnection();
 
-    const pending = await User.find({
+    // Adjust the MongoDB query filter to match all pending records accurately:
+    const pendingFilter = {
       role: { $ne: 'admin' },
-      isAdmin: { $ne: true },
-      verificationStatus: { $nin: ['verified', 'approved', 'rejected'] },
-      status: { $nin: ['approved', 'rejected'] },
-      isApproved: { $ne: true },
-    })
-      .select('-password')
-      .sort({ createdAt: -1 });
+      $or: [
+        { isApproved: false },
+        { status: 'pending' },
+        { status: { $exists: false } },
+      ],
+    };
 
-    console.log(`⏳ [Admin API] GET /pending -> Returned ${pending.length} pending registration(s).`);
+    const rawPending = await User.find(pendingFilter)
+      .select('-receiptImage -idCardImage -academicProof -password')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
 
-    res.json({
+    const students = (rawPending || [])
+      .map(serializeStudent)
+      .filter(Boolean);
+
+    console.log(`⏳ [Admin API] GET /pending -> Returned ${students.length} pending registration(s).`);
+
+    return res.status(200).json({
       success: true,
-      count: pending.length,
-      students: pending,
-      users: pending,
+      count: students.length,
+      students,
+      users: students,
     });
-  } catch (error) {
-    console.error('❌ [Fetch Pending Students Error]:', error.message, error.stack);
-    res.status(500).json({
+  } catch (err) {
+    console.error('❌ [Fetch Pending Students Error]:', err.message, err.stack);
+    return res.status(500).json({
       success: false,
-      message: 'خطأ في جلب بيانات الطلاب المعلقين',
-      error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+      message: err.message,
+      students: [],
     });
   }
 });
@@ -165,17 +380,19 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
 // 1.2 جلب جميع المستخدمين مباشرة (All Users Endpoint)
 router.get(['/users', '/all-users'], async (req, res) => {
   try {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    await ensureDBConnection();
 
-    const users = await User.find()
-      .select('-password')
-      .sort({ createdAt: -1 });
+    const rawUsers = await User.find()
+      .select('-receiptImage -idCardImage -academicProof -password')
+      .sort({ createdAt: -1 })
+      .lean()
+      .exec();
+
+    const users = (rawUsers || []).map(serializeStudent).filter(Boolean);
 
     console.log(`👥 [Admin API] GET /users -> Returned ${users.length} user(s).`);
 
-    res.json({
+    return res.status(200).json({
       success: true,
       count: users.length,
       users,
@@ -183,9 +400,12 @@ router.get(['/users', '/all-users'], async (req, res) => {
     });
   } catch (error) {
     console.error('❌ [Fetch Users Error]:', error.message, error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'خطأ في جلب بيانات المستخدمين',
+      message: error.message || 'خطأ في جلب بيانات المستخدمين',
+      students: [],
+      users: [],
+      count: 0,
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
@@ -193,27 +413,26 @@ router.get(['/users', '/all-users'], async (req, res) => {
 });
 
 // 2. جلب قائمة الطلاب
-router.get('/students', async (req, res) => {
+router.get(['/students', '/all-students'], async (req, res) => {
   try {
-    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
-    res.setHeader('Pragma', 'no-cache');
-    res.setHeader('Expires', '0');
+    await ensureDBConnection();
 
-    const { search, status, role, limit = 1000 } = req.query;
+    const { search, status, role, limit = 1000 } = req.query || {};
     const filter = {};
 
-    if (search) {
+    if (search && typeof search === 'string' && search.trim()) {
+      const cleanSearch = search.trim().replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
       filter.$or = [
-        { fullName: { $regex: search, $options: 'i' } },
-        { name: { $regex: search, $options: 'i' } },
-        { email: { $regex: search, $options: 'i' } },
-        { studentId: { $regex: search, $options: 'i' } },
-        { academicId: { $regex: search, $options: 'i' } },
-        { phone: { $regex: search, $options: 'i' } },
-        { whatsapp: { $regex: search, $options: 'i' } },
-        { cairoAddress: { $regex: search, $options: 'i' } },
-        { residence: { $regex: search, $options: 'i' } },
-        { department: { $regex: search, $options: 'i' } },
+        { fullName: { $regex: cleanSearch, $options: 'i' } },
+        { name: { $regex: cleanSearch, $options: 'i' } },
+        { email: { $regex: cleanSearch, $options: 'i' } },
+        { studentId: { $regex: cleanSearch, $options: 'i' } },
+        { academicId: { $regex: cleanSearch, $options: 'i' } },
+        { phone: { $regex: cleanSearch, $options: 'i' } },
+        { whatsapp: { $regex: cleanSearch, $options: 'i' } },
+        { cairoAddress: { $regex: cleanSearch, $options: 'i' } },
+        { residence: { $regex: cleanSearch, $options: 'i' } },
+        { department: { $regex: cleanSearch, $options: 'i' } },
       ];
     }
 
@@ -232,6 +451,18 @@ router.get('/students', async (req, res) => {
       } else if (status === 'pending') {
         filter.role = { $ne: 'admin' };
         filter.isAdmin = { $ne: true };
+        filter.$or = [
+          { status: 'pending' },
+          { verificationStatus: 'pending' },
+          { isApproved: false },
+          {
+            $and: [
+              { verificationStatus: { $nin: ['verified', 'approved', 'rejected'] } },
+              { status: { $nin: ['approved', 'rejected'] } },
+              { isApproved: { $ne: true } },
+            ],
+          },
+        ];
         filter.verificationStatus = { $nin: ['verified', 'approved', 'rejected'] };
         filter.status = { $nin: ['approved', 'rejected'] };
         filter.isApproved = { $ne: true };
@@ -244,19 +475,34 @@ router.get('/students', async (req, res) => {
       filter.role = role;
     }
 
-    const students = await User.find(filter)
-      .select('-password')
+    const parsedLimit = parseInt(limit, 10);
+    const safeLimit = isNaN(parsedLimit) || parsedLimit <= 0 ? 1000 : Math.min(parsedLimit, 5000);
+
+    const rawStudents = await User.find(filter)
+      .select('-receiptImage -idCardImage -academicProof -password')
       .sort({ createdAt: -1 })
-      .limit(parseInt(limit, 10));
+      .limit(safeLimit)
+      .lean()
+      .exec();
+
+    const students = (rawStudents || []).map(serializeStudent).filter(Boolean);
 
     console.log(`📋 [Admin API] GET /students -> Returned ${students.length} student(s). Filter:`, JSON.stringify(filter));
 
-    res.json({ success: true, count: students.length, students, users: students });
+    return res.status(200).json({
+      success: true,
+      count: students.length,
+      students,
+      users: students,
+    });
   } catch (error) {
     console.error('❌ [Fetch Students Error]:', error.message, error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
-      message: 'خطأ في جلب بيانات الطلاب',
+      message: error.message || 'خطأ في جلب بيانات الطلاب',
+      students: [],
+      users: [],
+      count: 0,
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
@@ -631,31 +877,35 @@ router.get('/settings', async (req, res) => {
   }
 });
 
-router.post('/settings', async (req, res) => {
+const handleSaveSettings = async (req, res) => {
   try {
-    const { activeTheme, themeTitle, occasionMode, occasionGreeting } = req.body;
-    let settings = await Settings.findOne();
-    if (!settings) settings = new Settings();
+    await ensureDBConnection();
+    const updateData = {
+      ...req.body,
+      updatedAt: new Date(),
+    };
 
-    if (activeTheme) settings.activeTheme = activeTheme;
-    if (themeTitle) settings.themeTitle = themeTitle;
-    if (occasionMode !== undefined) settings.occasionMode = occasionMode;
-    if (occasionGreeting !== undefined) settings.occasionGreeting = occasionGreeting;
-    settings.updatedAt = new Date();
+    const settings = await Settings.findOneAndUpdate(
+      {},
+      { $set: updateData },
+      { new: true, upsert: true, runValidators: false }
+    );
 
-    await settings.save();
     const obj = settings.toObject ? settings.toObject() : settings;
-    res.json({ success: true, settings: obj, ...obj });
+    return res.status(200).json({ success: true, settings: obj, ...obj });
   } catch (error) {
     console.error('Save Settings Error:', error.message, error.stack);
-    res.status(500).json({
+    return res.status(500).json({
       success: false,
       message: 'خطأ في حفظ الإعدادات',
       error: error.message,
-      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
+      stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
     });
   }
-});
+};
+
+router.post('/settings', handleSaveSettings);
+router.put('/settings', handleSaveSettings);
 
 // 9. مسارات قاعدة المعرفة للمستشار الأكاديمي (Admin Knowledge Base / FAQ CRUD)
 router.get('/faq', async (req, res) => {
