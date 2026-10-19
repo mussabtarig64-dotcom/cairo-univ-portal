@@ -158,7 +158,6 @@ router.post(
       emergencyContactName,
       emergencyContactRelation,
       emergencyContactPhone,
-      idCardUrl,
       idDocument,
       nationalIdPhoto,
     } = req.body || {};
@@ -175,7 +174,7 @@ router.post(
     const cleanEmergencyRelation = (emergencyContactRelation || 'الوالد / الوالدة').trim();
     const cleanEmergencyPhone = (emergencyContactPhone || '').trim();
     const cleanNationalId = (passportOrNationalId || nationalId || studentId || '').trim();
-    const cleanIdDoc = (idCardUrl || idDocument || nationalIdPhoto || '').trim();
+    const cleanIdDoc = (req.body?.idCardUrl || idDocument || nationalIdPhoto || '').trim();
 
     if (!cleanName || !cleanEmail || !cleanPassword) {
       return res.status(400).json({
