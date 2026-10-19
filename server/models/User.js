@@ -166,6 +166,10 @@ const userSchema = new mongoose.Schema(
   }
 );
 
+// فهارس لتحسين سرعة الاستعلامات والترتيب ومنع تجاوز حد ذاكرة الترتيب (Sort memory limit) في MongoDB
+userSchema.index({ createdAt: -1 });
+userSchema.index({ isApproved: 1, createdAt: -1 });
+
 // Middleware لمزامنة الحقول المترادفة تلقائياً وضمان عدم حدوث أخطاء أو فقدان في البيانات
 userSchema.pre('save', function () {
   try {

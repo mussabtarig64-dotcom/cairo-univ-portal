@@ -21,6 +21,9 @@ const {
 
 const connectDB = require('../db');
 
+// 0. إسقاط صريح للحقول الخفيفة فقط وتجنب تحميل سلاسل Base64 الثقيلة لحماية الذاكرة ومنع أخطاء تجاوز حد الترتيب (Sort memory limit)
+const STUDENT_PROJECTION = '_id name fullName email phone whatsapp age studentId academicId department academicYear academicLevel level residence cairoAddress isApproved status verificationStatus role isAdmin receiptUrl idCardUrl academicProofUrl emergencyContact emergencyContactName emergencyContactPhone emergencyContactRelation notes createdAt updatedAt';
+
 // 0. ضمان الاتصال بقاعدة البيانات MongoDB Atlas قبل تنفيذ أي عملية
 const ensureDBConnection = async () => {
   if (mongoose.connection.readyState !== 1) {
@@ -350,8 +353,8 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
     };
 
     const rawPending = await User.find(pendingFilter)
-      .select('-receiptImage -idCardImage -academicProof -password')
-      .sort({ createdAt: -1 })
+      .select(STUDENT_PROJECTION)
+      .sort({ _id: -1 })
       .lean()
       .exec();
 
@@ -383,8 +386,8 @@ router.get(['/users', '/all-users'], async (req, res) => {
     await ensureDBConnection();
 
     const rawUsers = await User.find()
-      .select('-receiptImage -idCardImage -academicProof -password')
-      .sort({ createdAt: -1 })
+      .select(STUDENT_PROJECTION)
+      .sort({ _id: -1 })
       .lean()
       .exec();
 
@@ -479,8 +482,8 @@ router.get(['/students', '/all-students'], async (req, res) => {
     const safeLimit = isNaN(parsedLimit) || parsedLimit <= 0 ? 1000 : Math.min(parsedLimit, 5000);
 
     const rawStudents = await User.find(filter)
-      .select('-receiptImage -idCardImage -academicProof -password')
-      .sort({ createdAt: -1 })
+      .select(STUDENT_PROJECTION)
+      .sort({ _id: -1 })
       .limit(safeLimit)
       .lean()
       .exec();
@@ -715,7 +718,10 @@ router.delete('/students/:id', async (req, res) => {
 // 6. تصدير قاعدة بيانات الطلاب كملف CSV موحد
 router.get('/export', async (req, res) => {
   try {
-    const students = await User.find().sort({ createdAt: -1 }).lean();
+    const students = await User.find()
+      .select(STUDENT_PROJECTION)
+      .sort({ _id: -1 })
+      .lean();
 
     const headers = [
       'الاسم الكامل',
