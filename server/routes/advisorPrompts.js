@@ -3,12 +3,7 @@ const router = express.Router();
 const mongoose = require('mongoose');
 const AdvisorPrompt = require('../models/AdvisorPrompt');
 
-// Preflight options handling for advisor prompts
-router.options('*', (req, res) => {
-  res.setHeader('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, PATCH, OPTIONS');
-  res.setHeader('Access-Control-Allow-Headers', 'Content-Type, Authorization, Cache-Control, Pragma, Expires, X-Requested-With, Accept, Origin');
-  res.sendStatus(200);
-});
+
 
 const DEFAULT_SEED_PROMPTS = [
   {
