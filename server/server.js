@@ -5,6 +5,9 @@ const cors = require('cors');
 const mongoose = require('mongoose');
 const { Server } = require('socket.io');
 const path = require('path');
+const helmet = require('helmet');
+const rateLimit = require('express-rate-limit');
+const mongoSanitize = require('express-mongo-sanitize');
 
 const authRoutes = require('./routes/auth');
 const adminRoutes = require('./routes/admin');
@@ -17,6 +20,37 @@ const notificationsRoutes = require('./routes/notifications');
 const advisorPromptsRoutes = require('./routes/advisorPrompts');
 
 const app = express();
+
+// Middlewares: Helmet, Rate Limiting, and Mongo Sanitize
+app.use(helmet({ crossOriginResourcePolicy: false }));
+
+// Rate limit: 100 requests per 15 minutes for /api routes
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // Limit each IP to 100 requests per windowMs
+  standardHeaders: true, // Return rate limit info in the `RateLimit-*` headers
+  legacyHeaders: false, // Disable the `X-RateLimit-*` headers
+  message: {
+    success: false,
+    message: 'Too many requests from this IP, please try again after 15 minutes.',
+  },
+});
+app.use('/api', apiLimiter);
+
+// Express 5 compatibility patch and NoSQL query injection sanitization
+app.use((req, res, next) => {
+  if (req.query) {
+    Object.defineProperty(req, 'query', {
+      value: { ...req.query },
+      writable: true,
+      enumerable: true,
+      configurable: true,
+    });
+  }
+  next();
+});
+app.use(mongoSanitize());
+
 const server = http.createServer(app);
 
 // 1. إعداد CORS المرن والآمن لدعم Hostinger و Vercel و Render والبيئات المحلية
@@ -115,6 +149,7 @@ app.use((req, res, next) => {
 
 app.use(express.json({ limit: '50mb' }));
 app.use(express.urlencoded({ extended: true, limit: '50mb' }));
+app.use(mongoSanitize());
 
 const uploadsPath = path.join(__dirname, 'uploads');
 try {
