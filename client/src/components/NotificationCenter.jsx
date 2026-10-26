@@ -15,7 +15,8 @@ import {
   Calendar,
   Sparkles,
   ExternalLink,
-  X
+  X,
+  Trash2
 } from 'lucide-react';
 
 export default function NotificationCenter() {
@@ -28,6 +29,7 @@ export default function NotificationCenter() {
     typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted'
   );
   const [toastNotif, setToastNotif] = useState(null);
+  const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
   const dropdownRef = useRef(null);
 
   const userEmail = user?.email || localStorage.getItem('ssa_guest_email') || 'visitor';
@@ -97,6 +99,11 @@ export default function NotificationCenter() {
 
     socket.on('new_notification', (newNotif) => {
       handleIncomingNotif(newNotif);
+    });
+
+    socket.on('delete_notification', (deletedId) => {
+      if (!deletedId) return;
+      setNotifications((prev) => prev.filter((n) => (n._id || n.id) !== deletedId));
     });
 
     // 2. استقبال الإشعارات عبر BroadcastChannel للمزامنة الفورية اللحظية بين التبويبات المفتوحة
@@ -194,6 +201,28 @@ export default function NotificationCenter() {
     setIsOpen(false);
     if (notif.link) {
       navigate(notif.link);
+    }
+  };
+
+  // حذف إشعار محدد من واجهة المستخدم والخادم فوراً
+  const handleDeleteNotification = async (e, notifId) => {
+    e.stopPropagation();
+    if (!notifId) return;
+
+    // حذف فوري من حالة الواجهة
+    const targetNotif = notifications.find((n) => (n._id || n.id) === notifId);
+    const wasUnread = targetNotif && (!targetNotif.readBy || !targetNotif.readBy.includes(userEmail));
+
+    setNotifications((prev) => prev.filter((n) => (n._id || n.id) !== notifId));
+    if (wasUnread) {
+      setUnreadCount((prev) => Math.max(0, prev - 1));
+    }
+
+    // إرسال طلب الحذف الفوري إلى الباك إند
+    try {
+      await axios.delete(`${API_BASE}/notifications/${notifId}`);
+    } catch (err) {
+      console.error('Failed to sync notification deletion with backend:', err.message);
     }
   };
 
@@ -342,16 +371,28 @@ export default function NotificationCenter() {
 
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center justify-between gap-2 mb-1">
-                        <h4
-                          className={`text-xs font-bold truncate ${
-                            !isRead ? 'text-amber-300' : 'text-slate-200'
-                          }`}
+                        <div className="flex items-center gap-1.5 min-w-0 flex-1">
+                          {!isRead && (
+                            <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
+                          )}
+                          <h4
+                            className={`text-xs font-bold truncate ${
+                              !isRead ? 'text-amber-300' : 'text-slate-200'
+                            }`}
+                          >
+                            {notif.title}
+                          </h4>
+                        </div>
+
+                        <button
+                          type="button"
+                          onClick={(e) => handleDeleteNotification(e, notif._id || notif.id)}
+                          title="حذف هذا الإشعار"
+                          aria-label="حذف هذا الإشعار"
+                          className="p-1 rounded-lg text-slate-400 hover:text-red-400 hover:bg-red-500/15 opacity-70 hover:opacity-100 transition-all shrink-0 cursor-pointer"
                         >
-                          {notif.title}
-                        </h4>
-                        {!isRead && (
-                          <span className="w-2 h-2 rounded-full bg-amber-400 shrink-0" />
-                        )}
+                          <Trash2 size={13} />
+                        </button>
                       </div>
 
                       <p className="text-[11.5px] text-slate-300 line-clamp-2 leading-relaxed mb-1.5 break-words">

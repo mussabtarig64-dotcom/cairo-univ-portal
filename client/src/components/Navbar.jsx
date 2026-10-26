@@ -117,34 +117,35 @@ export default function Navbar() {
             style={{
               display: 'flex',
               alignItems: 'center',
-              gap: '8px',
+              gap: '10px',
               textDecoration: 'none',
-              flexShrink: 1,
+              flexShrink: 0,
               minWidth: 0,
             }}
           >
             <div
-              className="logo-wrapper"
+              className="logo-wrapper w-14 h-14 sm:w-16 sm:h-16"
               style={{
-                width: '38px',
-                height: '38px',
+                width: '58px',
+                height: '58px',
                 borderRadius: '50%',
                 overflow: 'hidden',
                 backgroundColor: '#ffffff',
-                padding: '2px',
+                padding: '2.5px',
                 display: 'flex',
                 alignItems: 'center',
                 justifyContent: 'center',
-                border: '2px solid #f59e0b',
-                boxShadow: '0 3px 10px rgba(0, 0, 0, 0.35)',
+                border: '2.5px solid #f59e0b',
+                boxShadow: '0 4px 14px rgba(245, 158, 11, 0.35)',
                 flexShrink: 0,
+                transition: 'transform 0.25s ease',
               }}
             >
               <img
                 src={logoImg}
                 alt="SSA Logo"
-                width="38"
-                height="38"
+                width="58"
+                height="58"
                 decoding="async"
                 style={{
                   width: '100%',
@@ -156,14 +157,14 @@ export default function Navbar() {
               />
             </div>
 
-            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0 }}>
+            <div style={{ display: 'flex', flexDirection: 'column', minWidth: 0, justifyContent: 'center' }}>
               <div
                 className="logo-title-text"
                 style={{
                   color: '#ffffff',
                   fontWeight: '900',
-                  fontSize: '14px',
-                  lineHeight: '1.2',
+                  fontSize: '15.5px',
+                  lineHeight: '1.25',
                   whiteSpace: 'nowrap',
                 }}
               >
@@ -173,9 +174,10 @@ export default function Navbar() {
                 className="logo-subtitle-text"
                 style={{
                   color: '#fbbf24',
-                  fontSize: '10.5px',
+                  fontSize: '11.5px',
                   fontWeight: '700',
                   whiteSpace: 'nowrap',
+                  marginTop: '1px',
                 }}
               >
                 كلية العلوم جامعة القاهرة
@@ -696,20 +698,26 @@ export default function Navbar() {
             gap: 6px !important;
           }
         }
+        @media (max-width: 768px) {
+          .logo-wrapper {
+            width: 50px !important;
+            height: 50px !important;
+          }
+        }
         @media (max-width: 480px) {
           .navbar-container {
             padding: 7px 10px !important;
             gap: 6px !important;
           }
           .logo-wrapper {
-            width: 34px !important;
-            height: 34px !important;
+            width: 44px !important;
+            height: 44px !important;
           }
           .logo-title-text {
-            font-size: 12px !important;
+            font-size: 13px !important;
           }
           .logo-subtitle-text {
-            font-size: 9px !important;
+            font-size: 9.5px !important;
           }
           .logout-btn-label {
             display: none !important;
@@ -729,11 +737,15 @@ export default function Navbar() {
           }
         }
         @media (max-width: 360px) {
+          .logo-wrapper {
+            width: 38px !important;
+            height: 38px !important;
+          }
           .logo-subtitle-text {
             display: none !important;
           }
           .logo-title-text {
-            font-size: 11px !important;
+            font-size: 11.5px !important;
           }
           .navbar-container {
             padding: 6px 8px !important;

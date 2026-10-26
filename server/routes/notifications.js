@@ -108,11 +108,24 @@ router.post('/mark-all-read', async (req, res) => {
   }
 });
 
-// 5. حذف إشعار (Admin)
+// 5. حذف إشعار
 router.delete('/:id', async (req, res) => {
   try {
-    await Notification.findByIdAndDelete(req.params.id);
-    res.json({ success: true, message: 'تم حذف الإشعار بنجاح' });
+    await connectDB();
+    const deletedNotification = await Notification.findByIdAndDelete(req.params.id);
+    
+    // إرسال تنبيه عبر Socket.IO بحذف الإشعار فوراً إن وُجد
+    const io = req.io || req.app?.get('io');
+    if (io) {
+      io.emit('delete_notification', req.params.id);
+    }
+
+    res.json({
+      success: true,
+      message: 'تم حذف الإشعار بنجاح',
+      deletedId: req.params.id,
+      deleted: Boolean(deletedNotification),
+    });
   } catch (error) {
     console.error('Delete Notification Error:', error.message);
     res.status(500).json({ success: false, error: error.message });

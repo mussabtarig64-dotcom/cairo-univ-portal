@@ -38,7 +38,8 @@ import {
   Flame
 } from 'lucide-react';
 
-import { API_BASE } from '../config/api';
+import { io } from 'socket.io-client';
+import { API_BASE, SOCKET_URL } from '../config/api';
 
 export default function AdminDashboard() {
   const {
@@ -71,6 +72,7 @@ export default function AdminDashboard() {
   const [themeSuccessMsg, setThemeSuccessMsg] = useState('');
   const [kbSuccessMsg, setKbSuccessMsg] = useState('');
   const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
+  const [notifErrorMsg, setNotifErrorMsg] = useState('');
   const [customGreetingInput, setCustomGreetingInput] = useState(customOccasionGreeting || '');
   const [pendingPage, setPendingPage] = useState(1);
   const [pendingPerPage, setPendingPerPage] = useState(10);
@@ -139,14 +141,6 @@ export default function AdminDashboard() {
     return () => clearInterval(interval);
   }, []);
 
-  // إعادة التحميل عند تغيير التبويب ومزامنة فورية عند فتح تبويب المستشار الذكي
-  useEffect(() => {
-    loadDashboardData();
-    if (activeTab === 'kb') {
-      fetchAdvisorPromptsLive();
-    }
-  }, [activeTab]);
-
   const getAuthHeaders = () => {
     const token =
       localStorage.getItem('token') ||
@@ -161,6 +155,91 @@ export default function AdminDashboard() {
       ...(token ? { Authorization: `Bearer ${token}` } : {}),
     };
   };
+
+  // جلب مباشر وفوري لطلبات التسجيل والاستبيان من قاعدة البيانات لضمان الثبات عند التحديث (Persistence)
+  const fetchRegistrationRequests = async () => {
+    try {
+      const authHeaders = getAuthHeaders();
+      const res = await axios.get(`${API_BASE}/admin/pending`, {
+        headers: authHeaders,
+        params: { _t: Date.now() },
+      });
+      const pendingList = res.data?.students || res.data?.users || (Array.isArray(res.data) ? res.data : []);
+      if (Array.isArray(pendingList)) {
+        console.log(`📥 [AdminDashboard] Fetched ${pendingList.length} pending registration requests from DB`);
+        setPendingUsers(pendingList);
+        try {
+          localStorage.setItem('pending_users', JSON.stringify(pendingList));
+        } catch (e) {}
+      }
+    } catch (err) {
+      console.error('❌ [AdminDashboard] Failed to fetch registration requests directly from DB:', err.message);
+    }
+  };
+
+  // 1. استرجاع طلبات التسجيل فور تحميل المكون لضمان عدم تأخرها أو فقدانها عند التحديث أو التنقل (Persistence)
+  // 2. الاستماع اللحظي عبر Socket.IO لأحداث new_registration و new_request لإضافة الطلب فوراً في أعلى القائمة (Real-time)
+  useEffect(() => {
+    fetchRegistrationRequests();
+
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      reconnectionAttempts: 5,
+      reconnectionDelay: 2000,
+    });
+
+    const handleNewRequest = (newRequest) => {
+      if (!newRequest) return;
+      console.log('⚡ [AdminDashboard] Received real-time registration request via Socket.IO:', newRequest);
+      const reqId = (newRequest._id || newRequest.id || '').toString();
+      const reqEmail = (newRequest.email || '').toLowerCase().trim();
+
+      // الإضافة الفورية في مقدمة مصفوفة طلبات التسجيل (Unshift to top)
+      setPendingUsers((prev) => {
+        const alreadyExists = prev.some(
+          (u) =>
+            (reqId && (u._id === reqId || u.id === reqId)) ||
+            (reqEmail && u.email && u.email.toLowerCase().trim() === reqEmail)
+        );
+        if (alreadyExists) return prev;
+        const updated = [newRequest, ...prev];
+        try {
+          localStorage.setItem('pending_users', JSON.stringify(updated));
+        } catch (e) {}
+        return updated;
+      });
+
+      setAllStudents((prev) => {
+        const alreadyExists = prev.some(
+          (u) =>
+            (reqId && (u._id === reqId || u.id === reqId)) ||
+            (reqEmail && u.email && u.email.toLowerCase().trim() === reqEmail)
+        );
+        return alreadyExists ? prev : [newRequest, ...prev];
+      });
+    };
+
+    socket.on('new_registration', handleNewRequest);
+    socket.on('new_request', handleNewRequest);
+
+    return () => {
+      socket.off('new_registration', handleNewRequest);
+      socket.off('new_request', handleNewRequest);
+      socket.disconnect();
+    };
+  }, []);
+
+  // إعادة التحميل عند تغيير التبويب ومزامنة فورية عند فتح تبويب طلبات التسجيل أو المستشار الذكي
+  useEffect(() => {
+    loadDashboardData();
+    if (activeTab === 'pending') {
+      fetchRegistrationRequests();
+    }
+    if (activeTab === 'kb') {
+      fetchAdvisorPromptsLive();
+    }
+  }, [activeTab]);
 
   const loadDashboardData = async () => {
     const authHeaders = getAuthHeaders();
@@ -569,6 +648,8 @@ export default function AdminDashboard() {
 
     try {
       setIsSendingNotif(true);
+      setNotifErrorMsg('');
+      setNotifSuccessMsg('');
       const res = await axios.post(
         `${API_BASE}/notifications`,
         {
@@ -611,7 +692,9 @@ export default function AdminDashboard() {
       }
     } catch (err) {
       console.error('Broadcast notification error:', err);
-      alert('فشل بث الإشعار: ' + (err.response?.data?.message || err.message));
+      const errMsg = err.response?.data?.message || err.message || 'حدث خطأ في الخادم';
+      setNotifErrorMsg(`فشل بث الإشعار: ${errMsg}`);
+      setTimeout(() => setNotifErrorMsg(''), 5000);
     } finally {
       setIsSendingNotif(false);
     }
@@ -2580,6 +2663,27 @@ export default function AdminDashboard() {
               >
                 <CheckCircle2 size={18} />
                 <span>{notifSuccessMsg}</span>
+              </div>
+            )}
+
+            {notifErrorMsg && (
+              <div
+                style={{
+                  background: 'rgba(239, 68, 68, 0.15)',
+                  border: '1px solid #ef4444',
+                  borderRadius: '10px',
+                  padding: '12px 16px',
+                  color: '#ef4444',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  marginBottom: '16px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '8px',
+                }}
+              >
+                <AlertCircle size={18} />
+                <span>{notifErrorMsg}</span>
               </div>
             )}
 

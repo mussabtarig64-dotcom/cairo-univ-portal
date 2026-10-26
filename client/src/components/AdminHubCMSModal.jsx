@@ -254,6 +254,7 @@ export default function AdminHubCMSModal({
   const [uploadStatusText, setUploadStatusText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+  const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
 
   // تحديد السياق النشط وعناصر التكوين الديناميكية للنموذج
   const currentContextKey = getContextKey(hub, formData.section);

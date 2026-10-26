@@ -344,6 +344,43 @@ router.post(
 
     const savedUser = await newUser.save();
 
+    // البث الحي اللحظي الفوري عبر Socket.IO للوحة تحكم الإدارة (Real-time Admin Dashboard)
+    const io = req.io || req.app?.get('io');
+    if (io) {
+      const studentPayload = {
+        _id: savedUser._id ? savedUser._id.toString() : savedUser.id,
+        id: savedUser._id ? savedUser._id.toString() : savedUser.id,
+        fullName: savedUser.fullName || savedUser.name,
+        name: savedUser.name || savedUser.fullName,
+        email: savedUser.email,
+        phone: savedUser.phone,
+        whatsapp: savedUser.whatsapp,
+        residence: savedUser.residence,
+        cairoAddress: savedUser.cairoAddress,
+        department: savedUser.department,
+        academicLevel: savedUser.academicLevel,
+        academicYear: savedUser.academicYear,
+        studentId: savedUser.studentId,
+        academicId: savedUser.academicId,
+        passportOrNationalId: savedUser.passportOrNationalId,
+        emergencyContactName: savedUser.emergencyContactName,
+        emergencyContactPhone: savedUser.emergencyContactPhone,
+        emergencyContactRelation: savedUser.emergencyContactRelation,
+        idCardUrl: savedUser.idCardUrl,
+        idDocument: savedUser.idDocument,
+        receiptUrl: savedUser.receiptUrl,
+        academicProofUrl: savedUser.academicProofUrl,
+        role: savedUser.role || 'user',
+        status: savedUser.status || 'pending',
+        verificationStatus: savedUser.verificationStatus || 'pending',
+        isApproved: false,
+        isAdmin: false,
+        createdAt: savedUser.createdAt || new Date().toISOString(),
+      };
+      io.emit('new_registration', studentPayload);
+      io.emit('new_request', studentPayload);
+    }
+
     // إرسال بريد الترحيب في الخلفية
     try {
       sendWelcomeEmail(savedUser).catch(() => {});
