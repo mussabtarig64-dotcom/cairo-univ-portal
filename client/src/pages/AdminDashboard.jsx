@@ -70,6 +70,7 @@ export default function AdminDashboard() {
   const [newNotif, setNewNotif] = useState({ title: '', message: '', type: 'general', link: '/posts' });
   const [themeSuccessMsg, setThemeSuccessMsg] = useState('');
   const [kbSuccessMsg, setKbSuccessMsg] = useState('');
+  const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
   const [customGreetingInput, setCustomGreetingInput] = useState(customOccasionGreeting || '');
   const [pendingPage, setPendingPage] = useState(1);
   const [pendingPerPage, setPendingPerPage] = useState(10);
