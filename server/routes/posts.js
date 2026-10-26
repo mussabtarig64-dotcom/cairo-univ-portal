@@ -1,11 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const Post = require('../models/Post');
+const connectDB = require('../db');
 
-// جلب جميع المنشورات
+// جلب جميع المنشورات مع دعم العزل والتصفية بالقسم العلمي (Data Scoping)
 router.get('/', async (req, res) => {
   try {
-    const posts = await Post.find().sort({ isPinned: -1, createdAt: -1 });
+    await connectDB();
+    const { department } = req.query;
+    const query = {};
+    if (department && department !== 'all' && department !== 'الكل') {
+      query.department = department;
+    }
+    const posts = await Post.find(query).sort({ isPinned: -1, createdAt: -1 }).lean();
     res.json(posts);
   } catch (err) {
     console.error('Fetch Posts Error:', err.message, err.stack);

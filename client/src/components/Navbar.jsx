@@ -322,7 +322,7 @@ export default function Navbar() {
                 </Link>
 
                 <Link
-                  to="/chat"
+                  to="/community"
                   style={{
                     display: 'flex',
                     alignItems: 'center',
@@ -331,13 +331,13 @@ export default function Navbar() {
                     borderRadius: '10px',
                     textDecoration: 'none',
                     fontSize: '13px',
-                    fontWeight: location.pathname === '/chat' ? '700' : '500',
-                    color: location.pathname === '/chat' ? '#fbbf24' : '#ffffff',
-                    background: location.pathname === '/chat' ? 'rgba(255,255,255,0.08)' : 'transparent',
+                    fontWeight: (location.pathname === '/community' || location.pathname === '/chat') ? '700' : '500',
+                    color: (location.pathname === '/community' || location.pathname === '/chat') ? '#fbbf24' : '#ffffff',
+                    background: (location.pathname === '/community' || location.pathname === '/chat') ? 'rgba(255,255,255,0.08)' : 'transparent',
                   }}
                 >
                   <Users size={14} />
-                  <span>غرف المذاكرة</span>
+                  <span>مجتمع للحوار</span>
                 </Link>
 
                 <Link
@@ -659,8 +659,8 @@ export default function Navbar() {
                 <Link to="/digital-id" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', color: '#ffffff', textDecoration: 'none', fontSize: '13.5px', borderRadius: '8px', backgroundColor: location.pathname === '/digital-id' ? 'rgba(245, 158, 11, 0.15)' : 'transparent' }}>
                   <QrCode size={15} color="#fbbf24" /> <span>بطاقة العضوية الرقمية</span>
                 </Link>
-                <Link to="/chat" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', color: '#ffffff', textDecoration: 'none', fontSize: '13.5px', borderRadius: '8px', backgroundColor: location.pathname === '/chat' ? 'rgba(245, 158, 11, 0.15)' : 'transparent' }}>
-                  <Users size={15} color="#fbbf24" /> <span>غرف المذاكرة التفاعلية</span>
+                <Link to="/community" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', color: '#ffffff', textDecoration: 'none', fontSize: '13.5px', borderRadius: '8px', backgroundColor: (location.pathname === '/community' || location.pathname === '/chat') ? 'rgba(245, 158, 11, 0.15)' : 'transparent' }}>
+                  <Users size={15} color="#fbbf24" /> <span>مجتمع للحوار</span>
                 </Link>
                 <Link to="/ai" onClick={() => setIsMobileMenuOpen(false)} style={{ display: 'flex', alignItems: 'center', gap: '9px', padding: '9px 12px', color: '#ffffff', textDecoration: 'none', fontSize: '13.5px', borderRadius: '8px', backgroundColor: location.pathname === '/ai' ? 'rgba(245, 158, 11, 0.15)' : 'transparent' }}>
                   <Bot size={15} color="#fbbf24" /> <span>المستشار الذكي (AI)</span>

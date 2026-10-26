@@ -70,8 +70,11 @@ export default function AdminDashboard() {
   const [newNotif, setNewNotif] = useState({ title: '', message: '', type: 'general', link: '/posts' });
   const [themeSuccessMsg, setThemeSuccessMsg] = useState('');
   const [kbSuccessMsg, setKbSuccessMsg] = useState('');
-  const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
   const [customGreetingInput, setCustomGreetingInput] = useState(customOccasionGreeting || '');
+  const [pendingPage, setPendingPage] = useState(1);
+  const [pendingPerPage, setPendingPerPage] = useState(10);
+  const [isRefreshing, setIsRefreshing] = useState(false);
+  const [isSendingNotif, setIsSendingNotif] = useState(false);
 
   // مزامنة حقل نص العبارة تلقائياً عند وصول القيمة من الخادم أو ThemeContext
   useEffect(() => {
@@ -131,7 +134,7 @@ export default function AdminDashboard() {
     loadDashboardData();
     const interval = setInterval(() => {
       loadDashboardData();
-    }, 10000);
+    }, 30000);
     return () => clearInterval(interval);
   }, []);
 
@@ -558,12 +561,13 @@ export default function AdminDashboard() {
     setTimeout(() => setThemeSuccessMsg(''), 4000);
   };
 
-  // 6.2 إرسال وبث إشعار فوري لجميع الأجهزة والطلاب (Web Push / Real-time Notification)
+  // 6.2 إرسال وبث إشعار فوري لجميع الأجهزة والطلاب (Instant Web Push / Real-time Notification)
   const handleBroadcastNotification = async (e) => {
     e.preventDefault();
-    if (!newNotif.title.trim() || !newNotif.message.trim()) return;
+    if (!newNotif.title.trim() || !newNotif.message.trim() || isSendingNotif) return;
 
     try {
+      setIsSendingNotif(true);
       const res = await axios.post(
         `${API_BASE}/notifications`,
         {
@@ -588,6 +592,18 @@ export default function AdminDashboard() {
         setNotificationsList((prev) => [created, ...prev]);
         setNotifSuccessMsg('تم إرسال وبث الإشعار الفوري بنجاح لجميع الأجهزة والطلاب! 🔔🚀');
         setNewNotif({ title: '', message: '', type: 'general', link: '/posts' });
+
+        // بث محلي لحظي لجميع النوافذ والتبويبات المفتوحة بالمتصفح
+        try {
+          if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+            const bc = new BroadcastChannel('ssa_realtime_notifications');
+            bc.postMessage({ type: 'NEW_NOTIFICATION', notification: created });
+            bc.close();
+          }
+        } catch (bcErr) {
+          console.warn('BroadcastChannel note:', bcErr);
+        }
+
         setTimeout(() => setNotifSuccessMsg(''), 4500);
       } else {
         throw new Error(res.data?.message || 'تعذر إرسال الإشعار');
@@ -595,6 +611,8 @@ export default function AdminDashboard() {
     } catch (err) {
       console.error('Broadcast notification error:', err);
       alert('فشل بث الإشعار: ' + (err.response?.data?.message || err.message));
+    } finally {
+      setIsSendingNotif(false);
     }
   };
 
@@ -690,6 +708,16 @@ export default function AdminDashboard() {
       (u.cairoAddress || u.residence || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
       (u.department || '').toLowerCase().includes(searchTerm.toLowerCase())
   );
+
+  // حسابات التجزئة والتصفح لطلبات التسجيل (Pagination Calculations)
+  useEffect(() => {
+    setPendingPage(1);
+  }, [searchTerm, registrationSubFilter, activeTab]);
+
+  const totalPendingPages = Math.max(1, Math.ceil(filteredPending.length / pendingPerPage));
+  const safePendingPage = Math.min(pendingPage, totalPendingPages);
+  const pendingStartIdx = (safePendingPage - 1) * pendingPerPage;
+  const paginatedPending = filteredPending.slice(pendingStartIdx, pendingStartIdx + pendingPerPage);
 
   const filteredApproved = approvedUsers.filter(
     (u) =>
@@ -1529,7 +1557,7 @@ export default function AdminDashboard() {
             </div>
 
             <div style={{ fontSize: '12px', color: activeTheme.textMuted }}>
-              إجمالي النتائج المعروضة: <strong>{filteredPending.length}</strong>
+              إجمالي النتائج: <strong>{filteredPending.length}</strong> {filteredPending.length > 0 && `(الصفحة ${safePendingPage} من ${totalPendingPages})`}
             </div>
           </div>
 
@@ -1542,7 +1570,7 @@ export default function AdminDashboard() {
               </div>
             </div>
           ) : (
-            filteredPending.map((student) => {
+            paginatedPending.map((student) => {
               const isApproved =
                 student.verificationStatus === 'verified' ||
                 student.verificationStatus === 'approved' ||
@@ -1754,6 +1782,129 @@ export default function AdminDashboard() {
                 </div>
               );
             })
+          )}
+
+          {/* عناصر وأزرار التصفح والتجزئة (Pagination Controls) */}
+          {totalPendingPages > 1 && (
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                flexWrap: 'wrap',
+                gap: '12px',
+                padding: '14px 18px',
+                borderRadius: '12px',
+                background: activeTheme.cardBg,
+                border: `1px solid ${activeTheme.border}`,
+                marginTop: '12px',
+              }}
+            >
+              <div style={{ fontSize: '13px', color: activeTheme.textMuted, display: 'flex', alignItems: 'center', gap: '8px' }}>
+                <span>عرض</span>
+                <select
+                  value={pendingPerPage}
+                  onChange={(e) => {
+                    setPendingPerPage(Number(e.target.value));
+                    setPendingPage(1);
+                  }}
+                  style={{
+                    background: 'rgba(0,0,0,0.25)',
+                    color: activeTheme.textMain,
+                    border: `1px solid ${activeTheme.border}`,
+                    borderRadius: '6px',
+                    padding: '4px 8px',
+                    fontSize: '12px',
+                    outline: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <option value={5}>5 طلبات</option>
+                  <option value={10}>10 طلبات</option>
+                  <option value={20}>20 طلب</option>
+                  <option value={50}>50 طلب</option>
+                </select>
+                <span>لكل صفحة (إجمالي: {filteredPending.length})</span>
+              </div>
+
+              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                <button
+                  disabled={safePendingPage <= 1}
+                  onClick={() => setPendingPage((p) => Math.max(1, p - 1))}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${activeTheme.border}`,
+                    background: safePendingPage <= 1 ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                    color: safePendingPage <= 1 ? activeTheme.textMuted : activeTheme.textMain,
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: safePendingPage <= 1 ? 'not-allowed' : 'pointer',
+                    opacity: safePendingPage <= 1 ? 0.5 : 1,
+                  }}
+                >
+                  السابق
+                </button>
+
+                {Array.from({ length: totalPendingPages }, (_, i) => i + 1).map((pg) => {
+                  if (
+                    totalPendingPages > 7 &&
+                    pg !== 1 &&
+                    pg !== totalPendingPages &&
+                    Math.abs(pg - safePendingPage) > 1
+                  ) {
+                    if (pg === 2 || pg === totalPendingPages - 1) {
+                      return (
+                        <span key={pg} style={{ color: activeTheme.textMuted, padding: '0 4px' }}>
+                          ...
+                        </span>
+                      );
+                    }
+                    return null;
+                  }
+
+                  const isActive = pg === safePendingPage;
+                  return (
+                    <button
+                      key={pg}
+                      onClick={() => setPendingPage(pg)}
+                      style={{
+                        minWidth: '32px',
+                        height: '32px',
+                        padding: '0 8px',
+                        borderRadius: '8px',
+                        border: `1px solid ${isActive ? activeTheme.accent : activeTheme.border}`,
+                        background: isActive ? activeTheme.primary : 'transparent',
+                        color: isActive && !activeTheme.isDark ? '#0b1622' : '#ffffff',
+                        fontSize: '12px',
+                        fontWeight: 'bold',
+                        cursor: 'pointer',
+                      }}
+                    >
+                      {pg}
+                    </button>
+                  );
+                })}
+
+                <button
+                  disabled={safePendingPage >= totalPendingPages}
+                  onClick={() => setPendingPage((p) => Math.min(totalPendingPages, p + 1))}
+                  style={{
+                    padding: '6px 12px',
+                    borderRadius: '8px',
+                    border: `1px solid ${activeTheme.border}`,
+                    background: safePendingPage >= totalPendingPages ? 'rgba(255,255,255,0.03)' : 'rgba(255,255,255,0.08)',
+                    color: safePendingPage >= totalPendingPages ? activeTheme.textMuted : activeTheme.textMain,
+                    fontSize: '12px',
+                    fontWeight: 'bold',
+                    cursor: safePendingPage >= totalPendingPages ? 'not-allowed' : 'pointer',
+                    opacity: safePendingPage >= totalPendingPages ? 0.5 : 1,
+                  }}
+                >
+                  التالي
+                </button>
+              </div>
+            </div>
           )}
         </div>
       )}
@@ -2504,23 +2655,25 @@ export default function AdminDashboard() {
               <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: '6px' }}>
                 <button
                   type="submit"
+                  disabled={isSendingNotif}
                   style={{
                     display: 'flex',
                     alignItems: 'center',
                     gap: '8px',
-                    background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                    background: isSendingNotif ? 'rgba(245, 158, 11, 0.4)' : 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
                     color: '#0b1622',
                     border: 'none',
                     padding: '12px 24px',
                     borderRadius: '10px',
                     fontSize: '13.5px',
                     fontWeight: '900',
-                    cursor: 'pointer',
+                    cursor: isSendingNotif ? 'not-allowed' : 'pointer',
                     boxShadow: '0 4px 15px rgba(245, 158, 11, 0.35)',
+                    opacity: isSendingNotif ? 0.7 : 1,
                   }}
                 >
                   <Send size={16} />
-                  <span>إرسال وبث الإشعار الفوري لجميع الأجهزة 🚀</span>
+                  <span>{isSendingNotif ? 'جاري البث اللحظي لجميع الأجهزة...' : 'إرسال وبث الإشعار الفوري لجميع الأجهزة 🚀'}</span>
                 </button>
               </div>
             </form>

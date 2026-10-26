@@ -261,7 +261,7 @@ export default function FloatingAIChatWidget() {
         ...prev,
         {
           sender: 'assistant',
-          text: 'أبشر بالخير! يمكنك الاطلاع على قسم **المكتبة الأكاديمية** أو **الأسئلة الشائعة** بالمنصة للحصول على تفاصيل فورية، أو المحاولة لاحقاً.',
+          text: 'تعذر الاتصال بقاعدة المعرفة حالياً. يُرجى مراجعة الأسئلة في لوحة المستشار أو إعادة المحاولة لاحقاً.',
           time: new Date().toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' }),
         },
       ]);

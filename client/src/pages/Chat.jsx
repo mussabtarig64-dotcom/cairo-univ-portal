@@ -38,10 +38,6 @@ const AVAILABLE_ROOMS = [
   { id: 'general', name: '📢 غرفة الحوار والنقاش العام', desc: 'ملتقى عام لجميع طلاب الرابطة' },
   { id: 'freshmen', name: '🌟 ملتقى واستقبال الطلاب الجدد', desc: 'إرشادات ونصائح خاصة بالمستجدين' },
   { id: 'housing', name: '🏠 شؤون السكن والإقامة بمصر', desc: 'البحث عن سكن وتجديد الإقامات' },
-  { id: 'cs', name: '💻 علوم الحاسب والمعلومات', desc: 'برمجة، خوارزميات، ومشاريع' },
-  { id: 'chemistry', name: '🧪 الكيمياء والكيمياء الحيوية', desc: 'معامل، تفاعلات، ومذكرات' },
-  { id: 'physics', name: '⚡ الفيزياء والرياضيات', desc: 'مسائل ونظريات علمية' },
-  { id: 'biology', name: '🌿 علوم الحياة والأحياء المجهرية', desc: 'نبات، حيوان، وميكرو' },
 ];
 
 const FRESHMEN_GUIDE = [
@@ -86,7 +82,14 @@ export default function Chat() {
 
   const [currentRoom, setCurrentRoom] = useState('general');
   const [message, setMessage] = useState('');
-  const [messages, setMessages] = useState([]);
+  const [roomMessages, setRoomMessages] = useState(() => {
+    try {
+      const saved = localStorage.getItem('ssa_community_room_messages');
+      return saved ? JSON.parse(saved) : { general: [], freshmen: [], housing: [] };
+    } catch {
+      return { general: [], freshmen: [], housing: [] };
+    }
+  });
   const [activeGuideIndex, setActiveGuideIndex] = useState(0);
   const [showGuide, setShowGuide] = useState(false);
   const chatScrollRef = useRef(null);
@@ -96,8 +99,18 @@ export default function Chat() {
       socket.emit('join_room', currentRoom);
 
       const handleReceive = (data) => {
-        if (data.room === currentRoom) {
-          setMessages((prev) => [...prev, data]);
+        if (data && data.room) {
+          setRoomMessages((prev) => {
+            const list = prev[data.room] || [];
+            const updated = {
+              ...prev,
+              [data.room]: [...list, data],
+            };
+            try {
+              localStorage.setItem('ssa_community_room_messages', JSON.stringify(updated));
+            } catch (e) {}
+            return updated;
+          });
         }
       };
 
@@ -108,9 +121,11 @@ export default function Chat() {
     }
   }, [currentRoom]);
 
+  const currentMessages = roomMessages[currentRoom] || [];
+
   useEffect(() => {
     chatScrollRef.current?.scrollIntoView({ behavior: 'smooth' });
-  }, [messages]);
+  }, [currentMessages]);
 
   const sendMessage = (e) => {
     e.preventDefault();
@@ -127,7 +142,17 @@ export default function Chat() {
     if (socket && socket.connected) {
       socket.emit('send_message', msgData);
     }
-    setMessages((prev) => [...prev, msgData]);
+    setRoomMessages((prev) => {
+      const list = prev[currentRoom] || [];
+      const updated = {
+        ...prev,
+        [currentRoom]: [...list, msgData],
+      };
+      try {
+        localStorage.setItem('ssa_community_room_messages', JSON.stringify(updated));
+      } catch (e) {}
+      return updated;
+    });
     setMessage('');
   };
 
@@ -204,7 +229,7 @@ export default function Chat() {
           )}
         </div>
 
-        {/* الشات المباشر وغرف المذاكرة */}
+        {/* مجتمع للحوار */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }}>
           {/* قائمة الغرف */}
           <div
@@ -218,7 +243,7 @@ export default function Chat() {
           >
             <h3 style={{ fontSize: '15px', fontWeight: 'bold', margin: '0 0 14px', color: activeTheme.accentLight, display: 'flex', alignItems: 'center', gap: '8px' }}>
               <Users size={18} />
-              <span>غرف المذاكرة والتواصل المباشر</span>
+              <span>مجتمع للحوار والتواصل المباشر</span>
             </h3>
 
             <div style={{ display: 'flex', flexDirection: 'column', gap: '8px' }}>
@@ -227,10 +252,7 @@ export default function Chat() {
                 return (
                   <button
                     key={room.id}
-                    onClick={() => {
-                      setCurrentRoom(room.id);
-                      setMessages([]);
-                    }}
+                    onClick={() => setCurrentRoom(room.id)}
                     style={{
                       padding: '12px 14px',
                       borderRadius: '10px',
@@ -303,14 +325,14 @@ export default function Chat() {
                 maxHeight: '420px',
               }}
             >
-              {messages.length === 0 ? (
+              {currentMessages.length === 0 ? (
                 <div style={{ textAlign: 'center', color: activeTheme.textMuted, margin: 'auto', padding: '40px' }}>
                   <MessageSquare size={36} color={activeTheme.accentLight} style={{ marginBottom: '10px' }} />
-                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>غرفة الدردشة والتواصل جاهزة</div>
+                  <div style={{ fontWeight: 'bold', fontSize: '14px' }}>غرفة الحوار والتواصل جاهزة</div>
                   <div style={{ fontSize: '12px', marginTop: '4px' }}>شارك زملاءك بطرح سؤال أو استفسار أو تبادل خبراتك!</div>
                 </div>
               ) : (
-                messages.map((msg, idx) => {
+                currentMessages.map((msg, idx) => {
                   const isMe = msg.sender === (user?.fullName || user?.name);
                   return (
                     <div

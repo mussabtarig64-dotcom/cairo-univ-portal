@@ -247,9 +247,19 @@ export default function Posts() {
     }
   };
 
-  // تصفية المنشورات
+  // تصفية المنشورات - عزل وربط دقيق حسب القسم العلمي (Strict Data Scoping)
   const filteredPosts = posts.filter((p) => {
-    const matchDept = selectedDept === 'الكل' || p.department?.includes(selectedDept) || p.department === selectedDept;
+    const postDept = (p.department || 'العلوم العامة').trim();
+    
+    // عندما يتم الدخول لقسم معين، يظهر المحتوى الخاص به حصراً
+    // وعند التواجد في الواجهة الخارجية (الكل)، تظهر المنشورات العامة فقط ولا تتسرب منشورات الأقسام التخصصية
+    let matchDept = false;
+    if (selectedDept === 'الكل') {
+      matchDept = postDept === 'العلوم العامة' || postDept === 'عام' || postDept === 'الكل' || !p.department;
+    } else {
+      matchDept = postDept === selectedDept;
+    }
+
     const matchSearch =
       searchQuery === '' ||
       p.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -283,7 +293,10 @@ export default function Posts() {
 
         {/* زر نشر مشاركة جديدة */}
         <button
-          onClick={() => setShowAddModal(true)}
+          onClick={() => {
+            if (selectedDept !== 'الكل') setNewDept(selectedDept);
+            setShowAddModal(true);
+          }}
           style={{
             display: 'flex',
             alignItems: 'center',

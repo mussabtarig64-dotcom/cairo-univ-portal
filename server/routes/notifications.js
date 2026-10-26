@@ -1,11 +1,13 @@
 const express = require('express');
 const router = express.Router();
 const Notification = require('../models/Notification');
+const connectDB = require('../db');
 
 // 1. جلب قائمة الإشعارات العامة والحديثة
 router.get('/', async (req, res) => {
   try {
-    const notifications = await Notification.find().sort({ createdAt: -1 }).limit(40);
+    await connectDB();
+    const notifications = await Notification.find().sort({ createdAt: -1 }).limit(40).lean();
     res.json({
       success: true,
       count: notifications.length,
@@ -21,9 +23,10 @@ router.get('/', async (req, res) => {
   }
 });
 
-// 2. بث ونشر إشعار جديد لجميع الطلاب والأجهزة (Admin Push Notification Broadcast)
+// 2. بث ونشر إشعار جديد لجميع الطلاب والأجهزة (Instant Push Notification Broadcast)
 router.post('/', async (req, res) => {
   try {
+    await connectDB();
     const { title, message, type, link, sender, senderRole } = req.body;
 
     if (!title || !message) {
@@ -38,16 +41,18 @@ router.post('/', async (req, res) => {
       message: message.trim(),
       type: type || 'general',
       link: link || '/',
-      sender: sender || 'إدارة الرابطة',
+      sender: sender || 'إدارة الرابطة (SSA-FS-CU)',
       senderRole: senderRole || 'admin',
     });
 
-    await newNotification.save();
-
-    // البث الحي عبر Socket.IO لجميع المستخدمين المتصلين لحظياً
-    if (req.io) {
-      req.io.emit('new_notification', newNotification);
+    // البث الحي اللحظي الفوري عبر Socket.IO لجميع المستخدمين المتصلين لحظياً في 0ms
+    const io = req.io || req.app?.get('io');
+    if (io) {
+      io.emit('new_notification', newNotification.toObject ? newNotification.toObject() : newNotification);
     }
+
+    // حفظ في قاعدة البيانات
+    await newNotification.save();
 
     res.status(201).json({
       success: true,

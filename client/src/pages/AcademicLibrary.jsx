@@ -391,8 +391,14 @@ export default function AcademicLibrary({ defaultTab }) {
   };
 
   const filteredNotesAndExams = resources.filter((item) => {
-    if (activeTab === 'notes' && (item.type === 'exam' || item.section === 'exams')) return false;
-    if (activeTab === 'exams' && item.type !== 'exam' && item.section !== 'exams') return false;
+    if (activeTab === 'notes') {
+      const isNote = item.section === 'notes' || (!item.section && item.type !== 'exam');
+      if (!isNote) return false;
+    }
+    if (activeTab === 'exams') {
+      const isExam = item.section === 'exams' || (!item.section && item.type === 'exam');
+      if (!isExam) return false;
+    }
 
     const matchesLevel = selectedLevel === 'الكل' || item.level === selectedLevel;
     const matchesDept = selectedDept === 'جميع التخصصات' || item.dept === selectedDept || item.category === selectedDept;

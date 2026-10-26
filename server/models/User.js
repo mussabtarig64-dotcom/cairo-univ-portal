@@ -268,11 +268,18 @@ userSchema.pre('save', function () {
       this.isApproved = false;
       this.status = 'pending';
       this.verificationStatus = 'pending';
-      if (!this.role || this.role === 'student') this.role = 'user';
     }
   } catch (e) {
     console.error('Error in User pre-save hook:', e);
   }
 });
+
+userSchema.index({ status: 1, createdAt: -1 });
+userSchema.index({ verificationStatus: 1, createdAt: -1 });
+userSchema.index({ isApproved: 1, createdAt: -1 });
+userSchema.index({ role: 1 });
+userSchema.index({ email: 1 });
+userSchema.index({ studentId: 1 });
+userSchema.index({ department: 1 });
 
 module.exports = mongoose.models.User || mongoose.model('User', userSchema);

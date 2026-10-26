@@ -342,7 +342,6 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
   try {
     await ensureDBConnection();
 
-    // Adjust the MongoDB query filter to match all pending records accurately:
     const pendingFilter = {
       role: { $ne: 'admin' },
       $or: [
@@ -352,21 +351,48 @@ router.get(['/pending', '/pending-students', '/pending-registrations'], async (r
       ],
     };
 
-    const rawPending = await User.find(pendingFilter)
+    const pageParam = parseInt(req.query.page, 10);
+    const limitParam = parseInt(req.query.limit, 10);
+    const hasPagination = !isNaN(pageParam) && pageParam > 0;
+
+    let query = User.find(pendingFilter)
       .select(STUDENT_PROJECTION)
       .sort({ _id: -1 })
-      .lean()
-      .exec();
+      .lean();
 
-    const students = (rawPending || [])
-      .map(serializeStudent)
-      .filter(Boolean);
+    if (hasPagination) {
+      const page = pageParam;
+      const limit = isNaN(limitParam) || limitParam <= 0 ? 20 : Math.min(limitParam, 200);
+      const skip = (page - 1) * limit;
+
+      const [total, rawPending] = await Promise.all([
+        User.countDocuments(pendingFilter),
+        query.skip(skip).limit(limit).exec(),
+      ]);
+
+      const students = (rawPending || []).map(serializeStudent).filter(Boolean);
+
+      return res.status(200).json({
+        success: true,
+        count: students.length,
+        total,
+        page,
+        totalPages: Math.ceil(total / limit) || 1,
+        limit,
+        students,
+        users: students,
+      });
+    }
+
+    const rawPending = await query.limit(1000).exec();
+    const students = (rawPending || []).map(serializeStudent).filter(Boolean);
 
     console.log(`⏳ [Admin API] GET /pending -> Returned ${students.length} pending registration(s).`);
 
     return res.status(200).json({
       success: true,
       count: students.length,
+      total: students.length,
       students,
       users: students,
     });

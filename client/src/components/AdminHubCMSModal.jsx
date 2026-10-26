@@ -19,11 +19,200 @@ import {
   RefreshCw,
   Cloud,
   CloudUpload,
-  Loader2,
-  UserCheck,
-  User
+  Loader2
 } from 'lucide-react';
 import { createHubContent, updateHubContent, deleteHubContent } from '../utils/cmsApi';
+
+// خريطة التكوين الديناميكي للحقول والنصوص التوضيحية بناءً على القسم أو المجال الفعّال
+const SECTION_CONFIGS = {
+  sports: {
+    contextName: 'النشاط الرياضي',
+    contextBadge: '⚽ النشاط الرياضي والبطولات',
+    titleLabel: 'اسم البطولة/المباراة',
+    titlePlaceholder: 'مثال: دوري كلية العلوم 2026، فرسان الكيمياء vs صقور الفيزياء، بطولة الشطرنج السريع...',
+    categoryLabel: 'فئة الرياضة',
+    categoryPlaceholder: 'مثال: كرة قدم (خماسيات)، شطرنج، تنس طاولة، ألعاب قوى...',
+    yearLabel: 'الموسم الرياضي',
+    yearPlaceholder: 'مثال: 2025 - 2026',
+    descriptionLabel: 'التفاصيل والوصف الرياضي',
+    descriptionPlaceholder: 'تفاصيل البطولة، لوائح المنافسة، تشكيلة الفريق، نتائج وأحداث المباراة...',
+    badgeLabel: 'حالة النشاط / الشارة',
+    badgePlaceholder: 'مثال: جارية الآن، نهائي، ذهبية، متصدر الدوري...',
+    uploadSubtitle: 'رفع شعارات الفرق الرياضية، جداول المباريات، ومستندات الأنشطة السحابية',
+  },
+  academic: {
+    contextName: 'المحتوى الأكاديمي',
+    contextBadge: '📚 المكتبة والمحتوى الدراسي',
+    titleLabel: 'عنوان المحتوى أو المذكرة',
+    titlePlaceholder: 'مثال: مذكرة الكيمياء العضوية، امتحان الفيزياء الحديثة 2025، جدول المحاضرات...',
+    categoryLabel: 'التصنيف أو القسم الأكاديمي',
+    categoryPlaceholder: 'مثال: قسم الكيمياء، قسم الفيزياء، علوم الحاسب، الجيولوجيا...',
+    yearLabel: 'السنة الأكاديمية / الفرقة',
+    yearPlaceholder: 'مثال: الفرقة الثالثة 2026 أو الفصل الدراسي الثاني',
+    descriptionLabel: 'الوصف وتفاصيل المحتوى الأكاديمي',
+    descriptionPlaceholder: 'تفاصيل المحتوى، فصول المذكرة، أو تعليمات الامتحان والمراجع...',
+    badgeLabel: 'الشارة أو التصنيف الإضافي',
+    badgePlaceholder: 'مثال: ملزمة جديدة، امتحان معتمد، شامل، ملخص نهائي...',
+    uploadSubtitle: 'رفع المذكرات، نماذج الامتحانات، والمستندات السحابية (Cloudinary)',
+  },
+  social: {
+    contextName: 'العمل الاجتماعي',
+    contextBadge: '🤝 المبادرات والتكافل والخدمة',
+    titleLabel: 'اسم المبادرة/الأسرة',
+    titlePlaceholder: 'مثال: مبادرة رفق، أسرة النيل الطلابية، صندوق التكافل الطلابي، حملة كسوة...',
+    categoryLabel: 'مجال التطوع',
+    categoryPlaceholder: 'مثال: دعم السكن، كفالة طالب، إرشاد وتوجيه، خدمة مجتمعية، إغاثة عاجلة...',
+    yearLabel: 'العام / الدفعة المستهدفة',
+    yearPlaceholder: 'مثال: 2026',
+    descriptionLabel: 'أهداف وتفاصيل المبادرة',
+    descriptionPlaceholder: 'أهداف المبادرة، الفئات المستهدفة، برامج التكافل، وكيفية التطوع...',
+    badgeLabel: 'حالة المبادرة / الشارة',
+    badgePlaceholder: 'مثال: مبادرة نشطة، مفتوح للتطوع، مكتمل، عاجل...',
+    uploadSubtitle: 'رفع استمارات التطوع، بروشورات المبادرات، وتوثيقات العمل التكافلي',
+  },
+  events: {
+    contextName: 'الفعاليات والمؤتمرات',
+    contextBadge: '🎟️ الفعاليات والملتقيات',
+    titleLabel: 'عنوان الفعالية',
+    titlePlaceholder: 'مثال: ملتقى الطلاب السودانيين السنوي، ورشة الذكاء الاصطناعي، المعرض العلمي...',
+    categoryLabel: 'نوع الفعالية',
+    categoryPlaceholder: 'مثال: مؤتمر سنوي، ورشة عمل، ندوة علمية، معرض، حفل تكريم واستقبال...',
+    yearLabel: 'سنة / موعد الفعالية',
+    yearPlaceholder: 'مثال: 2026 أو مارس 2026',
+    descriptionLabel: 'تفاصيل وبرنامج الفعالية',
+    descriptionPlaceholder: 'جدول وبرنامج الفعالية، المتحدثين، الموقع وشروط الحضور والتسجيل...',
+    badgeLabel: 'حالة الفعالية / شارة الحجز',
+    badgePlaceholder: 'مثال: التسجيل متاح، مقاعد محدودة، قريباً، مجاني...',
+    uploadSubtitle: 'رفع بوسترات الفعاليات، برامج المؤتمرات، وجداول المواعيد السحابية',
+  },
+  media: {
+    contextName: 'المركز الإعلامي',
+    contextBadge: '📰 الأخبار والبيانات الرسمية',
+    titleLabel: 'عنوان الخبر',
+    titlePlaceholder: 'مثال: صدور جداول الامتحانات الرسمية، تغطية حفل الاستقبال، بيان المكتب التنفيذي...',
+    categoryLabel: 'تصنيف الخبر',
+    categoryPlaceholder: 'مثال: أخبار الكلية، بيانات رسمية، إعلانات عاجلة، تقارير مصورة...',
+    yearLabel: 'سنة النشر / الأرشيف',
+    yearPlaceholder: 'مثال: 2026',
+    descriptionLabel: 'نص الخبر أو البيان الإعلامي',
+    descriptionPlaceholder: 'التفاصيل الكاملة للخبر، حيثيات البيان والتصريحات الرسمية للمكتب الإعلامي...',
+    badgeLabel: 'تصنيف الأولوية / الشارة',
+    badgePlaceholder: 'مثال: هام وعاجل، خبر حصري، بيان رسمي، تنبيه للطلاب...',
+    uploadSubtitle: 'رفع صور الأخبار الرسمية، نص البيانات، وتصاميم التغطية الإعلامية',
+  },
+  administration: {
+    contextName: 'المكتب التنفيذي',
+    contextBadge: '🏛️ الهيكل الإداري والتنفيذي',
+    titleLabel: 'اسم العضو أو المنصب الإداري',
+    titlePlaceholder: 'مثال: رئيس الرابطة، أمين الشؤون الأكاديمية، المسؤول المالي...',
+    categoryLabel: 'الأمانة أو اللجنة',
+    categoryPlaceholder: 'مثال: المكتب التنفيذي، الأمانة الرياضية، اللجنة الإعلامية، أمانة العلاقات...',
+    yearLabel: 'الدورة النقابية / العام',
+    yearPlaceholder: 'مثال: دورة 2025 - 2026',
+    descriptionLabel: 'المهام والاختصاصات التنفيذية',
+    descriptionPlaceholder: 'المسؤوليات التنفيذية، خطة العمل الدورية، ووسائل التواصل المعتمدة...',
+    badgeLabel: 'الصفة الإدارية',
+    badgePlaceholder: 'مثال: الدورة الحالية، عضو فخري، استشاري...',
+    uploadSubtitle: 'رفع صور الأعضاء واللوائح التنظيمية وقرارات المكتب التنفيذي',
+  },
+  default: {
+    contextName: 'إدارة المحتوى',
+    contextBadge: '📁 محتوى البوابة الجامعية',
+    titleLabel: 'عنوان المحتوى',
+    titlePlaceholder: 'مثال: عنوان المستند، المذكرة، أو الفعالية...',
+    categoryLabel: 'التصنيف',
+    categoryPlaceholder: 'مثال: التصنيف العام، القسم، أو الفئة...',
+    yearLabel: 'السنة الأكاديمية',
+    yearPlaceholder: 'مثال: 2026',
+    descriptionLabel: 'الوصف والتفاصيل',
+    descriptionPlaceholder: 'تفاصيل المحتوى، الملاحظات، أو التوجيهات...',
+    badgeLabel: 'الشارة (Badge / Status)',
+    badgePlaceholder: 'مثال: جديد، نشط، معتمد...',
+    uploadSubtitle: 'رفع المذكرات، المستندات، والصور السحابية (Cloudinary Cloud Storage)',
+  },
+};
+
+/**
+ * دالة استنتاج سياق القسم المستهدف بدقة استناداً إلى Hub أو Section
+ */
+const getContextKey = (hub, section) => {
+  const normHub = (hub || '').toString().toLowerCase().trim();
+  const normSec = (section || '').toString().toLowerCase().trim();
+
+  // 1. الرياضة
+  if (
+    normHub === 'sports' ||
+    normSec === 'sports' ||
+    normHub.includes('sport') ||
+    normSec.includes('sport') ||
+    ['tournaments', 'teams', 'results', 'standings', 'scorers', 'halloffame', 'matches'].includes(normSec) ||
+    ['رياضة', 'الرياضة', 'الرياضي', 'بطولات'].some((k) => normHub.includes(k) || normSec.includes(k))
+  ) {
+    return 'sports';
+  }
+
+  // 2. الأكاديمي
+  if (
+    normHub === 'academic' ||
+    normSec === 'academic' ||
+    normHub.includes('academic') ||
+    normSec.includes('academic') ||
+    ['notes', 'exams', 'majors', 'groups', 'grants', 'calendar'].includes(normSec) ||
+    ['أكاديمي', 'دراسي', 'مذكرات', 'امتحانات', 'مكتبة'].some((k) => normHub.includes(k) || normSec.includes(k))
+  ) {
+    return 'academic';
+  }
+
+  // 3. الاجتماعي
+  if (
+    normHub === 'social' ||
+    normSec === 'social' ||
+    normHub.includes('social') ||
+    normSec.includes('social') ||
+    ['initiatives', 'volunteer', 'support', 'families'].includes(normSec) ||
+    ['اجتماعي', 'مبادرات', 'تطوع', 'أسر', 'تكافل'].some((k) => normHub.includes(k) || normSec.includes(k))
+  ) {
+    return 'social';
+  }
+
+  // 4. الفعاليات
+  if (
+    normHub === 'events' ||
+    normSec === 'events' ||
+    normHub.includes('event') ||
+    normSec.includes('event') ||
+    ['upcoming', 'gallery'].includes(normSec) ||
+    ['فعاليات', 'فعالية', 'مؤتمرات', 'ملتقى'].some((k) => normHub.includes(k) || normSec.includes(k))
+  ) {
+    return 'events';
+  }
+
+  // 5. الإعلام
+  if (
+    normHub === 'media' ||
+    normSec === 'media' ||
+    normHub.includes('media') ||
+    normSec.includes('media') ||
+    ['news', 'statements', 'announcements'].includes(normSec) ||
+    ['إعلام', 'أخبار', 'بيانات', 'إعلانات'].some((k) => normHub.includes(k) || normSec.includes(k))
+  ) {
+    return 'media';
+  }
+
+  // 6. الإدارة
+  if (
+    normHub === 'administration' ||
+    normSec === 'administration' ||
+    ['leadership', 'executives', 'secretariat'].includes(normSec) ||
+    ['إدارة', 'إداري', 'تنفيذي'].some((k) => normHub.includes(k) || normSec.includes(k))
+  ) {
+    return 'administration';
+  }
+
+  if (SECTION_CONFIGS[normSec]) return normSec;
+  if (SECTION_CONFIGS[normHub]) return normHub;
+  return 'default';
+};
 
 export default function AdminHubCMSModal({
   hub,
@@ -65,6 +254,10 @@ export default function AdminHubCMSModal({
   const [uploadStatusText, setUploadStatusText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
+
+  // تحديد السياق النشط وعناصر التكوين الديناميكية للنموذج
+  const currentContextKey = getContextKey(hub, formData.section);
+  const currentConfig = SECTION_CONFIGS[currentContextKey] || SECTION_CONFIGS.default;
 
   useEffect(() => {
     if (editingItem) {
@@ -320,10 +513,13 @@ export default function AdminHubCMSModal({
             </div>
             <div>
               <h3 style={{ fontSize: '19px', fontWeight: 'bold', margin: 0, color: '#ffffff' }}>
-                {editingItem ? 'تعديل المحتوى (لوحة الإدارة)' : 'إضافة محتوى جديد (CMS - Admin)'}
+                {editingItem ? `تعديل المحتوى (${currentConfig.contextName})` : `إضافة محتوى جديد (${currentConfig.contextName})`}
               </h3>
-              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '2px' }}>
-                رفع المذكرات، نماذج الامتحانات، والمستندات السحابية (Cloudinary Cloud Storage)
+              <div style={{ fontSize: '12px', color: '#94a3b8', marginTop: '4px', display: 'flex', alignItems: 'center', gap: '8px', flexWrap: 'wrap' }}>
+                <span>{currentConfig.uploadSubtitle}</span>
+                <span style={{ fontSize: '11px', background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.3)', padding: '2px 8px', borderRadius: '6px' }}>
+                  {currentConfig.contextBadge}
+                </span>
               </div>
             </div>
           </div>
@@ -394,45 +590,30 @@ export default function AdminHubCMSModal({
             </div>
           )}
 
-          {/* Association Member Name Field (Unconditionally Visible Above Title) */}
-          <div style={{ background: 'rgba(245, 158, 11, 0.08)', border: '1px solid rgba(245, 158, 11, 0.25)', borderRadius: '14px', padding: '14px 16px' }}>
-            <label style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '13px', fontWeight: '700', color: '#fbbf24', marginBottom: '8px' }}>
-              <UserCheck size={18} color="#f59e0b" />
-              <span>اسم عضو الرابطة (Association Member Name):</span>
-            </label>
-            <input
-              type="text"
-              placeholder="مثال: مصعب طارق، د. سيف الدين، عمر صديق، أو اسم المسؤول..."
-              value={formData.memberName}
-              onChange={(e) => setFormData({ ...formData, memberName: e.target.value })}
-              style={{ ...inputStyle, backgroundColor: 'rgba(0, 0, 0, 0.35)', borderColor: 'rgba(245, 158, 11, 0.4)' }}
-            />
-          </div>
-
-          {/* Title */}
+          {/* Title - Dynamic based on active section context */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-              عنوان المحتوى الرئيسي أو المنصب الإداري: *
+              {currentConfig.titleLabel}: *
             </label>
             <input
               type="text"
               required
-              placeholder="مثال: رئيس الرابطة، مذكرة الكيمياء العضوية، جدول المحاضرات، الخطة الاستراتيجية..."
+              placeholder={currentConfig.titlePlaceholder}
               value={formData.title}
               onChange={(e) => setFormData({ ...formData, title: e.target.value })}
               style={inputStyle}
             />
           </div>
 
-          {/* Subtitle / Department / Category */}
+          {/* Subtitle / Department / Category - Dynamic based on active section context */}
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                التصنيف أو القسم الأكاديمي:
+                {currentConfig.categoryLabel}:
               </label>
               <input
                 type="text"
-                placeholder="مثال: قسم الكيمياء، الفيزياء، الرياضيات..."
+                placeholder={currentConfig.categoryPlaceholder}
                 value={formData.category}
                 onChange={(e) => setFormData({ ...formData, category: e.target.value })}
                 style={inputStyle}
@@ -441,11 +622,11 @@ export default function AdminHubCMSModal({
 
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                السنة الأكاديمية / الدفعة:
+                {currentConfig.yearLabel}:
               </label>
               <input
                 type="text"
-                placeholder="2026"
+                placeholder={currentConfig.yearPlaceholder}
                 value={formData.year}
                 onChange={(e) => setFormData({ ...formData, year: e.target.value })}
                 style={inputStyle}
@@ -453,14 +634,14 @@ export default function AdminHubCMSModal({
             </div>
           </div>
 
-          {/* Description */}
+          {/* Description - Dynamic based on active section context */}
           <div>
             <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-              الوصف والتفاصيل:
+              {currentConfig.descriptionLabel}:
             </label>
             <textarea
               rows={3}
-              placeholder="تفاصيل المحتوى، فصول المذكرة، أو تعليمات الامتحان..."
+              placeholder={currentConfig.descriptionPlaceholder}
               value={formData.description}
               onChange={(e) => setFormData({ ...formData, description: e.target.value })}
               style={{ ...inputStyle, resize: 'vertical' }}
@@ -711,11 +892,11 @@ export default function AdminHubCMSModal({
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '12px' }}>
             <div>
               <label style={{ display: 'block', fontSize: '13px', fontWeight: '600', color: '#cbd5e1', marginBottom: '6px' }}>
-                الشارة (Badge / Status):
+                {currentConfig.badgeLabel}:
               </label>
               <input
                 type="text"
-                placeholder="مثال: ملزمة جديدة، امتحان معتمد، شامل..."
+                placeholder={currentConfig.badgePlaceholder}
                 value={formData.badge}
                 onChange={(e) => setFormData({ ...formData, badge: e.target.value })}
                 style={inputStyle}

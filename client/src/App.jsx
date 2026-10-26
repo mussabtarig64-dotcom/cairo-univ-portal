@@ -110,6 +110,8 @@ function MainAppLayout() {
             <Route path="/register" element={<GuestOnlyRoute><Register /></GuestOnlyRoute>} />
             <Route path="/pending-approval" element={<PendingOrVerifiedRoute><PendingApproval /></PendingOrVerifiedRoute>} />
             <Route path="/posts" element={<VerifiedStudentRoute><Posts /></VerifiedStudentRoute>} />
+            <Route path="/community" element={<VerifiedStudentRoute><Chat /></VerifiedStudentRoute>} />
+            <Route path="/dialogue" element={<VerifiedStudentRoute><Chat /></VerifiedStudentRoute>} />
             <Route path="/chat" element={<VerifiedStudentRoute><Chat /></VerifiedStudentRoute>} />
             <Route path="/ai" element={<VerifiedStudentRoute><AIChat /></VerifiedStudentRoute>} />
             <Route path="/admin" element={<AdminRoute><AdminDashboard /></AdminRoute>} />

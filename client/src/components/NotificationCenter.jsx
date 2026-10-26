@@ -57,15 +57,16 @@ export default function NotificationCenter() {
   useEffect(() => {
     fetchNotifications();
 
-    // إعداد الاتصال بالـ Socket.IO لتلقي الإشعارات الفورية
-    const socket = io(SOCKET_URL, {
-      transports: ['websocket', 'polling'],
-      withCredentials: true,
-      reconnectionAttempts: 5,
-    });
-
-    socket.on('new_notification', (newNotif) => {
-      setNotifications((prev) => [newNotif, ...prev]);
+    // دالة مساعدة لمعالجة وصول إشعار جديد لحظياً وبث تنبيه المتصفح
+    const handleIncomingNotif = (newNotif) => {
+      if (!newNotif) return;
+      setNotifications((prev) => {
+        const notifId = newNotif._id || newNotif.id;
+        if (notifId && prev.some((n) => (n._id || n.id) === notifId)) {
+          return prev;
+        }
+        return [newNotif, ...prev];
+      });
       setUnreadCount((prev) => prev + 1);
 
       // إظهار Toast داخلي سلس وراقي
@@ -85,10 +86,48 @@ export default function NotificationCenter() {
           console.log('Browser notification note:', err);
         }
       }
+    };
+
+    // 1. إعداد الاتصال بالـ Socket.IO لتلقي الإشعارات الفورية اللحظية
+    const socket = io(SOCKET_URL, {
+      transports: ['websocket', 'polling'],
+      withCredentials: true,
+      reconnectionAttempts: 5,
     });
+
+    socket.on('new_notification', (newNotif) => {
+      handleIncomingNotif(newNotif);
+    });
+
+    // 2. استقبال الإشعارات عبر BroadcastChannel للمزامنة الفورية اللحظية بين التبويبات المفتوحة
+    let bc = null;
+    try {
+      if (typeof window !== 'undefined' && 'BroadcastChannel' in window) {
+        bc = new BroadcastChannel('ssa_realtime_notifications');
+        bc.onmessage = (event) => {
+          if (event.data?.type === 'NEW_NOTIFICATION' && event.data.notification) {
+            handleIncomingNotif(event.data.notification);
+          }
+        };
+      }
+    } catch (e) {
+      console.warn('NotificationCenter BroadcastChannel note:', e);
+    }
+
+    // 3. تحديث فوري عند عودة المستخدم إلى التبويب (Window Focus)
+    const handleFocus = () => {
+      fetchNotifications();
+    };
+    window.addEventListener('focus', handleFocus);
+
+    // 4. مؤقت فحص دوري احتياطي خفيف
+    const interval = setInterval(fetchNotifications, 25000);
 
     return () => {
       socket.disconnect();
+      if (bc) bc.close();
+      window.removeEventListener('focus', handleFocus);
+      clearInterval(interval);
     };
   }, [userEmail]);
 

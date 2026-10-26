@@ -557,114 +557,23 @@ export default function Home() {
           </p>
         </div>
 
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(min(100%, 260px), 1fr))', gap: '20px' }}>
-          
-          {/* المكتبة الأكاديمية الرقمية */}
-          <Link to="/library" style={featureCardStyle(activeTheme)}>
-            <div style={{
-              width: '46px', height: '46px', borderRadius: '12px',
-              background: 'rgba(245, 158, 11, 0.15)', border: '1px solid #f59e0b',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fbbf24', marginBottom: '14px'
-            }}>
-              <BookOpen size={22} />
-            </div>
-            <h3 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: '0 0 8px' }}>
-              المكتبة الرقمية وأرشيف الامتحانات
-            </h3>
-            <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: '0 0 14px' }}>
-              تصفح وتنزيل مذكرات المعامل، ملخصات المواد، والامتحانات السابقة مقسمة بالأقسام.
-            </p>
-            <span style={{ color: '#fbbf24', fontSize: '12px', fontWeight: 'bold' }}>دخول المكتبة الرقمية ←</span>
-          </Link>
-
-          {/* البطاقة الرقمية */}
-          <Link to="/digital-id" style={featureCardStyle(activeTheme)}>
-            <div style={{
-              width: '46px', height: '46px', borderRadius: '12px',
-              background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#34d399', marginBottom: '14px'
-            }}>
-              <QrCode size={22} />
-            </div>
-            <h3 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: '0 0 8px' }}>
-              بطاقة العضوية الرقمية (Digital ID)
-            </h3>
-            <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: '0 0 14px' }}>
-              عرض واستخراج كارت العضوية الرسمي المطبوع المزود بـ QR Code لإثبات القيد.
-            </p>
-            <span style={{ color: '#34d399', fontSize: '12px', fontWeight: 'bold' }}>عرض بطاقتي الرقمية ←</span>
-          </Link>
-
-          {/* الأسئلة الشائعة FAQ */}
-          <Link to="/faq" style={featureCardStyle(activeTheme)}>
-            <div style={{
-              width: '46px', height: '46px', borderRadius: '12px',
-              background: 'rgba(59, 130, 246, 0.15)', border: '1px solid #3b82f6',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#60a5fa', marginBottom: '14px'
-            }}>
-              <HelpCircle size={22} />
-            </div>
-            <h3 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: '0 0 8px' }}>
-              الأسئلة الشائعة وتدقيق القيد
-            </h3>
-            <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: '0 0 14px' }}>
-              إرشادات تفصيلية عن الإقامة، السكن، المعادلة، ونظام الدراسة بكلية العلوم.
-            </p>
-            <span style={{ color: '#60a5fa', fontSize: '12px', fontWeight: 'bold' }}>استعراض الأسئلة والإرشادات ←</span>
-          </Link>
-
+        <div style={{ maxWidth: '480px', margin: '0 auto' }}>
           {/* اتصل بنا والمقر */}
           <Link to="/contact" style={featureCardStyle(activeTheme)}>
             <div style={{
-              width: '46px', height: '46px', borderRadius: '12px',
+              width: '52px', height: '52px', borderRadius: '14px',
               background: 'rgba(236, 72, 153, 0.15)', border: '1px solid #ec4899',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f472b6', marginBottom: '14px'
+              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#f472b6', marginBottom: '16px'
             }}>
-              <MapPin size={22} />
+              <MapPin size={24} />
             </div>
-            <h3 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: '0 0 8px' }}>
+            <h3 style={{ color: activeTheme.textMain, fontSize: '18px', fontWeight: 'bold', margin: '0 0 8px' }}>
               اتصل بنا وخريطة المقر
             </h3>
-            <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: '0 0 14px' }}>
-              أرقام التواصل الرسمية، قنوات المراسلة المباشرة، وخريطة الموقع بكلية العلوم.
+            <p style={{ color: activeTheme.textMuted, fontSize: '13.5px', lineHeight: '1.6', margin: '0 0 16px' }}>
+              أرقام التواصل الرسمية، قنوات المراسلة المباشرة، وخريطة الموقع بكلية العلوم جامعة القاهرة.
             </p>
-            <span style={{ color: '#f472b6', fontSize: '12px', fontWeight: 'bold' }}>موقع الرابطة والتواصل ←</span>
-          </Link>
-
-          {/* غرفة المنشورات */}
-          <Link to="/posts" style={featureCardStyle(activeTheme)}>
-            <div style={{
-              width: '46px', height: '46px', borderRadius: '12px',
-              background: 'rgba(99, 102, 241, 0.15)', border: '1px solid #6366f1',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#818cf8', marginBottom: '14px'
-            }}>
-              <MessageSquare size={22} />
-            </div>
-            <h3 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: '0 0 8px' }}>
-              الملتقى الأكاديمي والمنشورات
-            </h3>
-            <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: '0 0 14px' }}>
-              مشاركة المذكرات ومستندات PDF، حلول تقارير المعامل، والتفاعل المباشر بين الطلاب.
-            </p>
-            <span style={{ color: '#818cf8', fontSize: '12px', fontWeight: 'bold' }}>دخول الملتقى ←</span>
-          </Link>
-
-          {/* غرفة الذكاء الاصطناعي */}
-          <Link to="/ai" style={featureCardStyle(activeTheme)}>
-            <div style={{
-              width: '46px', height: '46px', borderRadius: '12px',
-              background: 'rgba(234, 179, 8, 0.15)', border: '1px solid #eab308',
-              display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fde047', marginBottom: '14px'
-            }}>
-              <Bot size={22} />
-            </div>
-            <h3 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: '0 0 8px' }}>
-              المستشار الأكاديمي والرفيق الذكي
-            </h3>
-            <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.6', margin: '0 0 14px' }}>
-              شات بوت ذكي مدرب على مناهج كلية العلوم ولوائح الساعات المعتمدة وإجراءات الإقامة.
-            </p>
-            <span style={{ color: '#fde047', fontSize: '12px', fontWeight: 'bold' }}>استشارة الذكاء الاصطناعي ←</span>
+            <span style={{ color: '#f472b6', fontSize: '13px', fontWeight: 'bold' }}>موقع الرابطة والتواصل ←</span>
           </Link>
         </div>
       </section>
