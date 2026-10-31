@@ -247,17 +247,31 @@ export default function Posts() {
     }
   };
 
-  // تصفية المنشورات - عزل وربط دقيق حسب القسم العلمي (Strict Data Scoping)
+  // تصفية المنشورات - منطق ديناميكي يدعم ظهور المنشور في قسمه التخصصي وفي تبويب "الكل"
   const filteredPosts = posts.filter((p) => {
     const postDept = (p.department || 'العلوم العامة').trim();
     
-    // عندما يتم الدخول لقسم معين، يظهر المحتوى الخاص به حصراً
-    // وعند التواجد في الواجهة الخارجية (الكل)، تظهر المنشورات العامة فقط ولا تتسرب منشورات الأقسام التخصصية
     let matchDept = false;
-    if (selectedDept === 'الكل') {
-      matchDept = postDept === 'العلوم العامة' || postDept === 'عام' || postDept === 'الكل' || !p.department;
+    if (selectedDept === 'الكل' || selectedDept === 'all' || !selectedDept) {
+      // يظهر المنشور دائماً في تبويب "الكل" لجميع الأقسام والتخصصات
+      matchDept = true;
     } else {
-      matchDept = postDept === selectedDept;
+      const sDept = selectedDept.toLowerCase();
+      const pDept = postDept.toLowerCase();
+      const pCat = (p.category || '').toLowerCase();
+      
+      // مطابقة دقيقة وذكية بين القسم المختار وتصنيف المنشور
+      matchDept =
+        pDept === sDept ||
+        pCat === sDept ||
+        (sDept.includes('فيزياء') && (pDept.includes('فيزياء') || pCat.includes('فيزياء') || pDept.includes('phys'))) ||
+        (sDept.includes('كيمياء') && (pDept.includes('كيمياء') || pCat.includes('كيمياء') || pDept.includes('chem'))) ||
+        (sDept.includes('حاسب') && (pDept.includes('حاسب') || pCat.includes('حاسب') || pDept.includes('comp'))) ||
+        (sDept.includes('رياضيات') && (pDept.includes('رياضيات') || pCat.includes('رياضيات') || pDept.includes('math'))) ||
+        (sDept.includes('نبات') && (pDept.includes('نبات') || pCat.includes('نبات') || pDept.includes('botany'))) ||
+        (sDept.includes('حيوان') && (pDept.includes('حيوان') || pCat.includes('حيوان') || pDept.includes('zoo'))) ||
+        (sDept.includes('جيولوجيا') && (pDept.includes('جيولوجيا') || pCat.includes('جيولوجيا') || pDept.includes('geo'))) ||
+        (sDept.includes('عامة') && (pDept.includes('عام') || pCat.includes('عام')));
     }
 
     const matchSearch =

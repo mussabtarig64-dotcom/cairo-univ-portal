@@ -195,7 +195,7 @@ const DEFAULT_STATES = [
     title: 'ولاية نهر النيل',
     capital: 'الدامر',
     region: 'الشمال',
-    image: 'https://images.unsplash.com/photo-1568322445389-f64ac2515020?auto=format&fit=crop&w=800&q=80',
+    image: 'https://images.unsplash.com/photo-1685677821127-169deb7fb349?auto=format&fit=crop&w=800&q=80',
     landmark: 'أهرامات البجراوية (مروي)، شلال السبلوقة السادس، وقلاع شندي التاريخية',
     description: 'عاصمة مملكة مروي ومصانع صهر الحديد القديمة، ومدينة الحديد والنار (عطبرة) معقل حركة العمال والسكك الحديدية، وتاريخ الدامر العلمي الفقهي والقرآني.',
     section: 'states',

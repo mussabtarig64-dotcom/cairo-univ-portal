@@ -54,13 +54,42 @@ export default function AdminDashboard() {
     customOccasionGreeting,
     saveOccasionGreeting,
   } = useTheme();
-  const { user, updateUserRole } = useAuth();
+  const { user, updateUserRole, pendingRequestsCache, refreshPendingRequests } = useAuth();
 
   const [activeTab, setActiveTab] = useState('pending'); // 'pending' | 'approved' | 'rejected' | 'themes' | 'announcements' | 'kb' | 'analytics' | 'notifications'
-  const [allStudents, setAllStudents] = useState([]);
-  const [pendingUsers, setPendingUsers] = useState([]);
-  const [approvedUsers, setApprovedUsers] = useState([]);
-  const [rejectedUsers, setRejectedUsers] = useState([]);
+  const [allStudents, setAllStudents] = useState(() => {
+    try {
+      const stored = localStorage.getItem('approved_users');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [pendingUsers, setPendingUsers] = useState(() => {
+    try {
+      const stored = localStorage.getItem('pending_users');
+      const parsed = stored ? JSON.parse(stored) : [];
+      return parsed.length > 0 ? parsed : (pendingRequestsCache || []);
+    } catch (e) {
+      return pendingRequestsCache || [];
+    }
+  });
+  const [approvedUsers, setApprovedUsers] = useState(() => {
+    try {
+      const stored = localStorage.getItem('approved_users');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+  const [rejectedUsers, setRejectedUsers] = useState(() => {
+    try {
+      const stored = localStorage.getItem('rejected_users');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
   const [registrationSubFilter, setRegistrationSubFilter] = useState('all'); // 'all' | 'pending' | 'approved'
   const [announcements, setAnnouncements] = useState([]);
   const [kbItems, setKbItems] = useState([]);
@@ -78,6 +107,13 @@ export default function AdminDashboard() {
   const [pendingPerPage, setPendingPerPage] = useState(10);
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [isSendingNotif, setIsSendingNotif] = useState(false);
+
+  // مزامنة فورية وسريعة مع الـ Cache العالي المستوى
+  useEffect(() => {
+    if (pendingRequestsCache && Array.isArray(pendingRequestsCache) && pendingRequestsCache.length > 0) {
+      setPendingUsers((prev) => (prev.length === 0 ? pendingRequestsCache : prev));
+    }
+  }, [pendingRequestsCache]);
 
   // مزامنة حقل نص العبارة تلقائياً عند وصول القيمة من الخادم أو ThemeContext
   useEffect(() => {
@@ -156,6 +192,19 @@ export default function AdminDashboard() {
     };
   };
 
+  const isRootAdmin = (s) => {
+    if (!s) return false;
+    const email = (s.email || '').toLowerCase().trim();
+    const studentId = (s.studentId || s.academicId || '').toString().trim();
+    const id = (s._id || s.id || '').toString();
+    return (
+      email === 'mussab@gmail.com' ||
+      studentId === 'ADMIN-MUSSAB' ||
+      id === 'admin_root' ||
+      (s.isAdmin === true && email === 'mussab@gmail.com')
+    );
+  };
+
   // جلب مباشر وفوري لطلبات التسجيل والاستبيان من قاعدة البيانات لضمان الثبات عند التحديث (Persistence)
   const fetchRegistrationRequests = async () => {
     try {
@@ -164,14 +213,40 @@ export default function AdminDashboard() {
         headers: authHeaders,
         params: { _t: Date.now() },
       });
-      const pendingList = res.data?.students || res.data?.users || (Array.isArray(res.data) ? res.data : []);
-      if (Array.isArray(pendingList)) {
-        console.log(`📥 [AdminDashboard] Fetched ${pendingList.length} pending registration requests from DB`);
-        setPendingUsers(pendingList);
+      const rawList = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.students)
+        ? res.data.students
+        : Array.isArray(res.data?.users)
+        ? res.data.users
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+      const pendingList = rawList.filter((s) => !isRootAdmin(s));
+
+      console.log(`📥 [AdminDashboard] Fetched ${pendingList.length} pending registration requests from DB`);
+
+      // تحديث الحالة المحلية مع الحفاظ الكامل على أي طلبات فورية تم استلامها عبر Socket.IO دون استبدالها أو مسحها
+      setPendingUsers((prev) => {
+        const map = new Map();
+        // إدراج الطلبات الواردة من السيرفر
+        pendingList.forEach((u) => {
+          const k = (u._id || u.id || u.email || '').toString().toLowerCase();
+          if (k) map.set(k, u);
+        });
+        // الاحتفاظ بالطلبات اللحظية المضافة مسبقاً عبر Socket.io والتي لم تتزامن بعد
+        prev.forEach((u) => {
+          const k = (u._id || u.id || u.email || '').toString().toLowerCase();
+          if (k && !map.has(k)) {
+            map.set(k, u);
+          }
+        });
+        const updated = Array.from(map.values());
         try {
-          localStorage.setItem('pending_users', JSON.stringify(pendingList));
+          localStorage.setItem('pending_users', JSON.stringify(updated));
         } catch (e) {}
-      }
+        return updated;
+      });
     } catch (err) {
       console.error('❌ [AdminDashboard] Failed to fetch registration requests directly from DB:', err.message);
     }
@@ -190,12 +265,12 @@ export default function AdminDashboard() {
     });
 
     const handleNewRequest = (newRequest) => {
-      if (!newRequest) return;
+      if (!newRequest || isRootAdmin(newRequest)) return;
       console.log('⚡ [AdminDashboard] Received real-time registration request via Socket.IO:', newRequest);
       const reqId = (newRequest._id || newRequest.id || '').toString();
       const reqEmail = (newRequest.email || '').toLowerCase().trim();
 
-      // الإضافة الفورية في مقدمة مصفوفة طلبات التسجيل (Unshift to top)
+      // الإضافة الفورية في مقدمة مصفوفة طلبات التسجيل (Unshift to top) دون مسح الحالة الحالية
       setPendingUsers((prev) => {
         const alreadyExists = prev.some(
           (u) =>
@@ -292,13 +367,15 @@ export default function AdminDashboard() {
       let all = [];
       let pendingList = [];
 
-      if (studentsRes.status === 'fulfilled' && (studentsRes.value.data?.students || studentsRes.value.data?.users)) {
-        all = studentsRes.value.data.students || studentsRes.value.data.users || [];
+      if (studentsRes.status === 'fulfilled') {
+        const val = studentsRes.value.data;
+        all = (Array.isArray(val) ? val : (val?.students || val?.users || val?.data || [])).filter((s) => !isRootAdmin(s));
         setAllStudents(all);
       }
 
-      if (pendingRes.status === 'fulfilled' && (pendingRes.value.data?.students || pendingRes.value.data?.users)) {
-        pendingList = pendingRes.value.data.students || pendingRes.value.data.users || [];
+      if (pendingRes.status === 'fulfilled') {
+        const val = pendingRes.value.data;
+        pendingList = (Array.isArray(val) ? val : (val?.students || val?.users || val?.data || [])).filter((s) => !isRootAdmin(s));
       }
 
       // دمج السجلات الواردة من قاعدة البيانات مع الاحتفاظ بكافة الاستمارات
@@ -334,8 +411,7 @@ export default function AdminDashboard() {
         // الطلاب المعلقون (Pending Registration Forms)
         const p = mergedList.filter(
           (s) =>
-            s.role !== 'admin' &&
-            !s.isAdmin &&
+            !isRootAdmin(s) &&
             s.verificationStatus !== 'verified' &&
             s.verificationStatus !== 'approved' &&
             s.status !== 'approved' &&
@@ -347,6 +423,7 @@ export default function AdminDashboard() {
         // الطلاب المعتمدون (Approved)
         const a = mergedList.filter(
           (s) =>
+            !isRootAdmin(s) &&
             (s.isApproved === true ||
               s.verificationStatus === 'verified' ||
               s.verificationStatus === 'approved' ||
@@ -357,7 +434,7 @@ export default function AdminDashboard() {
 
         // الحسابات المرفوضة (Rejected)
         const r = mergedList.filter(
-          (s) => s.verificationStatus === 'rejected' || s.status === 'rejected'
+          (s) => !isRootAdmin(s) && (s.verificationStatus === 'rejected' || s.status === 'rejected')
         );
 
         console.log(`📊 [AdminDashboard] Computed: Pending=${p.length}, Approved=${a.length}, Rejected=${r.length}`);
@@ -369,7 +446,22 @@ export default function AdminDashboard() {
           localStorage.setItem('rejected_users', JSON.stringify(r));
         } catch (e) {}
 
-        setPendingUsers(p);
+        // دمج النتائج بأمان مع أي عناصر لحظية تم استلامها عبر Socket.IO
+        setPendingUsers((prev) => {
+          const map = new Map();
+          p.forEach((item) => {
+            const k = (item._id || item.id || item.email || '').toString().toLowerCase();
+            if (k) map.set(k, item);
+          });
+          prev.forEach((item) => {
+            const k = (item._id || item.id || item.email || '').toString().toLowerCase();
+            if (k && !map.has(k)) {
+              map.set(k, item);
+            }
+          });
+          return Array.from(map.values());
+        });
+
         setApprovedUsers(a);
         setRejectedUsers(r);
       } else {
@@ -725,11 +817,22 @@ export default function AdminDashboard() {
   // 7. إضافة إعلان لشريط الأخبار
   const handleAddAnnouncement = async (e) => {
     e.preventDefault();
-    if (!newAnnouncement.content.trim()) return;
+    const content = (newAnnouncement.content || '').trim();
+    if (!content) return;
+
+    const title = (newAnnouncement.title || '').trim() || (content.length > 35 ? `${content.substring(0, 32)}...` : content);
+    const payload = {
+      title,
+      content,
+      category: 'general',
+      isPinned: newAnnouncement.isPinned !== undefined ? newAnnouncement.isPinned : true,
+    };
 
     try {
-      const res = await axios.post(`${API_BASE}/admin/announcements`, newAnnouncement, {
+      const authHeaders = getAuthHeaders();
+      const res = await axios.post(`${API_BASE}/admin/announcements`, payload, {
         headers: {
+          ...authHeaders,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           Pragma: 'no-cache',
           Expires: '0',
@@ -751,8 +854,10 @@ export default function AdminDashboard() {
   const handleDeleteAnnouncement = async (id) => {
     if (!window.confirm('هل أنت متأكد من حذف هذا الإعلان نهائياً؟')) return;
     try {
+      const authHeaders = getAuthHeaders();
       const res = await axios.delete(`${API_BASE}/admin/announcements/${id}`, {
         headers: {
+          ...authHeaders,
           'Cache-Control': 'no-cache, no-store, must-revalidate',
           Pragma: 'no-cache',
           Expires: '0',
@@ -772,15 +877,15 @@ export default function AdminDashboard() {
   // تصفية نتائج البحث واستمارات التسجيل
   const allRegistrationsList = [
     ...pendingUsers,
-    ...approvedUsers.filter((u) => u.role !== 'admin'),
-    ...rejectedUsers,
+    ...approvedUsers.filter((u) => !isRootAdmin(u)),
+    ...rejectedUsers.filter((u) => !isRootAdmin(u)),
   ];
 
   const displayedRegistrations =
     registrationSubFilter === 'pending'
       ? pendingUsers
       : registrationSubFilter === 'approved'
-      ? approvedUsers.filter((u) => u.role !== 'admin')
+      ? approvedUsers.filter((u) => !isRootAdmin(u))
       : allRegistrationsList;
 
   const filteredPending = displayedRegistrations.filter(
@@ -1636,7 +1741,7 @@ export default function AdminDashboard() {
                   color: registrationSubFilter === 'approved' ? '#4ade80' : activeTheme.textMuted,
                 }}
               >
-                الطلاب المعتمدون ({approvedUsers.filter((u) => u.role !== 'admin').length})
+                الطلاب المعتمدون ({approvedUsers.filter((u) => !isRootAdmin(u)).length})
               </button>
             </div>
 

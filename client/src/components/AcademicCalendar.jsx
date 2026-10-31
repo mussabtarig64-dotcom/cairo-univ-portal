@@ -19,7 +19,11 @@ import {
   RefreshCw,
   Layers,
   MapPin,
-  Tag
+  Tag,
+  Eye,
+  X,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import AdminHubCMSModal from './AdminHubCMSModal';
 import { fetchHubContent, deleteHubContent } from '../utils/cmsApi';
@@ -136,6 +140,7 @@ export default function AcademicCalendar() {
   // Admin CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [previewItem, setPreviewItem] = useState(null);
 
   // 1. Data Persistence (GET): Fetch live dynamic calendar data from MongoDB Atlas on mount
   const loadCalendarData = async () => {
@@ -477,7 +482,7 @@ export default function AcademicCalendar() {
                     📍 المستهدفين: {dept}
                   </div>
 
-                  {/* Admin Controls (حذف / تعديل) - Rendered ONLY for Admins */}
+                  {/* Admin Controls (معاينة / تعديل / حذف) - Rendered ONLY for Admins */}
                   {isAdmin && (
                     <div
                       style={{
@@ -489,6 +494,28 @@ export default function AcademicCalendar() {
                         borderTop: '1px solid rgba(255, 255, 255, 0.08)',
                       }}
                     >
+                      <button
+                        onClick={() => setPreviewItem(item)}
+                        title="معاينة الملف المرفق أو تفاصيل الجدول"
+                        style={{
+                          display: 'inline-flex',
+                          alignItems: 'center',
+                          gap: '4px',
+                          background: 'rgba(16, 185, 129, 0.12)',
+                          border: '1px solid rgba(16, 185, 129, 0.35)',
+                          color: '#34d399',
+                          padding: '5px 10px',
+                          borderRadius: '8px',
+                          fontSize: '11px',
+                          fontWeight: 'bold',
+                          cursor: 'pointer',
+                          transition: 'all 0.2s',
+                        }}
+                      >
+                        <Eye size={12} />
+                        <span>معاينة</span>
+                      </button>
+
                       <button
                         onClick={() => handleEditEvent(item)}
                         style={{
@@ -552,6 +579,221 @@ export default function AcademicCalendar() {
         }}
         onSaved={handleSaved}
       />
+
+      {/* Admin Preview Modal for Uploaded Items - Accessible only by Admin */}
+      {isAdmin && previewItem && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+            backdropFilter: 'blur(5px)',
+          }}
+          onClick={() => setPreviewItem(null)}
+        >
+          <div
+            style={{
+              background: activeTheme.bgCard,
+              border: `1px solid ${activeTheme.border}`,
+              borderRadius: '20px',
+              maxWidth: '850px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '26px',
+              position: 'relative',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+              direction: 'rtl',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                borderBottom: `1px solid ${activeTheme.border}`,
+                paddingBottom: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    padding: '8px',
+                    borderRadius: '10px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    color: '#34d399',
+                  }}
+                >
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <h3 style={{ color: activeTheme.textMain, fontSize: '17px', fontWeight: 'bold', margin: '0 0 4px' }}>
+                    معاينة ملف التقويم وجدول الامتحانات (لوحة الإدارة)
+                  </h3>
+                  <span style={{ fontSize: '12px', color: activeTheme.textMuted }}>
+                    {previewItem.title}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewItem(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: activeTheme.textMuted,
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '8px',
+                }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Modal Body: File Preview */}
+            <div style={{ textAlign: 'center', minHeight: '260px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              {previewItem.fileUrl ? (
+                previewItem.fileUrl.startsWith('data:image') ||
+                previewItem.fileUrl.match(/\.(jpeg|jpg|png|webp|gif)$/i) ? (
+                  <div style={{ width: '100%' }}>
+                    <img
+                      src={previewItem.fileUrl}
+                      alt={previewItem.title}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '65vh',
+                        objectFit: 'contain',
+                        borderRadius: '12px',
+                        border: `1px solid ${activeTheme.border}`,
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    <iframe
+                      src={previewItem.fileUrl}
+                      title="File Preview"
+                      style={{
+                        width: '100%',
+                        height: '55vh',
+                        border: `1px solid ${activeTheme.border}`,
+                        borderRadius: '12px',
+                        background: '#ffffff',
+                      }}
+                    />
+                  </div>
+                )
+              ) : (
+                /* Fallback preview for schedule/calendar items without an uploaded attachment */
+                <div
+                  style={{
+                    padding: '30px 20px',
+                    width: '100%',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    borderRadius: '16px',
+                    border: `1px dashed ${activeTheme.border}`,
+                  }}
+                >
+                  <FileText size={48} color="#34d399" style={{ margin: '0 auto 12px' }} />
+                  <h4 style={{ color: activeTheme.textMain, fontSize: '16px', fontWeight: 'bold', margin: '0 0 8px' }}>
+                    {previewItem.title}
+                  </h4>
+                  <p style={{ color: activeTheme.textMuted, fontSize: '13px', lineHeight: '1.7', maxWidth: '540px', margin: '0 auto 16px' }}>
+                    {previewItem.description || 'جدول وموعد أكاديمي معتمد وموثق في السجل المركزي لكلية العلوم.'}
+                  </p>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      color: activeTheme.accentLight,
+                    }}
+                  >
+                    <span>📅 التاريخ: {previewItem.date}</span>
+                    <span>•</span>
+                    <span>📍 الفئة: {previewItem.badge || previewItem.category || 'عام'}</span>
+                    <span>•</span>
+                    <span>🏛️ المستهدفين: {previewItem.extraData?.dept || 'كافة الفرق'}</span>
+                  </div>
+                  <div style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8' }}>
+                    (تم التحقق من بيانات الموعد بواسطة مسؤول النظام)
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: '22px',
+                paddingTop: '16px',
+                borderTop: `1px solid ${activeTheme.border}`,
+              }}
+            >
+              {previewItem.fileUrl && (
+                <a
+                  href={previewItem.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid #38bdf8',
+                    color: '#38bdf8',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ExternalLink size={14} />
+                  <span>فتح في نافذة كاملة</span>
+                </a>
+              )}
+              <button
+                onClick={() => setPreviewItem(null)}
+                style={{
+                  background: activeTheme.primary,
+                  color: !activeTheme.isDark ? '#0b1622' : '#ffffff',
+                  border: 'none',
+                  padding: '8px 20px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+              >
+                إغلاق المعاينة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

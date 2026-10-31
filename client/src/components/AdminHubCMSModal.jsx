@@ -251,10 +251,22 @@ export default function AdminHubCMSModal({
   const [isDragging, setIsDragging] = useState(false);
   const [isProcessingFile, setIsProcessingFile] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isUploading, setIsUploading] = useState(false);
+  const [uploadProgress, setUploadProgress] = useState(0);
+  const progressIntervalRef = useRef(null);
   const [uploadStatusText, setUploadStatusText] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
   const [successMsg, setSuccessMsg] = useState('');
   const [notifSuccessMsg, setNotifSuccessMsg] = useState('');
+
+  // تنظيف مؤقت شريط تقدم الرفع عند إلغاء تحميل المكون
+  useEffect(() => {
+    return () => {
+      if (progressIntervalRef.current) {
+        clearInterval(progressIntervalRef.current);
+      }
+    };
+  }, []);
 
   // تحديد السياق النشط وعناصر التكوين الديناميكية للنموذج
   const currentContextKey = getContextKey(hub, formData.section);
@@ -422,7 +434,19 @@ export default function AdminHubCMSModal({
     setIsSubmitting(true);
     setErrorMsg('');
     setSuccessMsg('');
-    setUploadStatusText(rawFile ? '☁️ جاري رفع الملف السحابي إلى Cloudinary...' : 'جاري الحفظ...');
+
+    // تفعيل شريط التقدم المرئي التفاعلي (Dynamic Visual Progress Bar)
+    setIsUploading(true);
+    setUploadProgress(12);
+    if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+    progressIntervalRef.current = setInterval(() => {
+      setUploadProgress((prev) => {
+        if (prev < 40) return prev + Math.floor(Math.random() * 8 + 6);
+        if (prev < 75) return prev + Math.floor(Math.random() * 6 + 3);
+        if (prev < 94) return prev + Math.floor(Math.random() * 2 + 1);
+        return prev;
+      });
+    }, 220);
 
     try {
       // بناء FormData لإرسال الملف الحقيقي والبيانات بدقة
@@ -454,20 +478,31 @@ export default function AdminHubCMSModal({
       let result;
       if (editingItem && editingItem._id) {
         result = await updateHubContent(editingItem._id, fd);
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+        setUploadProgress(100);
         setSuccessMsg('تم تحديث المحتوى ورفع المرفق السحابي بنجاح!');
         setTimeout(() => {
+          setIsUploading(false);
+          setUploadProgress(0);
           onSaved(result, 'update');
           onClose();
-        }, 900);
+        }, 850);
       } else {
         result = await createHubContent(hub, fd);
+        if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+        setUploadProgress(100);
         setSuccessMsg('تم حفظ المحتوى ورفع المرفق إلى التخزين السحابي (Cloudinary) بنجاح!');
         setTimeout(() => {
+          setIsUploading(false);
+          setUploadProgress(0);
           onSaved(result, 'create');
           onClose();
-        }, 900);
+        }, 850);
       }
     } catch (err) {
+      if (progressIntervalRef.current) clearInterval(progressIntervalRef.current);
+      setIsUploading(false);
+      setUploadProgress(0);
       setErrorMsg(err.message || 'حدث خطأ أثناء رفع وحفظ المحتوى');
     } finally {
       setIsSubmitting(false);
@@ -557,15 +592,92 @@ export default function AdminHubCMSModal({
           </div>
         )}
 
-        {/* Cloud Upload Spinner Indicator */}
-        {isSubmitting && (
-          <div style={{ backgroundColor: 'rgba(245, 158, 11, 0.15)', border: '1px solid rgba(245, 158, 11, 0.4)', color: '#fbbf24', padding: '14px 18px', borderRadius: '14px', fontSize: '13px', marginBottom: '16px', display: 'flex', alignItems: 'center', gap: '12px', animation: 'pulse 1.8s infinite' }}>
-            <Loader2 size={20} className="animate-spin shrink-0" color="#f59e0b" />
-            <div>
-              <div style={{ fontWeight: 'bold' }}>{uploadStatusText || 'جاري الرفع السحابي ومعالجة الطلب...'}</div>
-              <div style={{ fontSize: '11px', color: '#cbd5e1', marginTop: '2px' }}>
-                يتم نقل الملف مباشرة إلى خوادم Cloudinary وتأمين رابط الـ HTTPS الدائم.
+        {/* Dynamic Visual Upload Progress Bar */}
+        {isUploading && (
+          <div
+            id="academic-upload-progress"
+            className="w-full bg-slate-900/90 border border-amber-500/40 rounded-2xl p-4 mb-4 shadow-xl backdrop-blur-md transition-all duration-300"
+            style={{
+              backgroundColor: 'rgba(15, 23, 42, 0.88)',
+              border: '1px solid rgba(245, 158, 11, 0.45)',
+              borderRadius: '16px',
+              padding: '16px 20px',
+              marginBottom: '18px',
+              boxShadow: '0 10px 28px rgba(0, 0, 0, 0.45)',
+            }}
+          >
+            <div
+              className="flex items-center justify-between mb-2 text-xs font-bold"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px', fontSize: '13px', fontWeight: 'bold' }}
+            >
+              <div
+                className="flex items-center gap-2 text-amber-400"
+                style={{ display: 'flex', alignItems: 'center', gap: '8px', color: uploadProgress >= 100 ? '#4ade80' : '#fbbf24' }}
+              >
+                <CloudUpload size={18} className="animate-bounce" color={uploadProgress >= 100 ? '#22c55e' : '#f59e0b'} />
+                <span>
+                  {uploadProgress >= 100
+                    ? '✅ اكتمل الرفع السحابي وتأمين الملف بنجاح!'
+                    : rawFile
+                    ? 'جاري نقل ورفع الملف السحابي إلى Cloudinary...'
+                    : 'جاري رفع وحفظ البيانات السحابية...'}
+                </span>
               </div>
+              <span
+                className="font-mono text-sm tracking-wider"
+                style={{
+                  color: uploadProgress >= 100 ? '#4ade80' : '#fde047',
+                  fontFamily: 'monospace',
+                  fontSize: '14px',
+                  fontWeight: '900',
+                }}
+              >
+                {uploadProgress}%
+              </span>
+            </div>
+
+            {/* Visual Progress Track & Animated Bar */}
+            <div
+              className="w-full bg-slate-950/80 h-3 rounded-full overflow-hidden p-0.5 border border-white/10"
+              style={{
+                width: '100%',
+                backgroundColor: 'rgba(2, 6, 23, 0.85)',
+                height: '10px',
+                borderRadius: '9999px',
+                overflow: 'hidden',
+                padding: '2px',
+                border: '1px solid rgba(255, 255, 255, 0.12)',
+              }}
+            >
+              <div
+                className={`h-full rounded-full transition-all duration-300 ease-out ${
+                  uploadProgress >= 100
+                    ? 'bg-gradient-to-r from-emerald-500 to-green-400 shadow-[0_0_12px_rgba(34,197,94,0.7)]'
+                    : 'bg-gradient-to-r from-amber-500 via-yellow-400 to-amber-500 shadow-[0_0_12px_rgba(245,158,11,0.7)] animate-pulse'
+                }`}
+                style={{
+                  width: `${Math.min(uploadProgress, 100)}%`,
+                  height: '100%',
+                  borderRadius: '9999px',
+                  background:
+                    uploadProgress >= 100
+                      ? 'linear-gradient(90deg, #10b981 0%, #22c55e 100%)'
+                      : 'linear-gradient(90deg, #f59e0b 0%, #facc15 50%, #f59e0b 100%)',
+                  boxShadow:
+                    uploadProgress >= 100
+                      ? '0 0 12px rgba(34, 197, 94, 0.7)'
+                      : '0 0 12px rgba(245, 158, 11, 0.7)',
+                  transition: 'width 0.3s ease-out, background 0.4s ease',
+                }}
+              />
+            </div>
+
+            <div
+              className="flex items-center justify-between text-[11px] text-slate-400 mt-2"
+              style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', fontSize: '11px', color: '#94a3b8', marginTop: '8px' }}
+            >
+              <span>{rawFile ? `${rawFile.name} (${(rawFile.size / 1024).toFixed(1)} KB)` : 'تأمين رابط الـ HTTPS الدائم'}</span>
+              <span>{uploadProgress >= 100 ? 'تم التأكيد السحابي' : 'جاري تشفير ونقل البيانات...'}</span>
             </div>
           </div>
         )}
@@ -961,7 +1073,7 @@ export default function AdminHubCMSModal({
               {isSubmitting ? (
                 <>
                   <Loader2 size={16} className="animate-spin" />
-                  <span>{rawFile ? 'جاري الرفع السحابي...' : 'جاري الحفظ...'}</span>
+                  <span>{isUploading ? `جاري الرفع السحابي (${uploadProgress}%)...` : 'جاري الحفظ...'}</span>
                 </>
               ) : (
                 <>

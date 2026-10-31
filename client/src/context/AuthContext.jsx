@@ -575,6 +575,55 @@ export function AuthProvider({ children }) {
   const isPending = !isApproved && (user?.verificationStatus === 'pending' || user?.status === 'pending');
   const isVerified = isApproved;
 
+  // Caching & High-Level Pre-fetching for Registration Requests (SWR / Optimistic UI)
+  const [pendingRequestsCache, setPendingRequestsCache] = useState(() => {
+    try {
+      const stored = localStorage.getItem('pending_users');
+      return stored ? JSON.parse(stored) : [];
+    } catch (e) {
+      return [];
+    }
+  });
+
+  const refreshPendingRequests = async () => {
+    try {
+      const token = localStorage.getItem('ssa_token') || localStorage.getItem('token');
+      const authHeaders = token ? { Authorization: `Bearer ${token}` } : {};
+      const res = await axios.get(`${API_BASE}/admin/pending`, {
+        headers: authHeaders,
+        params: { _t: Date.now() },
+      });
+      const rawList = Array.isArray(res.data)
+        ? res.data
+        : Array.isArray(res.data?.students)
+        ? res.data.students
+        : Array.isArray(res.data?.users)
+        ? res.data.users
+        : Array.isArray(res.data?.data)
+        ? res.data.data
+        : [];
+      const cleanList = rawList.filter((s) => {
+        if (!s) return false;
+        const email = (s.email || '').toLowerCase().trim();
+        const studentId = (s.studentId || s.academicId || '').toString().trim();
+        const id = (s._id || s.id || '').toString();
+        return email !== 'mussab@gmail.com' && studentId !== 'ADMIN-MUSSAB' && id !== 'admin_root';
+      });
+      setPendingRequestsCache(cleanList);
+      safeSetLocalStorage('pending_users', cleanList);
+      return cleanList;
+    } catch (err) {
+      console.warn('[AuthContext] Background fetch of pending registration requests:', err.message);
+      return null;
+    }
+  };
+
+  useEffect(() => {
+    if (isAdmin) {
+      refreshPendingRequests();
+    }
+  }, [isAdmin]);
+
   const value = {
     user,
     setUser,
@@ -582,6 +631,8 @@ export function AuthProvider({ children }) {
     isAdmin,
     isPending,
     isVerified,
+    pendingRequestsCache,
+    refreshPendingRequests,
     register,
     login,
     logout,

@@ -165,8 +165,21 @@ function QuantumAura() {
   );
 }
 
-// 5. Complete Atom Model Scene
-function AtomScene({ speedMultiplier = 1 }) {
+// 5. Smooth Transition Wrapper for 3D Models
+function SmoothModelTransition({ active, children }) {
+  const groupRef = useRef();
+  useFrame((_, delta) => {
+    if (groupRef.current) {
+      const targetScale = active ? 1 : 0.0001;
+      groupRef.current.scale.lerp(new THREE.Vector3(targetScale, targetScale, targetScale), Math.min(1, delta * 8));
+      groupRef.current.visible = groupRef.current.scale.x > 0.02;
+    }
+  });
+  return <group ref={groupRef}>{children}</group>;
+}
+
+// 6. Complete Physics Model Scene (Quantum Atom)
+function PhysicsAtomScene({ speedMultiplier = 1 }) {
   return (
     <Float speed={1.5} rotationIntensity={0.6} floatIntensity={0.8}>
       <ambientLight intensity={0.4} />
@@ -176,7 +189,7 @@ function AtomScene({ speedMultiplier = 1 }) {
       {/* Nucleus Core */}
       <Nucleus pulseSpeed={speedMultiplier} />
 
-      {/* 3 Orbit Planes (rotated at distinct scientific angles) */}
+      {/* 4 Orbit Planes rotated at distinct quantum angles */}
       <OrbitalRing
         rotation={[Math.PI / 3, Math.PI / 4, 0]}
         radius={2.3}
@@ -208,6 +221,208 @@ function AtomScene({ speedMultiplier = 1 }) {
 
       {/* Outer Quantum Field */}
       <QuantumAura />
+    </Float>
+  );
+}
+
+// 7. Covalent Chemical Bond (Cylinder between 2 3D Points)
+function ChemicalBond({ start, end, color = '#cbd5e1', radius = 0.05 }) {
+  const p1 = useMemo(() => new THREE.Vector3(...start), [start]);
+  const p2 = useMemo(() => new THREE.Vector3(...end), [end]);
+  const dir = useMemo(() => new THREE.Vector3().subVectors(p2, p1), [p1, p2]);
+  const len = useMemo(() => dir.length(), [dir]);
+  const mid = useMemo(() => new THREE.Vector3().addVectors(p1, p2).multiplyScalar(0.5), [p1, p2]);
+  const quaternion = useMemo(() => {
+    const q = new THREE.Quaternion();
+    q.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir.clone().normalize());
+    return q;
+  }, [dir]);
+
+  return (
+    <mesh position={mid} quaternion={quaternion}>
+      <cylinderGeometry args={[radius, radius, len, 16]} />
+      <meshStandardMaterial
+        color={color}
+        metalness={0.7}
+        roughness={0.25}
+        emissive={color}
+        emissiveIntensity={0.15}
+      />
+    </mesh>
+  );
+}
+
+// 8. Complete Chemistry Model Scene (Dynamic 3D Organic Molecule Structure)
+function ChemistryMoleculeScene({ speedMultiplier = 1 }) {
+  const moleculeRef = useRef();
+
+  useFrame(({ clock }) => {
+    if (moleculeRef.current) {
+      const t = clock.getElapsedTime() * 0.4 * speedMultiplier;
+      moleculeRef.current.rotation.y = t * 0.6;
+      moleculeRef.current.rotation.x = Math.sin(t * 0.5) * 0.25;
+      moleculeRef.current.rotation.z = Math.cos(t * 0.4) * 0.15;
+    }
+  });
+
+  // Carbon (emerald #10b981), Oxygen (crimson #ef4444), Nitrogen (amber #f59e0b), Hydrogen (white #f8fafc)
+  const atoms = [
+    // Central Benzene / Organic Ring (Carbons)
+    { id: 'c1', pos: [0, 1.2, 0], color: '#10b981', r: 0.32, label: 'C' },
+    { id: 'c2', pos: [1.05, 0.4, 0], color: '#10b981', r: 0.32, label: 'C' },
+    { id: 'c3', pos: [0.65, -0.9, 0], color: '#10b981', r: 0.32, label: 'C' },
+    { id: 'c4', pos: [-0.65, -0.9, 0], color: '#10b981', r: 0.32, label: 'C' },
+    { id: 'c5', pos: [-1.05, 0.4, 0], color: '#10b981', r: 0.32, label: 'C' },
+
+    // Functional Groups: Oxygen, Nitrogen, Hydrogens
+    { id: 'o1', pos: [0, 2.3, 0], color: '#ef4444', r: 0.38, label: 'O' },
+    { id: 'n1', pos: [2.1, 0.7, 0.4], color: '#f59e0b', r: 0.35, label: 'N' },
+    { id: 'h1', pos: [2.8, 0.2, 0.7], color: '#ffffff', r: 0.2, label: 'H' },
+    { id: 'h2', pos: [2.2, 1.6, 0.3], color: '#ffffff', r: 0.2, label: 'H' },
+    { id: 'h3', pos: [1.3, -1.8, 0.4], color: '#ffffff', r: 0.2, label: 'H' },
+    { id: 'h4', pos: [-1.3, -1.8, -0.4], color: '#ffffff', r: 0.2, label: 'H' },
+    { id: 'h5', pos: [-2.0, 0.6, 0], color: '#ffffff', r: 0.2, label: 'H' },
+  ];
+
+  const bonds = [
+    // Ring bonds
+    ['c1', 'c2'],
+    ['c2', 'c3'],
+    ['c3', 'c4'],
+    ['c4', 'c5'],
+    ['c5', 'c1'],
+    // Functional branches
+    ['c1', 'o1'],
+    ['c2', 'n1'],
+    ['n1', 'h1'],
+    ['n1', 'h2'],
+    ['c3', 'h3'],
+    ['c4', 'h4'],
+    ['c5', 'h5'],
+  ];
+
+  const atomMap = useMemo(() => {
+    const map = {};
+    atoms.forEach((a) => {
+      map[a.id] = a.pos;
+    });
+    return map;
+  }, []);
+
+  return (
+    <Float speed={1.5} rotationIntensity={0.5} floatIntensity={0.8}>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[6, 6, 6]} intensity={1.2} />
+      <directionalLight position={[-6, -4, -4]} intensity={0.6} color="#f59e0b" />
+      <pointLight position={[0, 0, 0]} intensity={2.5} distance={6} color="#10b981" />
+
+      <group ref={moleculeRef}>
+        {/* Bonds */}
+        {bonds.map(([aId, bId], idx) => (
+          <ChemicalBond
+            key={`bond-${idx}`}
+            start={atomMap[aId]}
+            end={atomMap[bId]}
+            color="#94a3b8"
+            radius={0.06}
+          />
+        ))}
+
+        {/* Atoms */}
+        {atoms.map((atom) => (
+          <group key={atom.id} position={atom.pos}>
+            <Sphere args={[atom.r, 32, 32]}>
+              <meshStandardMaterial
+                color={atom.color}
+                roughness={0.15}
+                metalness={0.7}
+                emissive={atom.color}
+                emissiveIntensity={0.6}
+              />
+            </Sphere>
+            <pointLight color={atom.color} intensity={0.8} distance={2} decay={2} />
+          </group>
+        ))}
+
+        {/* Molecular Electron Cloud Vibration Mesh */}
+        <mesh>
+          <torusGeometry args={[1.5, 0.02, 16, 100]} />
+          <meshBasicMaterial color="#10b981" transparent opacity={0.25} wireframe />
+        </mesh>
+      </group>
+    </Float>
+  );
+}
+
+// 9. Complete Biotech / Biophysics Model Scene (DNA Double Helix Structure)
+function BiotechDNAScene({ speedMultiplier = 1 }) {
+  const dnaRef = useRef();
+
+  useFrame(({ clock }) => {
+    if (dnaRef.current) {
+      const t = clock.getElapsedTime() * speedMultiplier;
+      dnaRef.current.rotation.y = t * 0.7;
+    }
+  });
+
+  const steps = 14;
+  const radius = 1.3;
+  const height = 4.2;
+
+  const helixNodes = useMemo(() => {
+    const list = [];
+    for (let i = 0; i < steps; i++) {
+      const angle = (i / steps) * Math.PI * 2.8;
+      const y = (i / (steps - 1) - 0.5) * height;
+      const p1 = [Math.cos(angle) * radius, y, Math.sin(angle) * radius];
+      const p2 = [Math.cos(angle + Math.PI) * radius, y, Math.sin(angle + Math.PI) * radius];
+      const isGC = i % 2 === 0;
+      list.push({ p1, p2, isGC, id: i });
+    }
+    return list;
+  }, []);
+
+  return (
+    <Float speed={1.2} rotationIntensity={0.4} floatIntensity={0.6}>
+      <ambientLight intensity={0.5} />
+      <directionalLight position={[4, 5, 5]} intensity={1} />
+      <directionalLight position={[-4, -5, -4]} intensity={0.6} color="#10b981" />
+
+      <group ref={dnaRef}>
+        {helixNodes.map((node) => (
+          <group key={node.id}>
+            {/* Strand 1 Backbone Sphere */}
+            <Sphere args={[0.18, 16, 16]} position={node.p1}>
+              <meshStandardMaterial
+                color="#06b6d4"
+                emissive="#0891b2"
+                emissiveIntensity={0.9}
+                roughness={0.2}
+                metalness={0.6}
+              />
+            </Sphere>
+
+            {/* Strand 2 Backbone Sphere */}
+            <Sphere args={[0.18, 16, 16]} position={node.p2}>
+              <meshStandardMaterial
+                color="#10b981"
+                emissive="#059669"
+                emissiveIntensity={0.9}
+                roughness={0.2}
+                metalness={0.6}
+              />
+            </Sphere>
+
+            {/* Connecting Base Pair Rung */}
+            <ChemicalBond
+              start={node.p1}
+              end={node.p2}
+              color={node.isGC ? '#f59e0b' : '#a855f7'}
+              radius={0.04}
+            />
+          </group>
+        ))}
+      </group>
     </Float>
   );
 }
@@ -296,10 +511,10 @@ export default function ScienceAtom3D() {
               <span>واحة العلوم التفاعلية ثلاثية الأبعاد (Interactive 3D Science Oasis)</span>
             </div>
             <h2 className="text-2xl md:text-3xl font-black text-white leading-tight">
-              النموذج الذري والكمومي التفاعلي
+              {scienceFacts[activeTab].title} - مجسم ثلاثي الأبعاد
             </h2>
             <p className="text-slate-400 text-sm mt-1 max-w-xl">
-              استكشف ديناميكية المدارات الذرية والجسيمات الأولية التي تشكل جوهر العلوم الأساسية في كلية العلوم جامعة القاهرة.
+              {scienceFacts[activeTab].desc}
             </p>
           </div>
 
@@ -333,7 +548,7 @@ export default function ScienceAtom3D() {
               fallback={
                 <div className="w-full h-full flex flex-col items-center justify-center gap-3 text-sky-400">
                   <Atom size={36} className="animate-spin" />
-                  <span className="text-xs font-bold text-slate-400">جاري تهيئة المجسم الذري...</span>
+                  <span className="text-xs font-bold text-slate-400">جاري تهيئة المجسم العلمي...</span>
                 </div>
               }
             >
@@ -341,7 +556,21 @@ export default function ScienceAtom3D() {
                 camera={{ position: [0, 0, 6], fov: 50 }}
                 gl={{ antialias: true, alpha: true }}
               >
-                <AtomScene speedMultiplier={speedMultiplier} />
+                {/* 1. قسم الفيزياء: مجسم الذرة الكمومية والمدارات */}
+                <SmoothModelTransition active={activeTab === 'physics'}>
+                  <PhysicsAtomScene speedMultiplier={speedMultiplier} />
+                </SmoothModelTransition>
+
+                {/* 2. قسم الكيمياء: مجسم الهيكل الجزيئي والروابط التساهمية */}
+                <SmoothModelTransition active={activeTab === 'chemistry'}>
+                  <ChemistryMoleculeScene speedMultiplier={speedMultiplier} />
+                </SmoothModelTransition>
+
+                {/* 3. قسم البيوتكنولوجي والفيزياء الحيوية: مجسم الحلزون المزدوج للحمض النووي DNA */}
+                <SmoothModelTransition active={activeTab === 'biotech'}>
+                  <BiotechDNAScene speedMultiplier={speedMultiplier} />
+                </SmoothModelTransition>
+
                 <OrbitControls
                   enableZoom={false}
                   enablePan={false}

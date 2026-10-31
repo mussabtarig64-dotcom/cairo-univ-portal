@@ -42,6 +42,7 @@ const ACADEMIC_LEVELS = [
 ];
 
 const DEPARTMENTS = [
+  'الكل',
   'جميع التخصصات',
   'الكيمياء منفرد',
   'الفيزياء منفرد',
@@ -289,7 +290,7 @@ export default function AcademicLibrary({ defaultTab }) {
   const [isLoading, setIsLoading] = useState(true);
 
   const [selectedLevel, setSelectedLevel] = useState('الكل');
-  const [selectedDept, setSelectedDept] = useState('جميع التخصصات');
+  const [selectedDept, setSelectedDept] = useState('الكل');
   const [searchQuery, setSearchQuery] = useState('');
   const [downloadSuccess, setDownloadSuccess] = useState('');
 
@@ -400,8 +401,19 @@ export default function AcademicLibrary({ defaultTab }) {
       if (!isExam) return false;
     }
 
-    const matchesLevel = selectedLevel === 'الكل' || item.level === selectedLevel;
-    const matchesDept = selectedDept === 'جميع التخصصات' || item.dept === selectedDept || item.category === selectedDept;
+    const matchesLevel =
+      selectedLevel === 'الكل' ||
+      selectedLevel === 'all' ||
+      !selectedLevel ||
+      item.level === selectedLevel;
+
+    const matchesDept =
+      selectedDept === 'الكل' ||
+      selectedDept === 'جميع التخصصات' ||
+      selectedDept === 'all' ||
+      !selectedDept ||
+      item.dept === selectedDept ||
+      item.category === selectedDept;
     const matchesSearch =
       !searchQuery.trim() ||
       item.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -593,6 +605,8 @@ export default function AcademicLibrary({ defaultTab }) {
               display: 'grid',
               gridTemplateColumns: 'repeat(auto-fit, minmax(220px, 1fr))',
               gap: '16px',
+              position: 'relative',
+              zIndex: 20,
             }}
           >
             <div>
@@ -775,7 +789,6 @@ export default function AcademicLibrary({ defaultTab }) {
                   <span style={{ backgroundColor: 'rgba(59, 130, 246, 0.15)', color: '#60a5fa', padding: '4px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
                     {grp.dept || grp.category}
                   </span>
-                  <span style={{ fontSize: '12px', color: '#34d399', fontWeight: 'bold' }}>{grp.members || '15 طالباً'}</span>
                 </div>
 
                 <h3 style={{ fontSize: '18px', fontWeight: 'bold', color: '#ffffff', margin: '0 0 10px' }}>
@@ -956,11 +969,15 @@ const filterInputStyle = {
   width: '100%',
   padding: '11px 14px',
   borderRadius: '12px',
-  backgroundColor: 'rgba(255, 255, 255, 0.06)',
-  border: '1px solid rgba(255, 255, 255, 0.15)',
+  backgroundColor: '#1e293b',
+  border: '1px solid rgba(255, 255, 255, 0.2)',
   color: '#ffffff',
   fontSize: '14px',
   outline: 'none',
   direction: 'rtl',
   boxSizing: 'border-box',
+  cursor: 'pointer',
+  position: 'relative',
+  zIndex: 10,
+  pointerEvents: 'auto',
 };

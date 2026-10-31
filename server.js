@@ -1,3 +1,2 @@
-// Root server.js alias for Vercel Serverless compatibility
-const app = require('./server/server');
+const app = require('./server/server.js');
 module.exports = app;

@@ -5,19 +5,20 @@ const announcementSchema = new mongoose.Schema({
     type: String,
     required: true,
     trim: true,
+    default: 'تنويه عام',
   },
   content: {
     type: String,
     required: true,
+    trim: true,
   },
   category: {
     type: String,
-    enum: ['academic', 'event', 'urgent', 'cultural', 'general'],
     default: 'general',
   },
   isPinned: {
     type: Boolean,
-    default: false,
+    default: true,
   },
   author: {
     type: String,

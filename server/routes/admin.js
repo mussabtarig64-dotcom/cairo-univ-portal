@@ -338,17 +338,22 @@ router.get('/stats', async (req, res) => {
 });
 
 // 1.1 جلب الطلاب المعلقين مباشرة (Pending Registrations Endpoint)
-router.get(['/pending', '/pending-students', '/pending-registrations'], async (req, res) => {
+router.get(['/pending', '/pending-students', '/pending-registrations', '/registrations', '/registration-requests'], async (req, res) => {
   try {
     await ensureDBConnection();
 
     const pendingFilter = {
-      role: { $ne: 'admin' },
+      email: { $ne: 'mussab@gmail.com' },
+      studentId: { $ne: 'ADMIN-MUSSAB' },
       $or: [
         { isApproved: false },
         { status: 'pending' },
+        { verificationStatus: 'pending' },
         { status: { $exists: false } },
+        { verificationStatus: { $exists: false } },
       ],
+      status: { $ne: 'rejected' },
+      verificationStatus: { $ne: 'rejected' },
     };
 
     const pageParam = parseInt(req.query.page, 10);
@@ -478,23 +483,15 @@ router.get(['/students', '/all-students'], async (req, res) => {
           { status: 'rejected' },
         ];
       } else if (status === 'pending') {
-        filter.role = { $ne: 'admin' };
-        filter.isAdmin = { $ne: true };
+        filter.email = { $ne: 'mussab@gmail.com' };
+        filter.studentId = { $ne: 'ADMIN-MUSSAB' };
         filter.$or = [
           { status: 'pending' },
           { verificationStatus: 'pending' },
           { isApproved: false },
-          {
-            $and: [
-              { verificationStatus: { $nin: ['verified', 'approved', 'rejected'] } },
-              { status: { $nin: ['approved', 'rejected'] } },
-              { isApproved: { $ne: true } },
-            ],
-          },
         ];
-        filter.verificationStatus = { $nin: ['verified', 'approved', 'rejected'] };
-        filter.status = { $nin: ['approved', 'rejected'] };
-        filter.isApproved = { $ne: true };
+        filter.status = { $ne: 'rejected' };
+        filter.verificationStatus = { $ne: 'rejected' };
       } else {
         filter.verificationStatus = status;
       }
@@ -827,14 +824,20 @@ router.get('/announcements', async (req, res) => {
 router.post('/announcements', async (req, res) => {
   try {
     const { title, content, category, isPinned } = req.body;
-    if (!title && !content) {
-      return res.status(400).json({ message: 'المحتوى مطلوب' });
+    const resolvedContent = (content || '').trim() || (title || '').trim();
+    if (!resolvedContent) {
+      return res.status(400).json({ success: false, message: 'محتوى الإعلان مطلوب' });
     }
+    const resolvedTitle = (title || '').trim() || (resolvedContent.length > 40 ? `${resolvedContent.substring(0, 37)}...` : resolvedContent);
+    const resolvedCategory = (category || 'general').trim();
+
     const newAnnouncement = new Announcement({
-      title: title || 'تنويه عام',
-      content: content || title,
-      category: category || 'عام',
-      isPinned: !!isPinned,
+      title: resolvedTitle,
+      content: resolvedContent,
+      category: resolvedCategory,
+      isPinned: isPinned !== undefined ? !!isPinned : true,
+      author: req.user?.fullName || req.user?.name || 'إدارة الرابطة - SSA-FS-CU',
+      date: new Date(),
     });
     await newAnnouncement.save();
 
@@ -842,9 +845,9 @@ router.post('/announcements', async (req, res) => {
     try {
       const Notification = require('../models/Notification');
       const notif = new Notification({
-        title: `📢 ${title || 'إعلان جديد من إدارة الرابطة'}`,
-        message: content.length > 150 ? `${content.substring(0, 147)}...` : content,
-        type: isPinned ? 'urgent' : 'announcement',
+        title: `📢 ${resolvedTitle}`,
+        message: resolvedContent.length > 150 ? `${resolvedContent.substring(0, 147)}...` : resolvedContent,
+        type: newAnnouncement.isPinned ? 'urgent' : 'announcement',
         link: '/',
         sender: 'إدارة الرابطة (SSA)',
         senderRole: 'admin',
@@ -852,6 +855,7 @@ router.post('/announcements', async (req, res) => {
       await notif.save();
       if (req.io) {
         req.io.emit('new_notification', notif);
+        req.io.emit('new_announcement', newAnnouncement);
       }
     } catch (notifErr) {
       console.error('Announcement Notification Error:', notifErr.message);
@@ -862,7 +866,7 @@ router.post('/announcements', async (req, res) => {
     console.error('Save Announcement Error:', error.message, error.stack);
     res.status(500).json({
       success: false,
-      message: 'خطأ في حفظ الإعلان',
+      message: 'خطأ في حفظ الإعلان: ' + error.message,
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined
     });

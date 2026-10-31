@@ -15,7 +15,11 @@ import {
   PlusCircle,
   Edit,
   Trash2,
-  CheckCircle2
+  CheckCircle2,
+  Eye,
+  X,
+  ExternalLink,
+  FileText
 } from 'lucide-react';
 import AcademicCalendar from '../components/AcademicCalendar';
 import AdminHubCMSModal from '../components/AdminHubCMSModal';
@@ -99,6 +103,7 @@ export default function EventsHub() {
   // CMS Modal
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingItem, setEditingItem] = useState(null);
+  const [previewItem, setPreviewItem] = useState(null);
   const [notification, setNotification] = useState('');
 
   const tabs = [
@@ -406,6 +411,14 @@ export default function EventsHub() {
                     {isAdmin && (
                       <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
                         <button
+                          onClick={() => setPreviewItem(evt)}
+                          title="معاينة تفاصيل وملف الفعالية"
+                          style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 'bold' }}
+                        >
+                          <Eye size={14} />
+                          <span>معاينة</span>
+                        </button>
+                        <button
                           onClick={() => {
                             setEditingItem(evt);
                             setIsModalOpen(true);
@@ -465,6 +478,14 @@ export default function EventsHub() {
                 {isAdmin && (
                   <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'flex-end', gap: '6px', marginTop: '14px', paddingTop: '12px', borderTop: '1px solid rgba(255, 255, 255, 0.1)' }}>
                     <button
+                      onClick={() => setPreviewItem(item)}
+                      title="معاينة التغطية / الصورة المرفقة"
+                      style={{ background: 'rgba(16, 185, 129, 0.15)', border: '1px solid #10b981', color: '#34d399', padding: '8px 12px', borderRadius: '8px', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: '4px', fontSize: '12px', fontWeight: 'bold' }}
+                    >
+                      <Eye size={14} />
+                      <span>معاينة</span>
+                    </button>
+                    <button
                       onClick={() => {
                         setEditingItem(item);
                         setIsModalOpen(true);
@@ -500,6 +521,224 @@ export default function EventsHub() {
         }}
         onSaved={handleSaved}
       />
+
+      {/* Admin Preview Modal for Uploaded Events and Coverages - Accessible only by Admin */}
+      {isAdmin && previewItem && (
+        <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            background: 'rgba(0, 0, 0, 0.85)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 9999,
+            padding: '20px',
+            backdropFilter: 'blur(5px)',
+          }}
+          onClick={() => setPreviewItem(null)}
+        >
+          <div
+            style={{
+              background: '#0f172a',
+              border: '1px solid rgba(255, 255, 255, 0.15)',
+              borderRadius: '20px',
+              maxWidth: '850px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              padding: '26px',
+              position: 'relative',
+              boxShadow: '0 25px 60px rgba(0, 0, 0, 0.7)',
+              direction: 'rtl',
+            }}
+            onClick={(e) => e.stopPropagation()}
+          >
+            {/* Modal Header */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '20px',
+                borderBottom: '1px solid rgba(255, 255, 255, 0.1)',
+                paddingBottom: '14px',
+              }}
+            >
+              <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                <div
+                  style={{
+                    padding: '8px',
+                    borderRadius: '10px',
+                    background: 'rgba(16, 185, 129, 0.15)',
+                    border: '1px solid rgba(16, 185, 129, 0.3)',
+                    color: '#34d399',
+                  }}
+                >
+                  <Eye size={20} />
+                </div>
+                <div>
+                  <h3 style={{ color: '#ffffff', fontSize: '17px', fontWeight: 'bold', margin: '0 0 4px' }}>
+                    معاينة ملف وتغطية الفعالية (لوحة الإدارة)
+                  </h3>
+                  <span style={{ fontSize: '12px', color: '#94a3b8' }}>
+                    {previewItem.title}
+                  </span>
+                </div>
+              </div>
+              <button
+                onClick={() => setPreviewItem(null)}
+                style={{
+                  background: 'transparent',
+                  border: 'none',
+                  color: '#94a3b8',
+                  cursor: 'pointer',
+                  padding: '6px',
+                  borderRadius: '8px',
+                }}
+              >
+                <X size={22} />
+              </button>
+            </div>
+
+            {/* Modal Body: File Preview */}
+            <div style={{ textAlign: 'center', minHeight: '260px', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+              {previewItem.fileUrl ? (
+                previewItem.fileUrl.startsWith('data:image') ||
+                previewItem.fileUrl.match(/\.(jpeg|jpg|png|webp|gif)$/i) ? (
+                  <div style={{ width: '100%' }}>
+                    <img
+                      src={previewItem.fileUrl}
+                      alt={previewItem.title}
+                      style={{
+                        maxWidth: '100%',
+                        maxHeight: '65vh',
+                        objectFit: 'contain',
+                        borderRadius: '12px',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        boxShadow: '0 10px 30px rgba(0,0,0,0.5)',
+                      }}
+                    />
+                  </div>
+                ) : (
+                  <div style={{ width: '100%', display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '16px' }}>
+                    <iframe
+                      src={previewItem.fileUrl}
+                      title="Event File Preview"
+                      style={{
+                        width: '100%',
+                        height: '55vh',
+                        border: '1px solid rgba(255, 255, 255, 0.1)',
+                        borderRadius: '12px',
+                        background: '#ffffff',
+                      }}
+                    />
+                  </div>
+                )
+              ) : (
+                /* Fallback preview card for events / coverages */
+                <div
+                  style={{
+                    padding: '30px 20px',
+                    width: '100%',
+                    background: 'rgba(0, 0, 0, 0.25)',
+                    borderRadius: '16px',
+                    border: '1px dashed rgba(255, 255, 255, 0.15)',
+                  }}
+                >
+                  <div style={{ fontSize: '42px', marginBottom: '12px' }}>
+                    {previewItem.icon || '🎟️'}
+                  </div>
+                  <h4 style={{ color: '#ffffff', fontSize: '18px', fontWeight: 'bold', margin: '0 0 10px' }}>
+                    {previewItem.title}
+                  </h4>
+                  <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', maxWidth: '560px', margin: '0 auto 18px' }}>
+                    {previewItem.description || 'تفاصيل الفعالية وبرنامج الحضور الرسمي المعتمد من إدارة الرابطة.'}
+                  </p>
+                  <div
+                    style={{
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '12px',
+                      background: 'rgba(255, 255, 255, 0.05)',
+                      padding: '8px 16px',
+                      borderRadius: '10px',
+                      fontSize: '12px',
+                      color: '#38bdf8',
+                      flexWrap: 'wrap',
+                      justifyContent: 'center',
+                    }}
+                  >
+                    {previewItem.date && <span>📅 التاريخ: {previewItem.date}</span>}
+                    {previewItem.time && <span>⏰ الموعد: {previewItem.time}</span>}
+                    {previewItem.location && <span>📍 المكان: {previewItem.location}</span>}
+                    {previewItem.seats && <span>👥 المقاعد: {previewItem.seats}</span>}
+                  </div>
+                  <div style={{ marginTop: '16px', fontSize: '12px', color: '#10b981' }}>
+                    ✓ فعالية معتمدة ومدرجة في السجل الإداري
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Modal Actions */}
+            <div
+              style={{
+                display: 'flex',
+                justifyContent: 'flex-end',
+                alignItems: 'center',
+                gap: '10px',
+                marginTop: '22px',
+                paddingTop: '16px',
+                borderTop: '1px solid rgba(255, 255, 255, 0.1)',
+              }}
+            >
+              {previewItem.fileUrl && (
+                <a
+                  href={previewItem.fileUrl}
+                  target="_blank"
+                  rel="noreferrer"
+                  style={{
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    background: 'rgba(56, 189, 248, 0.15)',
+                    border: '1px solid #38bdf8',
+                    color: '#38bdf8',
+                    padding: '8px 16px',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: 'bold',
+                    textDecoration: 'none',
+                    cursor: 'pointer',
+                  }}
+                >
+                  <ExternalLink size={14} />
+                  <span>فتح في نافذة كاملة</span>
+                </a>
+              )}
+              <button
+                onClick={() => setPreviewItem(null)}
+                style={{
+                  background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                  color: '#0b1622',
+                  border: 'none',
+                  padding: '8px 20px',
+                  borderRadius: '10px',
+                  fontSize: '13px',
+                  fontWeight: 'bold',
+                  cursor: 'pointer',
+                }}
+              >
+                إغلاق المعاينة
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
