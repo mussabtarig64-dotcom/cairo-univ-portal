@@ -151,6 +151,14 @@ const userSchema = new mongoose.Schema(
       type: String,
       default: 'user',
     },
+    resetPasswordToken: {
+      type: String,
+      default: '',
+    },
+    resetPasswordExpires: {
+      type: Date,
+      default: null,
+    },
     notes: {
       type: String,
       default: '',
@@ -279,6 +287,7 @@ userSchema.index({ verificationStatus: 1, createdAt: -1 });
 userSchema.index({ isApproved: 1, createdAt: -1 });
 userSchema.index({ role: 1 });
 userSchema.index({ email: 1 });
+userSchema.index({ resetPasswordToken: 1 });
 userSchema.index({ studentId: 1 });
 userSchema.index({ department: 1 });
 

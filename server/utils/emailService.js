@@ -550,11 +550,111 @@ async function sendAnnouncementBroadcastEmail(student, announcement) {
   }
 }
 
+/**
+ * إرسال بريد استعادة كلمة المرور للطالب
+ * @param {Object} student - بيانات الطالب
+ * @param {string} resetUrl - رابط الاستعادة الكامل
+ * @param {string} resetToken - رمز/توكن الاستعادة المباشر
+ */
+async function sendPasswordResetEmail(student, resetUrl, resetToken) {
+  const {
+    fullName = student.name || 'طالبنا العزيز',
+    email,
+  } = student;
+
+  const htmlContent = `
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استعادة كلمة المرور - رابطة الطلاب السودانيين</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1b2a; margin: 0; padding: 20px; color: #333333; direction: rtl; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; }
+    .header { background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 32px 20px; text-align: center; color: #ffffff; }
+    .logo-badge { display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #d4af37; color: #0b3b24; font-size: 26px; font-weight: bold; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .title { margin: 0; font-size: 20px; font-weight: bold; color: #ffffff; }
+    .subtitle { margin: 6px 0 0; font-size: 13px; color: #d4af37; font-weight: 600; }
+    .body { padding: 30px 24px; }
+    .welcome-text { font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 20px; }
+    .token-box { background: #f8fafc; border: 2px dashed #d4af37; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0; }
+    .token-label { font-size: 13px; color: #64748b; font-weight: bold; margin-bottom: 8px; }
+    .token-code { font-size: 24px; font-weight: 900; color: #0b3b24; letter-spacing: 3px; font-family: monospace; }
+    .btn-container { text-align: center; margin: 28px 0; }
+    .action-btn { display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #c59b27 100%); color: #0b3b24 !important; text-decoration: none; padding: 14px 34px; border-radius: 10px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 12px rgba(212,175,55,0.35); }
+    .warning-box { background: #fef2f2; border-right: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin: 20px 0; font-size: 13px; color: #991b1b; line-height: 1.6; }
+    .url-fallback { font-size: 11px; color: #94a3b8; word-break: break-all; margin-top: 20px; }
+    .footer { background: #f1f5f9; padding: 18px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-badge">🔐</div>
+      <h1 class="title">استعادة كلمة المرور للحساب الطلابي</h1>
+      <p class="subtitle">رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</p>
+    </div>
+    <div class="body">
+      <p class="welcome-text">
+        مرحباً <strong>${fullName}</strong>،<br>
+        لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في البوابة الأكاديمية والخدمية. يمكنك إتمام العملية عبر الضغط على الزر أدناه:
+      </p>
+
+      <div class="btn-container">
+        <a href="${resetUrl}" class="action-btn">إعادة تعيين كلمة المرور الآن</a>
+      </div>
+
+      <div class="token-box">
+        <div class="token-label">أو استخدم رمز التحقق التالي في شاشة إعادة التعيين:</div>
+        <div class="token-code">${resetToken}</div>
+      </div>
+
+      <div class="warning-box">
+        ⏱️ <strong>تنبيه أمني:</strong> هذا الرابط والرمز صالحان لمدة <strong>30 دقيقة فقط</strong>.<br>
+        إذا لم تكن أنت من طلب استعادة كلمة المرور، يمكنك تجاهل هذا البريد بأمان ولن يطرأ أي تغيير على حسابك.
+      </div>
+
+      <div class="url-fallback">
+        إذا تعذر الضغط على الزر، يمكنك نسخ الرابط التالي ولصقه في متصفحك:<br>
+        <a href="${resetUrl}" style="color: #2563eb;">${resetUrl}</a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>الأمانة الرقمية وشؤون الطلاب | رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    const mailClient = await getTransporter();
+    if (!mailClient) return { sent: false, error: 'تعذر تهيئة مرسل البريد' };
+
+    const mailOptions = {
+      from: process.env.EMAIL_FROM || '"أمانة شؤون الطلاب - رابطة العلوم" <noreply@cairo-univ-portal.com>',
+      to: email,
+      subject: '🔐 طلب استعادة كلمة المرور - بوابة كلية العلوم جامعة القاهرة',
+      html: htmlContent,
+    };
+
+    const info = await mailClient.sendMail(mailOptions);
+    const previewUrl = nodemailer.getTestMessageUrl(info);
+    console.log(`📧 [Password Reset Email Sent] to ${email} Preview: ${previewUrl || 'N/A'}`);
+    return { sent: true, messageId: info.messageId, previewUrl };
+  } catch (error) {
+    console.error('❌ خطأ أثناء إرسال بريد استعادة كلمة المرور:', error.message);
+    return { sent: false, error: error.message };
+  }
+}
+
 module.exports = {
   sendWelcomeEmail,
   sendStatusUpdateEmail,
   sendPaymentStatusEmail,
   sendRoleUpdateEmail,
   sendAnnouncementBroadcastEmail,
+  sendPasswordResetEmail,
   getTransporter,
 };

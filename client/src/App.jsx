@@ -19,6 +19,7 @@ import SocialLinks from './components/SocialLinks';
 // Lazy-loaded route pages for optimal initial page load & code-splitting
 const Home = lazy(() => import('./pages/Home'));
 const Login = lazy(() => import('./pages/Login'));
+const ResetPassword = lazy(() => import('./pages/ResetPassword'));
 const Register = lazy(() => import('./pages/Register'));
 const PendingApproval = lazy(() => import('./pages/PendingApproval'));
 const Posts = lazy(() => import('./pages/Posts'));
@@ -107,6 +108,9 @@ function MainAppLayout() {
             <Route path="/contact" element={<Contact />} />
             <Route path="/digital-id" element={<DigitalIDPage />} />
             <Route path="/login" element={<GuestOnlyRoute><Login /></GuestOnlyRoute>} />
+            <Route path="/forgot-password" element={<GuestOnlyRoute><Login /></GuestOnlyRoute>} />
+            <Route path="/reset-password/:token" element={<GuestOnlyRoute><ResetPassword /></GuestOnlyRoute>} />
+            <Route path="/reset-password" element={<GuestOnlyRoute><ResetPassword /></GuestOnlyRoute>} />
             <Route path="/register" element={<GuestOnlyRoute><Register /></GuestOnlyRoute>} />
             <Route path="/pending-approval" element={<PendingOrVerifiedRoute><PendingApproval /></PendingOrVerifiedRoute>} />
             <Route path="/posts" element={<VerifiedStudentRoute><Posts /></VerifiedStudentRoute>} />

@@ -18,6 +18,7 @@ const paymentsRoutes = require('./routes/payments');
 const cmsRoutes = require('./routes/cms');
 const notificationsRoutes = require('./routes/notifications');
 const advisorPromptsRoutes = require('./routes/advisorPrompts');
+const initiativesRoutes = require('./routes/initiatives');
 
 const app = express();
 
@@ -194,6 +195,9 @@ app.use('/notifications', notificationsRoutes);
 
 app.use('/api/advisor-prompts', advisorPromptsRoutes);
 app.use('/advisor-prompts', advisorPromptsRoutes);
+
+app.use('/api/initiatives', initiativesRoutes);
+app.use('/initiatives', initiativesRoutes);
 
 // مسار فحص صحة الخادم وقاعدة البيانات (Health Check & Render Ping)
 app.get('/', (req, res) => {

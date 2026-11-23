@@ -1,9 +1,10 @@
 const express = require('express');
 const router = express.Router();
+const crypto = require('crypto');
 const bcrypt = require('bcryptjs');
 const multer = require('multer');
 const User = require('../models/User');
-const { sendWelcomeEmail } = require('../utils/emailService');
+const { sendWelcomeEmail, sendPasswordResetEmail } = require('../utils/emailService');
 const { sendRegistrationSMS } = require('../utils/smsService');
 
 const {
@@ -745,6 +746,123 @@ router.get('/status-check/:query', async (req, res) => {
       message: 'حدث خطأ في النظام أثناء الاستعلام عن حالة الحساب.',
       error: error.message,
       stack: process.env.NODE_ENV !== 'production' ? error.stack : undefined,
+    });
+  }
+});
+
+// مسار طلب استعادة كلمة المرور وإرسال الرابط/الرمز عبر البريد الإلكتروني (Forgot Password)
+router.post('/forgot-password', async (req, res) => {
+  try {
+    const { email } = req.body;
+    const cleanEmail = (email || '').toLowerCase().trim();
+
+    if (!cleanEmail) {
+      return res.status(400).json({
+        success: false,
+        message: 'يرجى إدخال البريد الإلكتروني المسجل في البوابة.',
+      });
+    }
+
+    const user = await User.findOne({
+      email: { $regex: new RegExp(`^${cleanEmail.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}$`, 'i') },
+    });
+
+    if (!user) {
+      return res.status(404).json({
+        success: false,
+        message: 'لم يتم العثور على حساب مسجل بهذا البريد الإلكتروني. يرجى التأكد من كتابة البريد بشكل صحيح.',
+      });
+    }
+
+    // توليد رمز تحقق عشوائي آمن
+    const rawToken = crypto.randomBytes(24).toString('hex');
+
+    // حفظ التوكن وصلاحيته (30 دقيقة)
+    user.resetPasswordToken = rawToken;
+    user.resetPasswordExpires = new Date(Date.now() + 30 * 60 * 1000);
+    await user.save();
+
+    // استخراج رابط الواجهة الأمامية من الطلب أو البيئة
+    let baseUrl = process.env.CLIENT_URL || process.env.FRONTEND_URL || 'https://cairo-univ-portal.com';
+    const originHeader = req.headers.origin || req.headers.referer;
+    if (originHeader) {
+      try {
+        baseUrl = new URL(originHeader).origin;
+      } catch (e) {}
+    }
+
+    const resetUrl = `${baseUrl.replace(/\/+$/, '')}/reset-password/${rawToken}`;
+
+    // إرسال البريد الإلكتروني
+    const emailResult = await sendPasswordResetEmail(user, resetUrl, rawToken);
+
+    return res.status(200).json({
+      success: true,
+      message: 'تم إرسال رابط ورمز استعادة كلمة المرور إلى بريدك الإلكتروني بنجاح. يرجى مراجعة صندوق الوارد.',
+      previewUrl: emailResult.previewUrl || undefined,
+      expiresInMinutes: 30,
+    });
+  } catch (error) {
+    console.error('Forgot Password Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'حدث خطأ في الخادم أثناء معالجة طلب استعادة كلمة المرور.',
+      error: error.message,
+    });
+  }
+});
+
+// مسار التحقق من الرمز وإعادة تعيين كلمة المرور الجديدة (Reset Password)
+router.post('/reset-password', async (req, res) => {
+  try {
+    const { token, newPassword, password } = req.body;
+    const cleanToken = (token || '').trim();
+    const resolvedPassword = (newPassword || password || '').trim();
+
+    if (!cleanToken) {
+      return res.status(400).json({
+        success: false,
+        message: 'رمز أو توكن الاستعادة مطلوب.',
+      });
+    }
+
+    if (!resolvedPassword || resolvedPassword.length < 6) {
+      return res.status(400).json({
+        success: false,
+        message: 'كلمة المرور الجديدة يجب أن تحتوي على 6 أحرف على الأقل.',
+      });
+    }
+
+    // فحص صلاحية التوكن والمدة الزمنية
+    const user = await User.findOne({
+      resetPasswordToken: cleanToken,
+      resetPasswordExpires: { $gt: new Date() },
+    });
+
+    if (!user) {
+      return res.status(400).json({
+        success: false,
+        message: 'رمز أو رابط الاستعادة غير صالح أو انتهت صلاحيته (مدة الصلاحية 30 دقيقة). يرجى طلب رابط جديد.',
+      });
+    }
+
+    // تشفير كلمة المرور وتحديث المستخدم وتفريغ التوكن
+    const salt = await bcrypt.genSalt(10);
+    user.password = await bcrypt.hash(resolvedPassword, salt);
+    user.resetPasswordToken = '';
+    user.resetPasswordExpires = null;
+    await user.save();
+
+    return res.status(200).json({
+      success: true,
+      message: 'تم إعادة تعيين كلمة المرور بنجاح! يمكنك الآن تسجيل الدخول بكلمة المرور الجديدة.',
+    });
+  } catch (error) {
+    console.error('Reset Password Error:', error);
+    return res.status(500).json({
+      success: false,
+      message: 'حدث خطأ أثناء إعادة تعيين كلمة المرور.',
+      error: error.message,
     });
   }
 });
