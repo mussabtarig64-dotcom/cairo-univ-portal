@@ -46,8 +46,61 @@ async function getTransporter() {
 }
 
 /**
+ * دالة موحدة لإرسال البريد (تستخدم Brevo HTTPS API على Render تلقائياً، أو Nodemailer كخيار احتياطي)
+ */
+async function dispatchEmail({ to, subject, html, senderName = 'رابطة الطلاب السودانيين - كلية العلوم', fromFallback }) {
+  // 1. الإرسال عبر Brevo HTTP API (يتجاوز حجب منافذ SMTP في Render)
+  if (process.env.BREVO_API_KEY) {
+    const senderEmail = process.env.BREVO_SENDER_EMAIL || process.env.SMTP_USER;
+    if (!senderEmail) {
+      throw new Error('يرجى إضافة SMTP_USER أو BREVO_SENDER_EMAIL في إعدادات البيئة');
+    }
+
+    const response = await fetch('https://api.brevo.com/v3/smtp/email', {
+      method: 'POST',
+      headers: {
+        'accept': 'application/json',
+        'api-key': process.env.BREVO_API_KEY,
+        'content-type': 'application/json',
+      },
+      body: JSON.stringify({
+        sender: { name: senderName, email: senderEmail },
+        to: [{ email: to }],
+        subject,
+        htmlContent: html,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Brevo API error (${response.status}):${errorText}`);
+    }
+
+    const data = await response.json();
+    console.log(`✅ [Brevo HTTP API] تم إرسال البريد بنجاح إلى: ${to} | Message ID:${data.messageId}`);
+    return { sent: true, messageId: data.messageId, previewUrl: null };
+  }
+
+  // 2. الوضع الاحتياطي عبر Nodemailer (SMTP أو Ethereal محلياً)
+  const mailClient = await getTransporter();
+  if (!mailClient) {
+    console.warn('⚠️ لم يتم إرسال البريد لعدم توفر عميل البريد الإلكتروني.');
+    return { sent: false, previewUrl: null, error: 'Transporter not ready' };
+  }
+
+  const info = await mailClient.sendMail({
+    from: process.env.EMAIL_FROM || fromFallback,
+    to,
+    subject,
+    html,
+  });
+
+  const previewUrl = nodemailer.getTestMessageUrl(info) || null;
+  return { sent: true, messageId: info.messageId, previewUrl };
+}
+
+/**
  * إرسال بريد الترحيب وتأكيد تسجيل الطالب
- * @param {Object} student - بيانات الطالب المسجل
  */
 async function sendWelcomeEmail(student) {
   const {
@@ -86,7 +139,7 @@ async function sendWelcomeEmail(student) {
     .subtitle { margin: 6px 0 0; font-size: 14px; color: #d4af37; font-weight: 600; }
     .body { padding: 30px 25px; }
     .welcome-text { font-size: 16px; line-height: 1.7; color: #2d3748; margin-bottom: 20px; }
-    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 25px; border: 1px solid ${statusColor}; color: ${statusColor}; background-color: ${statusBg}; }
+    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 25px; border: 1px solid ${statusColor}; color: ${statusColor}; background-color:${statusBg}; }
     .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 25px; }
     .info-title { font-size: 16px; font-weight: bold; color: #0b3b24; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #d4af37; padding-bottom: 6px; }
     .info-table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -119,42 +172,15 @@ async function sendWelcomeEmail(student) {
       <div class="info-card">
         <h3 class="info-title">📋 بيانات القيد والتسجيل المعتمدة</h3>
         <table class="info-table">
-          <tr>
-            <td class="info-label">الاسم الكامل:</td>
-            <td class="info-value">${fullName}</td>
-          </tr>
-          <tr>
-            <td class="info-label">الرقم الجامعي / رقم القيد:</td>
-            <td class="info-value" style="color: #0b3b24; letter-spacing: 0.5px;">${studentId}</td>
-          </tr>
-          <tr>
-            <td class="info-label">القسم العلمي:</td>
-            <td class="info-value">${department}</td>
-          </tr>
-          <tr>
-            <td class="info-label">المستوى الأكاديمي:</td>
-            <td class="info-value">${academicLevel}</td>
-          </tr>
-          <tr>
-            <td class="info-label">البريد الإلكتروني:</td>
-            <td class="info-value">${email}</td>
-          </tr>
-          <tr>
-            <td class="info-label">رقم الهاتف / الواتساب:</td>
-            <td class="info-value">${phone}</td>
-          </tr>
-          <tr>
-            <td class="info-label">مكان السكن بالقاهرة:</td>
-            <td class="info-value">${cairoAddress}</td>
-          </tr>
-          <tr>
-            <td class="info-label">جهة الاتصال للطوارئ:</td>
-            <td class="info-value">${emergencyContactName} (${emergencyContactPhone})</td>
-          </tr>
-          <tr>
-            <td class="info-label">تاريخ التسجيل:</td>
-            <td class="info-value">${new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</td>
-          </tr>
+          <tr><td class="info-label">الاسم الكامل:</td><td class="info-value">${fullName}</td></tr>
+          <tr><td class="info-label">الرقم الجامعي / رقم القيد:</td><td class="info-value" style="color: #0b3b24; letter-spacing: 0.5px;">${studentId}</td></tr>
+          <tr><td class="info-label">القسم العلمي:</td><td class="info-value">${department}</td></tr>
+          <tr><td class="info-label">المستوى الأكاديمي:</td><td class="info-value">${academicLevel}</td></tr>
+          <tr><td class="info-label">البريد الإلكتروني:</td><td class="info-value">${email}</td></tr>
+          <tr><td class="info-label">رقم الهاتف / الواتساب:</td><td class="info-value">${phone}</td></tr>
+          <tr><td class="info-label">مكان السكن بالقاهرة:</td><td class="info-value">${cairoAddress}</td></tr>
+          <tr><td class="info-label">جهة الاتصال للطوارئ:</td><td class="info-value">${emergencyContactName} (${emergencyContactPhone})</td></tr>
+          <tr><td class="info-label">تاريخ التسجيل:</td><td class="info-value">${new Date().toLocaleDateString('ar-EG', { year: 'numeric', month: 'long', day: 'numeric' })}</td></tr>
         </table>
       </div>
 
@@ -178,36 +204,15 @@ async function sendWelcomeEmail(student) {
   `;
 
   try {
-    const mailClient = await getTransporter();
-    if (!mailClient) {
-      console.warn('⚠️ لم يتم إرسال البريد لعدم توفر عميل البريد الإلكتروني.');
-      return { sent: false, previewUrl: null, error: 'Transporter not ready' };
-    }
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || '"رابطة الطلاب السودانيين - كلية العلوم" <no-reply@ssa-fscu.org>',
+    return await dispatchEmail({
       to: email,
       subject: `🎓 مرحباً بك في رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة | تأكيد التسجيل (${studentId})`,
       html: htmlContent,
-    };
-
-    const info = await mailClient.sendMail(mailOptions);
-    console.log(`\n======================================================`);
-    console.log(`✅ [Nodemailer Dispatch] تم إرسال بريد الترحيب بنجاح!`);
-    console.log(`📨 إلى: ${email} (${fullName})`);
-    console.log(`🆔 Message ID: ${info.messageId}`);
-
-    let previewUrl = null;
-    const etherealUrl = nodemailer.getTestMessageUrl(info);
-    if (etherealUrl) {
-      previewUrl = etherealUrl;
-      console.log(`🔗 [Email Preview URL] رابط معاينة البريد الإلكتروني (Ethereal): ${previewUrl}`);
-    }
-    console.log(`======================================================\n`);
-
-    return { sent: true, messageId: info.messageId, previewUrl };
+      senderName: 'رابطة الطلاب السودانيين - كلية العلوم',
+      fromFallback: '"رابطة الطلاب السودانيين - كلية العلوم" <no-reply@ssa-fscu.org>',
+    });
   } catch (error) {
-    console.error('❌ خطأ أثناء إرسال بريد الترحيب عبر Nodemailer:', error.message);
+    console.error('❌ خطأ أثناء إرسال بريد الترحيب:', error.message);
     return { sent: false, previewUrl: null, error: error.message };
   }
 }
@@ -247,7 +252,7 @@ async function sendStatusUpdateEmail(student, newStatus, adminNotes = '') {
     .header { background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 30px 20px; text-align: center; color: #ffffff; }
     .logo-badge { display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #d4af37; color: #0b3b24; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
     .body { padding: 30px 25px; }
-    .status-badge { display: inline-block; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; margin: 20px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color: ${statusBg}; }
+    .status-badge { display: inline-block; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; margin: 20px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color:${statusBg}; }
     .action-btn { display: inline-block; background: #d4af37; color: #0b3b24 !important; text-decoration: none; padding: 14px 30px; border-radius: 10px; font-weight: bold; font-size: 15px; margin: 15px 0; }
     .footer { background: #f1f5f9; padding: 18px; text-align: center; font-size: 12px; color: #64748b; }
   </style>
@@ -269,8 +274,7 @@ async function sendStatusUpdateEmail(student, newStatus, adminNotes = '') {
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 20px 0;">
         <p style="margin: 0 0 8px;"><strong>الرقم الجامعي / القيد:</strong> ${studentId}</p>
-        <p style="margin: 0 0 8px;"><strong>القسم:</strong> ${department}</p>
-        ${adminNotes ? `<p style="margin: 8px 0 0; padding-top:8px; border-top: 1px dashed #cbd5e1; color:#475569;"><strong>ملاحظات إدارة الرابطة:</strong> ${adminNotes}</p>` : ''}
+        <p style="margin: 0 0 8px;"><strong>القسم:</strong> ${department}</p>${adminNotes ? `<p style="margin: 8px 0 0; padding-top:8px; border-top: 1px dashed #cbd5e1; color:#475569;"><strong>ملاحظات إدارة الرابطة:</strong> ${adminNotes}</p>` : ''}
       </div>
 
       ${isVerified ? `
@@ -293,20 +297,13 @@ async function sendStatusUpdateEmail(student, newStatus, adminNotes = '') {
   `;
 
   try {
-    const mailClient = await getTransporter();
-    if (!mailClient) return { sent: false };
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || '"رابطة الطلاب السودانيين - كلية العلوم" <no-reply@ssa-fscu.org>',
+    return await dispatchEmail({
       to: email,
       subject: `📢 ${statusTitle} | رابطة الطلاب السودانيين - كلية العلوم`,
       html: htmlContent,
-    };
-
-    const info = await mailClient.sendMail(mailOptions);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`📧 [Status Notification Sent] to ${email} (Status: ${newStatus}) Preview: ${previewUrl || 'N/A'}`);
-    return { sent: true, messageId: info.messageId, previewUrl };
+      senderName: 'رابطة الطلاب السودانيين - كلية العلوم',
+      fromFallback: '"رابطة الطلاب السودانيين - كلية العلوم" <no-reply@ssa-fscu.org>',
+    });
   } catch (error) {
     console.error('❌ خطأ أثناء إرسال بريد تحديث الحالة:', error.message);
     return { sent: false, error: error.message };
@@ -337,7 +334,7 @@ async function sendPaymentStatusEmail(payment, student, newStatus, adminNotes = 
     .container { max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .header { background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 28px 20px; text-align: center; color: #ffffff; }
     .body { padding: 28px 22px; }
-    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin: 15px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color: ${statusBg}; }
+    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin: 15px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color:${statusBg}; }
     .receipt-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 18px 0; }
     .footer { background: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b; }
   </style>
@@ -360,8 +357,7 @@ async function sendPaymentStatusEmail(payment, student, newStatus, adminNotes = 
         <p style="margin:0 0 6px;"><strong>نوع الفعالية / النشاط:</strong> ${payment.activityType}</p>
         <p style="margin:0 0 6px;"><strong>المبلغ المسدد:</strong> ${payment.amount} جنيه مصري (EGP)</p>
         <p style="margin:0 0 6px;"><strong>رقم العملية / الحوالة:</strong> ${payment.transactionId}</p>
-        <p style="margin:0 0 6px;"><strong>طريقة الدفع:</strong> ${payment.paymentMethod}</p>
-        ${adminNotes ? `<p style="margin:8px 0 0; padding-top:8px; border-top:1px dashed #cbd5e1; color:#b91c1c;"><strong>ملاحظات الإدارة المالية:</strong> ${adminNotes}</p>` : ''}
+        <p style="margin:0 0 6px;"><strong>طريقة الدفع:</strong> ${payment.paymentMethod}</p>${adminNotes ? `<p style="margin:8px 0 0; padding-top:8px; border-top:1px dashed #cbd5e1; color:#b91c1c;"><strong>ملاحظات الإدارة المالية:</strong> ${adminNotes}</p>` : ''}
       </div>
 
       <p style="font-size:13px; color:#64748b;">يمكنك متابعة حالة جميع مدفوعاتك وإيصالاتك عبر قسم "المدفوعات والاشتراكات" في البوابة الطلابية.</p>
@@ -375,20 +371,13 @@ async function sendPaymentStatusEmail(payment, student, newStatus, adminNotes = 
   `;
 
   try {
-    const mailClient = await getTransporter();
-    if (!mailClient) return { sent: false };
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || '"الأمانة المالية - رابطة الطلاب السودانيين" <finance@ssa-fscu.org>',
+    return await dispatchEmail({
       to: email,
-      subject: `${statusArabic} | معاملة (${payment.transactionId})`,
+      subject: `${statusArabic} \vert{} معاملة (${payment.transactionId})`,
       html: htmlContent,
-    };
-
-    const info = await mailClient.sendMail(mailOptions);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`📧 [Payment Notification Sent] to ${email} (Status: ${newStatus}) Preview: ${previewUrl || 'N/A'}`);
-    return { sent: true, messageId: info.messageId, previewUrl };
+      senderName: 'الأمانة المالية - رابطة الطلاب السودانيين',
+      fromFallback: '"الأمانة المالية - رابطة الطلاب السودانيين" <finance@ssa-fscu.org>',
+    });
   } catch (error) {
     console.error('❌ خطأ أثناء إرسال إشعار الدفع:', error.message);
     return { sent: false, error: error.message };
@@ -399,7 +388,7 @@ async function sendPaymentStatusEmail(payment, student, newStatus, adminNotes = 
  * إرسال بريد الترقية إلى رتبة أدمن أو تعديل الصلاحيات
  */
 async function sendRoleUpdateEmail(student, newRole) {
-  const { fullName = student.name || 'عضو الرابطة', email, studentId = '' } = student;
+  const { fullName = student.name || 'عضو الرابطة', email } = student;
   if (!email) return { sent: false };
 
   const isAdmin = newRole === 'admin';
@@ -458,20 +447,13 @@ async function sendRoleUpdateEmail(student, newRole) {
   `;
 
   try {
-    const mailClient = await getTransporter();
-    if (!mailClient) return { sent: false };
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || '"إدارة رابطة الطلاب السودانيين" <admin@ssa-fscu.org>',
+    return await dispatchEmail({
       to: email,
       subject: `${roleTitle} | بوابة رابطة الطلاب السودانيين`,
       html: htmlContent,
-    };
-
-    const info = await mailClient.sendMail(mailOptions);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`📧 [Role Update Notification Sent] to ${email} (Role: ${newRole}) Preview: ${previewUrl || 'N/A'}`);
-    return { sent: true, messageId: info.messageId, previewUrl };
+      senderName: 'إدارة رابطة الطلاب السودانيين',
+      fromFallback: '"إدارة رابطة الطلاب السودانيين" <admin@ssa-fscu.org>',
+    });
   } catch (error) {
     console.error('❌ خطأ أثناء إرسال إشعار الرتبة:', error.message);
     return { sent: false, error: error.message };
@@ -514,37 +496,31 @@ async function sendAnnouncementBroadcastEmail(student, announcement) {
         <h4 style="margin:0 0 8px; color:#0b3b24; font-size:16px;">${announcement.title || 'تنويه عام'}</h4>
         <p style="margin:0; line-height:1.7; color:#334155;">${announcement.content || ''}</p>
         <div style="margin-top:12px; font-size:12px; color:#64748b;">
-          التصنيف: <strong>${announcement.category || 'عام'}</strong> | التاريخ: ${new Date().toLocaleDateString('ar-EG')}
-        </div>
-      </div>
+          التصنيف: <strong>${announcement.category \vert{ }\vert{ } 'عام'
+}</strong > \vert{ } التاريخ: ${ new Date().toLocaleDateString('ar-EG') }
+        </div >
+      </div >
 
-      <div style="text-align: center; margin-top: 20px;">
-        <a href="${CLIENT_URL}" style="display:inline-block; background:#d4af37; color:#0b3b24; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:bold;">زيارة البوابة والاطلاع على التفاصيل</a>
-      </div>
-    </div>
-    <div class="footer">
-      <p>المكتب الإعلامي | رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</p>
-    </div>
+  <div style="text-align: center; margin-top: 20px;">
+    <a href="${CLIENT_URL}" style="display:inline-block; background:#d4af37; color:#0b3b24; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:bold;">زيارة البوابة والاطلاع على التفاصيل</a>
   </div>
-</body>
-</html>
+    </div >
+  <div class="footer">
+    <p>المكتب الإعلامي | رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</p>
+  </div>
+  </div >
+</body >
+</html >
   `;
 
   try {
-    const mailClient = await getTransporter();
-    if (!mailClient) return { sent: false };
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || '"المكتب الإعلامي - رابطة الطلاب السودانيين" <media@ssa-fscu.org>',
+    return await dispatchEmail({
       to: email,
-      subject: `📢 تنويه هام: ${announcement.title || 'إعلان من رابطة الطلاب السودانيين'}`,
+      subject: `📢 تنويه هام: ${ announcement.title || 'إعلان من رابطة الطلاب السودانيين' } `,
       html: htmlContent,
-    };
-
-    const info = await mailClient.sendMail(mailOptions);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`📧 [Announcement Notification Sent] to ${email} Preview: ${previewUrl || 'N/A'}`);
-    return { sent: true, messageId: info.messageId, previewUrl };
+      senderName: 'المكتب الإعلامي - رابطة الطلاب السودانيين',
+      fromFallback: '"المكتب الإعلامي - رابطة الطلاب السودانيين" <media@ssa-fscu.org>',
+    });
   } catch (error) {
     console.error('❌ خطأ أثناء إرسال إشعار الإعلان:', error.message);
     return { sent: false, error: error.message };
@@ -553,9 +529,6 @@ async function sendAnnouncementBroadcastEmail(student, announcement) {
 
 /**
  * إرسال بريد استعادة كلمة المرور للطالب
- * @param {Object} student - بيانات الطالب
- * @param {string} resetUrl - رابط الاستعادة الكامل
- * @param {string} resetToken - رمز/توكن الاستعادة المباشر
  */
 async function sendPasswordResetEmail(student, resetUrl, resetToken) {
   const {
@@ -564,98 +537,28 @@ async function sendPasswordResetEmail(student, resetUrl, resetToken) {
   } = student;
 
   const htmlContent = `
-<!DOCTYPE html>
-<html dir="rtl" lang="ar">
-<head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>استعادة كلمة المرور - رابطة الطلاب السودانيين</title>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1b2a; margin: 0; padding: 20px; color: #333333; direction: rtl; }
-    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; }
-    .header { background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 32px 20px; text-align: center; color: #ffffff; }
-    .logo-badge { display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #d4af37; color: #0b3b24; font-size: 26px; font-weight: bold; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-    .title { margin: 0; font-size: 20px; font-weight: bold; color: #ffffff; }
-    .subtitle { margin: 6px 0 0; font-size: 13px; color: #d4af37; font-weight: 600; }
-    .body { padding: 30px 24px; }
-    .welcome-text { font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 20px; }
-    .token-box { background: #f8fafc; border: 2px dashed #d4af37; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0; }
-    .token-label { font-size: 13px; color: #64748b; font-weight: bold; margin-bottom: 8px; }
-    .token-code { font-size: 24px; font-weight: 900; color: #0b3b24; letter-spacing: 3px; font-family: monospace; }
-    .btn-container { text-align: center; margin: 28px 0; }
-    .action-btn { display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #c59b27 100%); color: #0b3b24 !important; text-decoration: none; padding: 14px 34px; border-radius: 10px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 12px rgba(212,175,55,0.35); }
-    .warning-box { background: #fef2f2; border-right: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin: 20px 0; font-size: 13px; color: #991b1b; line-height: 1.6; }
-    .url-fallback { font-size: 11px; color: #94a3b8; word-break: break-all; margin-top: 20px; }
-    .footer { background: #f1f5f9; padding: 18px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
-  </style>
-</head>
-<body>
-  <div class="container">
-    <div class="header">
-      <div class="logo-badge">🔐</div>
-      <h1 class="title">استعادة كلمة المرور للحساب الطلابي</h1>
-      <p class="subtitle">رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</p>
-    </div>
-    <div class="body">
-      <p class="welcome-text">
-        مرحباً <strong>${fullName}</strong>،<br>
-        لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في البوابة الأكاديمية والخدمية. يمكنك إتمام العملية عبر الضغط على الزر أدناه:
-      </p>
-
-      <div class="btn-container">
-        <a href="${resetUrl}" class="action-btn">إعادة تعيين كلمة المرور الآن</a>
-      </div>
-
-      <div class="token-box">
-        <div class="token-label">أو استخدم رمز التحقق التالي في شاشة إعادة التعيين:</div>
-        <div class="token-code">${resetToken}</div>
-      </div>
-
-      <div class="warning-box">
-        ⏱️ <strong>تنبيه أمني:</strong> هذا الرابط والرمز صالحان لمدة <strong>30 دقيقة فقط</strong>.<br>
-        إذا لم تكن أنت من طلب استعادة كلمة المرور، يمكنك تجاهل هذا البريد بأمان ولن يطرأ أي تغيير على حسابك.
-      </div>
-
-      <div class="url-fallback">
-        إذا تعذر الضغط على الزر، يمكنك نسخ الرابط التالي ولصقه في متصفحك:<br>
-        <a href="${resetUrl}" style="color: #2563eb;">${resetUrl}</a>
-      </div>
-    </div>
-    <div class="footer">
-      <p>الأمانة الرقمية وشؤون الطلاب | رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة</p>
-    </div>
-  </div>
-</body>
-</html>
-  `;
-
-  try {
-    const mailClient = await getTransporter();
-    if (!mailClient) return { sent: false, error: 'تعذر تهيئة مرسل البريد' };
-
-    const mailOptions = {
-      from: process.env.EMAIL_FROM || '"أمانة شؤون الطلاب - رابطة العلوم" <noreply@cairo-univ-portal.com>',
-      to: email,
-      subject: '🔐 طلب استعادة كلمة المرور - بوابة كلية العلوم جامعة القاهرة',
-      html: htmlContent,
-    };
-
-    const info = await mailClient.sendMail(mailOptions);
-    const previewUrl = nodemailer.getTestMessageUrl(info);
-    console.log(`📧 [Password Reset Email Sent] to ${email} Preview: ${previewUrl || 'N/A'}`);
-    return { sent: true, messageId: info.messageId, previewUrl };
-  } catch (error) {
-    console.error('❌ خطأ أثناء إرسال بريد استعادة كلمة المرور:', error.message);
-    return { sent: false, error: error.message };
-  }
-}
-
-module.exports = {
-  sendWelcomeEmail,
-  sendStatusUpdateEmail,
-  sendPaymentStatusEmail,
-  sendRoleUpdateEmail,
-  sendAnnouncementBroadcastEmail,
-  sendPasswordResetEmail,
-  getTransporter,
-};
+  < !DOCTYPE html >
+    <html dir="rtl" lang="ar">
+      <head>
+        <meta charset="UTF-8">
+          <meta name="viewport" content="width=device-width, initial-scale=1.0">
+            <title>استعادة كلمة المرور - رابطة الطلاب السودانيين</title>
+            <style>
+              body {font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1b2a; margin: 0; padding: 20px; color: #333333; direction: rtl; }
+              .container {max - width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; }
+              .header {background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 32px 20px; text-align: center; color: #ffffff; }
+              .logo-badge {display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #d4af37; color: #0b3b24; font-size: 26px; font-weight: bold; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+              .title {margin: 0; font-size: 20px; font-weight: bold; color: #ffffff; }
+              .subtitle {margin: 6px 0 0; font-size: 13px; color: #d4af37; font-weight: 600; }
+              .body {padding: 30px 24px; }
+              .welcome-text {font - size: 15px; line-height: 1.8; color: #334155; margin-bottom: 20px; }
+              .token-box {background: #f8fafc; border: 2px dashed #d4af37; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0; }
+              .token-label {font - size: 13px; color: #64748b; font-weight: bold; margin-bottom: 8px; }
+              .token-code {font - size: 24px; font-weight: 900; color: #0b3b24; letter-spacing: 3px; font-family: monospace; }
+              .btn-container {text - align: center; margin: 28px 0; }
+              .action-btn {display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #c59b27 100%); color: #0b3b24 !important; text-decoration: none; padding: 14px 34px; border-radius: 10px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 12px rgba(212,175,55,0.35); }
+              .warning-box {background: #fef2f2; border-right: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin: 20px 0; font-size: 13px; color: #991b1b; line-height: 1.6; }
+              .url-fallback {font - size: 11px; color: #94a3b8; word-break: break-all; margin-top: 20px; }
+              .footer {background: #f1f5f9; padding: 18px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+            </style>
+          </
