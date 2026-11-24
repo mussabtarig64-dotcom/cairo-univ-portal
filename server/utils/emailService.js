@@ -15,6 +15,7 @@ async function getTransporter() {
       host: process.env.SMTP_HOST,
       port: parseInt(process.env.SMTP_PORT || '587', 10),
       secure: process.env.SMTP_SECURE === 'true',
+      family: 4,
       auth: {
         user: process.env.SMTP_USER,
         pass: process.env.SMTP_PASS,
@@ -228,8 +229,8 @@ async function sendStatusUpdateEmail(student, newStatus, adminNotes = '') {
   const statusTitle = isVerified
     ? '🎉 تهانينا! تم اعتماد وتوثيق عضويتك رسميـاً'
     : isRejected
-    ? '⚠️ إشعار بخصوص طلب الانضمام للرابطة'
-    : '⏳ تم تحديث حالة طلبك إلى: قيد المراجعة';
+      ? '⚠️ إشعار بخصوص طلب الانضمام للرابطة'
+      : '⏳ تم تحديث حالة طلبك إلى: قيد المراجعة';
 
   const statusColor = isVerified ? '#10b981' : isRejected ? '#ef4444' : '#f59e0b';
   const statusBg = isVerified ? '#ecfdf5' : isRejected ? '#fef2f2' : '#fffbeb';
