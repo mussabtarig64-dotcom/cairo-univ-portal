@@ -73,11 +73,11 @@ async function dispatchEmail({ to, subject, html, senderName = 'رابطة ال�
 
     if (!response.ok) {
       const errorText = await response.text();
-      throw new Error(`Brevo API error (${response.status}):${errorText}`);
+      throw new Error(`Brevo API error (${response.status}): ${errorText}`);
     }
 
     const data = await response.json();
-    console.log(`✅ [Brevo HTTP API] تم إرسال البريد بنجاح إلى: ${to} | Message ID:${data.messageId}`);
+    console.log(`✅ [Brevo HTTP API] تم إرسال البريد بنجاح إلى: ${to} | Message ID: ${data.messageId}`);
     return { sent: true, messageId: data.messageId, previewUrl: null };
   }
 
@@ -139,7 +139,7 @@ async function sendWelcomeEmail(student) {
     .subtitle { margin: 6px 0 0; font-size: 14px; color: #d4af37; font-weight: 600; }
     .body { padding: 30px 25px; }
     .welcome-text { font-size: 16px; line-height: 1.7; color: #2d3748; margin-bottom: 20px; }
-    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 25px; border: 1px solid ${statusColor}; color: ${statusColor}; background-color:${statusBg}; }
+    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin-bottom: 25px; border: 1px solid ${statusColor}; color: ${statusColor}; background-color: ${statusBg}; }
     .info-card { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 20px; margin-bottom: 25px; }
     .info-title { font-size: 16px; font-weight: bold; color: #0b3b24; margin-top: 0; margin-bottom: 15px; border-bottom: 2px solid #d4af37; padding-bottom: 6px; }
     .info-table { width: 100%; border-collapse: collapse; font-size: 14px; }
@@ -252,7 +252,7 @@ async function sendStatusUpdateEmail(student, newStatus, adminNotes = '') {
     .header { background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 30px 20px; text-align: center; color: #ffffff; }
     .logo-badge { display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #d4af37; color: #0b3b24; font-size: 22px; font-weight: bold; margin-bottom: 10px; }
     .body { padding: 30px 25px; }
-    .status-badge { display: inline-block; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; margin: 20px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color:${statusBg}; }
+    .status-badge { display: inline-block; padding: 10px 20px; border-radius: 20px; font-size: 15px; font-weight: bold; margin: 20px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color: ${statusBg}; }
     .action-btn { display: inline-block; background: #d4af37; color: #0b3b24 !important; text-decoration: none; padding: 14px 30px; border-radius: 10px; font-weight: bold; font-size: 15px; margin: 15px 0; }
     .footer { background: #f1f5f9; padding: 18px; text-align: center; font-size: 12px; color: #64748b; }
   </style>
@@ -274,7 +274,8 @@ async function sendStatusUpdateEmail(student, newStatus, adminNotes = '') {
 
       <div style="background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 20px 0;">
         <p style="margin: 0 0 8px;"><strong>الرقم الجامعي / القيد:</strong> ${studentId}</p>
-        <p style="margin: 0 0 8px;"><strong>القسم:</strong> ${department}</p>${adminNotes ? `<p style="margin: 8px 0 0; padding-top:8px; border-top: 1px dashed #cbd5e1; color:#475569;"><strong>ملاحظات إدارة الرابطة:</strong> ${adminNotes}</p>` : ''}
+        <p style="margin: 0 0 8px;"><strong>القسم:</strong> ${department}</p>
+        ${adminNotes ? `<p style="margin: 8px 0 0; padding-top:8px; border-top: 1px dashed #cbd5e1; color:#475569;"><strong>ملاحظات إدارة الرابطة:</strong> ${adminNotes}</p>` : ''}
       </div>
 
       ${isVerified ? `
@@ -334,7 +335,7 @@ async function sendPaymentStatusEmail(payment, student, newStatus, adminNotes = 
     .container { max-width: 650px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); }
     .header { background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 28px 20px; text-align: center; color: #ffffff; }
     .body { padding: 28px 22px; }
-    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin: 15px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color:${statusBg}; }
+    .status-badge { display: inline-block; padding: 8px 18px; border-radius: 20px; font-size: 14px; font-weight: bold; margin: 15px 0; border: 1px solid ${statusColor}; color: ${statusColor}; background-color: ${statusBg}; }
     .receipt-box { background: #f8fafc; border: 1px solid #e2e8f0; border-radius: 12px; padding: 18px; margin: 18px 0; }
     .footer { background: #f1f5f9; padding: 16px; text-align: center; font-size: 12px; color: #64748b; }
   </style>
@@ -357,7 +358,8 @@ async function sendPaymentStatusEmail(payment, student, newStatus, adminNotes = 
         <p style="margin:0 0 6px;"><strong>نوع الفعالية / النشاط:</strong> ${payment.activityType}</p>
         <p style="margin:0 0 6px;"><strong>المبلغ المسدد:</strong> ${payment.amount} جنيه مصري (EGP)</p>
         <p style="margin:0 0 6px;"><strong>رقم العملية / الحوالة:</strong> ${payment.transactionId}</p>
-        <p style="margin:0 0 6px;"><strong>طريقة الدفع:</strong> ${payment.paymentMethod}</p>${adminNotes ? `<p style="margin:8px 0 0; padding-top:8px; border-top:1px dashed #cbd5e1; color:#b91c1c;"><strong>ملاحظات الإدارة المالية:</strong> ${adminNotes}</p>` : ''}
+        <p style="margin:0 0 6px;"><strong>طريقة الدفع:</strong> ${payment.paymentMethod}</p>
+        ${adminNotes ? `<p style="margin:8px 0 0; padding-top:8px; border-top:1px dashed #cbd5e1; color:#b91c1c;"><strong>ملاحظات الإدارة المالية:</strong> ${adminNotes}</p>` : ''}
       </div>
 
       <p style="font-size:13px; color:#64748b;">يمكنك متابعة حالة جميع مدفوعاتك وإيصالاتك عبر قسم "المدفوعات والاشتراكات" في البوابة الطلابية.</p>
@@ -373,7 +375,7 @@ async function sendPaymentStatusEmail(payment, student, newStatus, adminNotes = 
   try {
     return await dispatchEmail({
       to: email,
-      subject: `${statusArabic} \vert{} معاملة (${payment.transactionId})`,
+      subject: `${statusArabic} | معاملة (${payment.transactionId})`,
       html: htmlContent,
       senderName: 'الأمانة المالية - رابطة الطلاب السودانيين',
       fromFallback: '"الأمانة المالية - رابطة الطلاب السودانيين" <finance@ssa-fscu.org>',
@@ -496,27 +498,26 @@ async function sendAnnouncementBroadcastEmail(student, announcement) {
         <h4 style="margin:0 0 8px; color:#0b3b24; font-size:16px;">${announcement.title || 'تنويه عام'}</h4>
         <p style="margin:0; line-height:1.7; color:#334155;">${announcement.content || ''}</p>
         <div style="margin-top:12px; font-size:12px; color:#64748b;">
-          التصنيف: <strong>${announcement.category \vert{ }\vert{ } 'عام'
-}</strong > \vert{ } التاريخ: ${ new Date().toLocaleDateString('ar-EG') }
-        </div >
-      </div >
+          التصنيف: <strong>${announcement.category || 'عام'}</strong> | التاريخ: ${new Date().toLocaleDateString('ar-EG')}
+        </div>
+      </div>
 
-  <div style="text-align: center; margin-top: 20px;">
-    <a href="${CLIENT_URL}" style="display:inline-block; background:#d4af37; color:#0b3b24; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:bold;">زيارة البوابة والاطلاع على التفاصيل</a>
+      <div style="text-align: center; margin-top: 20px;">
+        <a href="${CLIENT_URL}" style="display:inline-block; background:#d4af37; color:#0b3b24; text-decoration:none; padding:12px 28px; border-radius:8px; font-weight:bold;">زيارة البوابة والاطلاع على التفاصيل</a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>المكتب الإعلامي | رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</p>
+    </div>
   </div>
-    </div >
-  <div class="footer">
-    <p>المكتب الإعلامي | رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</p>
-  </div>
-  </div >
-</body >
-</html >
+</body>
+</html>
   `;
 
   try {
     return await dispatchEmail({
       to: email,
-      subject: `📢 تنويه هام: ${ announcement.title || 'إعلان من رابطة الطلاب السودانيين' } `,
+      subject: `📢 تنويه هام: ${announcement.title || 'إعلان من رابطة الطلاب السودانيين'}`,
       html: htmlContent,
       senderName: 'المكتب الإعلامي - رابطة الطلاب السودانيين',
       fromFallback: '"المكتب الإعلامي - رابطة الطلاب السودانيين" <media@ssa-fscu.org>',
@@ -537,28 +538,91 @@ async function sendPasswordResetEmail(student, resetUrl, resetToken) {
   } = student;
 
   const htmlContent = `
-  < !DOCTYPE html >
-    <html dir="rtl" lang="ar">
-      <head>
-        <meta charset="UTF-8">
-          <meta name="viewport" content="width=device-width, initial-scale=1.0">
-            <title>استعادة كلمة المرور - رابطة الطلاب السودانيين</title>
-            <style>
-              body {font - family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1b2a; margin: 0; padding: 20px; color: #333333; direction: rtl; }
-              .container {max - width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; }
-              .header {background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 32px 20px; text-align: center; color: #ffffff; }
-              .logo-badge {display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #d4af37; color: #0b3b24; font-size: 26px; font-weight: bold; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
-              .title {margin: 0; font-size: 20px; font-weight: bold; color: #ffffff; }
-              .subtitle {margin: 6px 0 0; font-size: 13px; color: #d4af37; font-weight: 600; }
-              .body {padding: 30px 24px; }
-              .welcome-text {font - size: 15px; line-height: 1.8; color: #334155; margin-bottom: 20px; }
-              .token-box {background: #f8fafc; border: 2px dashed #d4af37; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0; }
-              .token-label {font - size: 13px; color: #64748b; font-weight: bold; margin-bottom: 8px; }
-              .token-code {font - size: 24px; font-weight: 900; color: #0b3b24; letter-spacing: 3px; font-family: monospace; }
-              .btn-container {text - align: center; margin: 28px 0; }
-              .action-btn {display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #c59b27 100%); color: #0b3b24 !important; text-decoration: none; padding: 14px 34px; border-radius: 10px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 12px rgba(212,175,55,0.35); }
-              .warning-box {background: #fef2f2; border-right: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin: 20px 0; font-size: 13px; color: #991b1b; line-height: 1.6; }
-              .url-fallback {font - size: 11px; color: #94a3b8; word-break: break-all; margin-top: 20px; }
-              .footer {background: #f1f5f9; padding: 18px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
-            </style>
-          </
+<!DOCTYPE html>
+<html dir="rtl" lang="ar">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>استعادة كلمة المرور - رابطة الطلاب السودانيين</title>
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background-color: #0d1b2a; margin: 0; padding: 20px; color: #333333; direction: rtl; }
+    .container { max-width: 600px; margin: 0 auto; background: #ffffff; border-radius: 16px; overflow: hidden; box-shadow: 0 10px 30px rgba(0,0,0,0.3); border: 1px solid #e2e8f0; }
+    .header { background: linear-gradient(135deg, #0b3b24 0%, #1d2a45 100%); padding: 32px 20px; text-align: center; color: #ffffff; }
+    .logo-badge { display: inline-block; width: 60px; height: 60px; line-height: 60px; border-radius: 50%; background: #d4af37; color: #0b3b24; font-size: 26px; font-weight: bold; margin-bottom: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); }
+    .title { margin: 0; font-size: 20px; font-weight: bold; color: #ffffff; }
+    .subtitle { margin: 6px 0 0; font-size: 13px; color: #d4af37; font-weight: 600; }
+    .body { padding: 30px 24px; }
+    .welcome-text { font-size: 15px; line-height: 1.8; color: #334155; margin-bottom: 20px; }
+    .token-box { background: #f8fafc; border: 2px dashed #d4af37; border-radius: 12px; padding: 18px; text-align: center; margin: 24px 0; }
+    .token-label { font-size: 13px; color: #64748b; font-weight: bold; margin-bottom: 8px; }
+    .token-code { font-size: 24px; font-weight: 900; color: #0b3b24; letter-spacing: 3px; font-family: monospace; }
+    .btn-container { text-align: center; margin: 28px 0; }
+    .action-btn { display: inline-block; background: linear-gradient(135deg, #d4af37 0%, #c59b27 100%); color: #0b3b24 !important; text-decoration: none; padding: 14px 34px; border-radius: 10px; font-weight: bold; font-size: 15px; box-shadow: 0 4px 12px rgba(212,175,55,0.35); }
+    .warning-box { background: #fef2f2; border-right: 4px solid #ef4444; padding: 12px 16px; border-radius: 6px; margin: 20px 0; font-size: 13px; color: #991b1b; line-height: 1.6; }
+    .url-fallback { font-size: 11px; color: #94a3b8; word-break: break-all; margin-top: 20px; }
+    .footer { background: #f1f5f9; padding: 18px; text-align: center; font-size: 12px; color: #64748b; border-top: 1px solid #e2e8f0; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div class="logo-badge">🔐</div>
+      <h1 class="title">استعادة كلمة المرور للحساب الطلابي</h1>
+      <p class="subtitle">رابطة الطلاب السودانيين - كلية العلوم جامعة القاهرة</p>
+    </div>
+    <div class="body">
+      <p class="welcome-text">
+        مرحباً <strong>${fullName}</strong>،<br>
+        لقد تلقينا طلباً لإعادة تعيين كلمة المرور الخاصة بحسابك في البوابة الأكاديمية والخدمية. يمكنك إتمام العملية عبر الضغط على الزر أدناه:
+      </p>
+
+      <div class="btn-container">
+        <a href="${resetUrl}" class="action-btn">إعادة تعيين كلمة المرور الآن</a>
+      </div>
+
+      <div class="token-box">
+        <div class="token-label">أو استخدم رمز التحقق التالي في شاشة إعادة التعيين:</div>
+        <div class="token-code">${resetToken}</div>
+      </div>
+
+      <div class="warning-box">
+        ⏱️ <strong>تنبيه أمني:</strong> هذا الرابط والرمز صالحان لمدة <strong>30 دقيقة فقط</strong>.<br>
+        إذا لم تكن أنت من طلب استعادة كلمة المرور، يمكنك تجاهل هذا البريد بأمان ولن يطرأ أي تغيير على حسابك.
+      </div>
+
+      <div class="url-fallback">
+        إذا تعذر الضغط على الزر، يمكنك نسخ الرابط التالي ولصقه في متصفحك:<br>
+        <a href="${resetUrl}" style="color: #2563eb;">${resetUrl}</a>
+      </div>
+    </div>
+    <div class="footer">
+      <p>الأمانة الرقمية وشؤون الطلاب | رابطة الطلاب السودانيين بكلية العلوم جامعة القاهرة</p>
+    </div>
+  </div>
+</body>
+</html>
+  `;
+
+  try {
+    return await dispatchEmail({
+      to: email,
+      subject: '🔐 طلب استعادة كلمة المرور - بوابة كلية العلوم جامعة القاهرة',
+      html: htmlContent,
+      senderName: 'أمانة شؤون الطلاب - رابطة العلوم',
+      fromFallback: '"أمانة شؤون الطلاب - رابطة العلوم" <noreply@cairo-univ-portal.com>',
+    });
+  } catch (error) {
+    console.error('❌ خطأ أثناء إرسال بريد استعادة كلمة المرور:', error.message);
+    return { sent: false, error: error.message };
+  }
+}
+
+module.exports = {
+  sendWelcomeEmail,
+  sendStatusUpdateEmail,
+  sendPaymentStatusEmail,
+  sendRoleUpdateEmail,
+  sendAnnouncementBroadcastEmail,
+  sendPasswordResetEmail,
+  getTransporter,
+};
