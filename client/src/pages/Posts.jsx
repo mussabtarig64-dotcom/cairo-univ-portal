@@ -22,6 +22,7 @@ import {
 } from 'lucide-react';
 
 import { API_BASE } from '../config/api';
+import { linkifyText } from '../utils/linkUtils.jsx';
 
 const DEPARTMENTS_FILTER = [
   'الكل',
@@ -495,7 +496,7 @@ export default function Posts() {
               )}
 
               <p style={{ color: activeTheme.textMain, fontSize: '14px', lineHeight: '1.8', whiteSpace: 'pre-line', margin: '0 0 16px' }}>
-                {post.content}
+                {linkifyText(post.content)}
               </p>
 
               {/* ميديا ومرفقات PDF */}

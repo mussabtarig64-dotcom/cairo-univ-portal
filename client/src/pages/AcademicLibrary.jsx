@@ -31,6 +31,7 @@ import {
 import AdminHubCMSModal from '../components/AdminHubCMSModal';
 import AcademicMajorsGuide from '../components/AcademicMajorsGuide';
 import { fetchHubContent, deleteHubContent } from '../utils/cmsApi';
+import { normalizeUrl, isExternalUrl, linkifyText } from '../utils/linkUtils.jsx';
 
 const ACADEMIC_LEVELS = [
   'الكل',
@@ -689,9 +690,16 @@ export default function AcademicLibrary({ defaultTab }) {
                       <span style={{ background: 'rgba(245, 158, 11, 0.15)', color: '#fbbf24', border: '1px solid rgba(245, 158, 11, 0.35)', padding: '4px 12px', borderRadius: '10px', fontSize: '12px', fontWeight: 'bold' }}>
                         {item.typeName || (item.type === 'exam' || item.section === 'exams' ? 'امتحانات سابقة' : 'مذكرات')}
                       </span>
-                      <span style={{ fontSize: '12px', color: '#cbd5e1', backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '3px 8px', borderRadius: '6px' }}>
-                        {item.format || 'PDF'} • {item.fileSize || '3.5 MB'}
-                      </span>
+                      {/* Smart badge: show PDF info only when a file exists; show link badge when only a link */}
+                      {item.fileUrl ? (
+                        <span style={{ fontSize: '12px', color: '#cbd5e1', backgroundColor: 'rgba(255, 255, 255, 0.08)', padding: '3px 8px', borderRadius: '6px' }}>
+                          PDF{item.fileSize ? ` • ${item.fileSize}` : ''}
+                        </span>
+                      ) : isExternalUrl(item.link) ? (
+                        <span style={{ fontSize: '12px', color: '#38bdf8', backgroundColor: 'rgba(56, 189, 248, 0.1)', padding: '3px 8px', borderRadius: '6px', border: '1px solid rgba(56, 189, 248, 0.3)' }}>
+                          🔗 رابط خارجي
+                        </span>
+                      ) : null}
                     </div>
 
                     <h3 style={{ color: '#ffffff', fontSize: '17px', fontWeight: 'bold', margin: '0 0 10px', lineHeight: '1.5' }}>
@@ -699,7 +707,7 @@ export default function AcademicLibrary({ defaultTab }) {
                     </h3>
 
                     <p style={{ color: '#cbd5e1', fontSize: '14px', lineHeight: '1.7', margin: '0 0 16px' }}>
-                      {item.description}
+                      {linkifyText(item.description)}
                     </p>
 
                     <div style={{ fontSize: '13px', color: '#38bdf8', marginBottom: '16px', fontWeight: '600' }}>
@@ -709,28 +717,62 @@ export default function AcademicLibrary({ defaultTab }) {
                   </div>
 
                   <div style={{ borderTop: '1px solid rgba(255, 255, 255, 0.1)', paddingTop: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                    <span style={{ fontSize: '12px', color: '#94a3b8' }}>📥 {item.downloads || 0} تنزيل</span>
+                    {/* Download counter only shown when a real file exists */}
+                    {item.fileUrl ? (
+                      <span style={{ fontSize: '12px', color: '#94a3b8' }}>📥 {item.downloads || 0} تنزيل</span>
+                    ) : (
+                      <span />
+                    )}
                     <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
-                      <button
-                        onClick={() => handleDownload(item)}
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '6px',
-                          background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
-                          color: '#0b1622',
-                          border: 'none',
-                          padding: '9px 18px',
-                          borderRadius: '10px',
-                          fontWeight: 'bold',
-                          fontSize: '13px',
-                          cursor: 'pointer',
-                          boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
-                        }}
-                      >
-                        <Download size={15} />
-                        <span>تنزيل الملف</span>
-                      </button>
+                      {/* Show Download button only when a real file URL exists */}
+                      {item.fileUrl && (
+                        <button
+                          onClick={() => handleDownload(item)}
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'linear-gradient(135deg, #f59e0b 0%, #d97706 100%)',
+                            color: '#0b1622',
+                            border: 'none',
+                            padding: '9px 18px',
+                            borderRadius: '10px',
+                            fontWeight: 'bold',
+                            fontSize: '13px',
+                            cursor: 'pointer',
+                            boxShadow: '0 4px 12px rgba(245, 158, 11, 0.3)',
+                          }}
+                        >
+                          <Download size={15} />
+                          <span>تنزيل الملف</span>
+                        </button>
+                      )}
+
+                      {/* Show Open Link button only when a real external URL exists */}
+                      {isExternalUrl(item.link) && (
+                        <a
+                          href={normalizeUrl(item.link)}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '6px',
+                            background: 'rgba(56, 189, 248, 0.15)',
+                            border: '1px solid #38bdf8',
+                            color: '#38bdf8',
+                            padding: '9px 18px',
+                            borderRadius: '10px',
+                            fontWeight: 'bold',
+                            fontSize: '13px',
+                            textDecoration: 'none',
+                            cursor: 'pointer',
+                          }}
+                        >
+                          <ExternalLink size={15} />
+                          <span>فتح الرابط</span>
+                        </a>
+                      )}
 
                       {isAdmin && (
                         <div style={{ display: 'flex', alignItems: 'center', gap: '4px' }}>
@@ -896,9 +938,9 @@ export default function AcademicLibrary({ defaultTab }) {
 
               <div style={{ marginTop: '18px', paddingTop: '14px', borderTop: '1px solid rgba(255, 255, 255, 0.1)', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
                 <a
-                  href="https://wa.me/201000000000"
+                  href={isExternalUrl(g.link) ? normalizeUrl(g.link) : 'https://wa.me/201000000000'}
                   target="_blank"
-                  rel="noreferrer"
+                  rel="noopener noreferrer"
                   style={{
                     display: 'inline-flex',
                     alignItems: 'center',
